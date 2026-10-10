@@ -24,8 +24,10 @@
 #   fsuae_gdb_script FILE   echo a copy of FILE with the stub port patched in
 # Launch API:
 #   fsuae_options           fill the FSUAE_ARGS array from the variables below
-#   fsuae_launch ARGS...    start "$FSUAE" in the background with FSUAE_ARGS, ARGS and
-#                           $EXTRA_ARGS, log to $FSUAE_RUN/fsuae.log, track it, print its pid
+#   fsuae_launch ARGS...    start "$FSUAE" in the background with $EXTRA_ARGS, ARGS and
+#                           FSUAE_ARGS, log to $FSUAE_RUN/fsuae.log, track it, print its pid.
+#                           FS-UAE keeps the first value of a repeated option, so EXTRA_ARGS
+#                           beats the script's ARGS, which beat fsuae_options
 #   fsuae_exec ARGS...      the same in the foreground (exec), for interactive scripts
 # Variables (all optional; a script sets its own defaults before calling fsuae_options):
 #   FSUAE (fs-uae on PATH), FSUAE_RUN (work dir, .run), DEBUG_PORT (pins the stub port)
@@ -36,7 +38,8 @@
 #   SOUND=1|0 (default 1, 0 for debug runs; SILENT=1 means SOUND=0)
 #   WINDOW=front|back|none (default front, back for debug runs).  back keeps the window
 #     behind the active one (SDL_MAC_BACKGROUND_APP); none runs with no window at all
-#   EXTRA_ARGS (word-split, appended last, so it overrides everything)
+#   EXTRA_ARGS (word-split, passed first, so it overrides everything; --warp_mode=1 in it
+#     makes a debug run like WARP=1)
 
 FSUAE_RUN="${FSUAE_RUN:-.run}"
 FSUAE_PIDFILE="$FSUAE_RUN/fsuae.pid"
@@ -155,7 +158,8 @@ fsuae_gdb_script() {
 
 # A debug run: the gdb stub, warp, or a script that says so (diag/capture scripts).
 fsuae_quiet() {
-  [ "${DEBUG:-0}" = 1 ] || [ "${WARP:-0}" = 1 ] || [ "${FSUAE_QUIET:-0}" = 1 ]
+  [ "${DEBUG:-0}" = 1 ] || [ "${WARP:-0}" = 1 ] || [ "${FSUAE_QUIET:-0}" = 1 ] ||
+    case " ${EXTRA_ARGS:-} " in *" --warp_mode=1 "*) true ;; *) false ;; esac
 }
 
 fsuae_options() {
@@ -203,7 +207,7 @@ fsuae_launch() {
   local log="${FSUAE_LOG:-$FSUAE_RUN/fsuae.log}"
   # The subshell execs, so $! is the emulator itself (what fsuae_stop_previous checks).
   # shellcheck disable=SC2086  # EXTRA_ARGS is word-split on purpose
-  ( fsuae_env; exec "${FSUAE:-fs-uae}" "${FSUAE_ARGS[@]}" "$@" ${EXTRA_ARGS:-} ) > "$log" 2>&1 &
+  ( fsuae_env; exec "${FSUAE:-fs-uae}" ${EXTRA_ARGS:-} "$@" "${FSUAE_ARGS[@]}" ) > "$log" 2>&1 &
   fsuae_track $!
   echo "fs-uae pid $FSUAE_PID (log $log, port $DEBUG_PORT)"
 }
@@ -213,5 +217,5 @@ fsuae_exec() {
   fsuae_track_self
   fsuae_env
   # shellcheck disable=SC2086
-  exec "${FSUAE:-fs-uae}" "${FSUAE_ARGS[@]}" "$@" ${EXTRA_ARGS:-}
+  exec "${FSUAE:-fs-uae}" ${EXTRA_ARGS:-} "$@" "${FSUAE_ARGS[@]}"
 }
