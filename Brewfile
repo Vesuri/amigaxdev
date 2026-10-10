@@ -1,5 +1,10 @@
 # Core host tools for every Amiga project (make brew).
 
+# bash 5: the projects' scripts run under `#!/usr/bin/env bash` and use what macOS's bash 3.2
+# lacks (an empty "${array[@]}" under set -u, for one).  AmigaXDev's own scripts stay on
+# /bin/bash 3.2, which is what a fresh Mac has.
+brew "bash"
+
 # Archives: lhasa's lha extracts .lha, unar/lsar read .lha, .lzx and .zip.  Archives are created
 # with LHa for UNIX, which setup builds into $AMIGA_SHARE/lha-compressor.
 brew "lhasa"
@@ -23,6 +28,9 @@ brew "sdl2-compat"
 brew "sdl2_image"
 brew "libsndfile"
 brew "coreutils"
+
+# Macintosh HFS volumes (hmount, hcopy, humount): Alone in the Dark's original data.
+brew "hfsutils"
 
 brew "git"
 brew "gh"

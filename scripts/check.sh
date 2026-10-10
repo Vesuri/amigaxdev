@@ -55,7 +55,9 @@ check "FS-UAE aprof"           "$AMIGA_SHARE/fs-uae-aprof/fs-uae" --version
 check "LHa for UNIX"           sh -c "'$AMIGA_SHARE/lha-compressor/src/lha' --version 2>&1 | grep -q LHa"
 check "Python packages"        "$AMIGA_SHARE/python/bin/python3" -c 'import PIL, numpy, capstone, amitools'
 check "xdftool"                "$AMIGA_SHARE/python/bin/xdftool" --help
-for t in lha unar lsar uv lldb; do check "$t" command -v "$t"; done
+for t in lha unar lsar uv lldb hmount hcopy ffmpeg 7zz; do check "$t" command -v "$t"; done
+# The projects' `#!/usr/bin/env bash` scripts need bash 4 or later first on PATH.
+check "bash 4+ on PATH"        bash -c '[ "${BASH_VERSINFO[0]}" -ge 4 ]'
 check "shared env.sh sources"  bash -c ". '$AMIGA_SHARE/env.sh' && [ -n \"\$KICKSTART\" ]"
 
 if [ "$fails" = 0 ]; then echo "all checks passed"; else echo "$fails check(s) failed"; exit 1; fi

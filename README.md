@@ -9,7 +9,9 @@ the playbooks in `docs/playbooks/`.
 ## Setting up a Mac
 
 Prerequisites: an Apple Silicon Mac with the Xcode command line tools (`xcode-select --install`)
-and [Homebrew](https://brew.sh). Then:
+and [Homebrew](https://brew.sh), with Homebrew's `bin` ahead of `/bin` on `PATH` (the
+`brew shellenv` line the installer suggests does that): the projects' scripts run under
+`#!/usr/bin/env bash` and need the bash 5 that setup installs, not macOS's 3.2. Then:
 
 ```sh
 git clone <this repo> AmigaXDev && cd AmigaXDev
@@ -58,7 +60,7 @@ variables can be left out once those files are installed.
 | Shared `env.sh`, `fsuae_common.sh`, playbooks | `share` | this repo | top level |
 | Native arm64 FS-UAE with the gdb stub | `fsuae-arm` | GitHub `grahambates/fs-uae`, built | `fs-uae-arm/` |
 | The same with the cycle profiler patch | `fsuae-aprof` | that + `patches/fsuae-aprof.patch` | `fs-uae-aprof/` |
-| Ghidra, MAME, DOSBox-X, DOSBox Staging, unicorn, volta | `brew-extras` | Homebrew | Homebrew; Ghidra linked under `~/.local/share/ghidra/` |
+| Ghidra, MAME, DOSBox-X, DOSBox Staging, unicorn, volta, ffmpeg, 7-Zip | `brew-extras` | Homebrew | Homebrew; Ghidra linked under `~/.local/share/ghidra/` |
 
 Paths without a directory are under `~/.local/share/amiga`. Every download, git commit and
 licensed file is pinned in `manifest/`. `docs/environment.md` lists the shared variables and
