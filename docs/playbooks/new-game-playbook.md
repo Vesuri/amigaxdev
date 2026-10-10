@@ -34,7 +34,7 @@ Patches come after all of that.
 
 ---
 
-## 0. Rules (put these in the new repo's CLAUDE.md before anything else)
+## 0. Rules (put these in the new repo's AGENTS.md before anything else)
 
 - **Never commit game, Kickstart or WHDLoad bytes**, or anything made from them: unpacked data,
   traces, memory dumps, screenshots, input recordings, built slaves. Keep them in `tmp/`, which
@@ -192,7 +192,8 @@ What is generic and what has to be adapted:
 | `state_fields.py`, `state_writers.py` | per-field snapshots at the VBL entry; finding `d16(a4)` stores | what to snapshot: TD2 and TFH dump the data hunk; I500 keeps its variables at absolute addresses inside the code hunk, so it dumps hunk 0. `state_writers.py` only finds `d16(a4)` stores (Aztec C), so an asm game needs an `abs.l` variant. `task_state.py` and `state_watch.py` are TD2-specific: don't copy them |
 | `compare_state.py` (TFH's) | compares the whole data hunk; a longword pointing into the code or data hunk at the same offset in both runs counts as equal, so builds that load the game elsewhere still compare | hunk sizes, `a4` bias. **TD2's version compares TD2's variable table and reports "identical" on any other game**: TFH quoted meaningless "identical state" results from it for a day. Before trusting any compare, check that two runs of the same build compare equal and two different scenes do not |
 
-Write `CLAUDE.md` (the rules from §0 plus a read-first table of docs), and start the docs on TFH's
+Write `AGENTS.md` (the rules from §0 plus a read-first table of docs) and a `CLAUDE.md` that
+holds only `@AGENTS.md` (Claude Code reads `CLAUDE.md`; other agents read `AGENTS.md`), and start the docs on TFH's
 layout, each a current-state reference (§0):
 
 | Doc | Holds |
@@ -646,7 +647,7 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
 
 ## 12. "Ready to improve": the definition of done for setup
 
-- [ ] Rules in `CLAUDE.md`; `tmp/` ignored; no game bytes in git (`git ls-files` reviewed).
+- [ ] Rules in `AGENTS.md`, imported by a one-line `CLAUDE.md`; `tmp/` ignored; no game bytes in git (`git ls-files` reviewed).
 - [ ] Game, version, slave type and existing patches documented.
 - [ ] `td2_report.py` names every hot region; traces have PCs.
 - [ ] A fixed gameplay window that is reproducible across boots: same screenshots, same state.

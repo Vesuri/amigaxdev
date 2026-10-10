@@ -63,7 +63,8 @@ Patches come after all of that.
   `user.signingkey` (empty), `commit.gpgsign=false`, `tag.gpgsign=false`, `push.gpgsign=false`,
   `core.hooksPath=/dev/null`. Linked worktrees share it. Upstream has no `AGENTS.md`: the user's
   personal rules are a local, untracked `AGENTS.md` (copied from the JOTD fork) in the main
-  checkout and the worktree, listed with `/tmp/` and `/CLAUDE.md` in the local exclude file.
+  checkout and the worktree, with a `CLAUDE.md` that holds only `@AGENTS.md`; both are listed
+  with `/tmp/` in the local exclude file.
   Re-check all of this after a fresh clone or a new worktree.
 - Addresses in docs are **offsets into the game's code hunk or file**, using the same numbering
   as the slave's patch lists. Never quote absolute addresses, because they move with the memory
@@ -381,8 +382,9 @@ Indianapolis 500 (in `tmp/dev/docs/`, carried over from the standalone project):
 | `docs/game.md`, `docs/slave.md` | the game's memory, time model and renderer; the slave's options, features, hooks, verification and measurements (the playbook's `internals.md`) |
 | `docs/simulation-feasibility.md` | the analysis of a faster simulation |
 
-A local, excluded `CLAUDE.md` at the worktree root carries the rules, the doc index and the
-current state for the next agent session.
+The local, excluded `AGENTS.md` at the worktree root carries the rules, the doc index and the
+current state for the next agent session, after the personal commit rules; a local `CLAUDE.md`
+holding only `@AGENTS.md` lets Claude Code read it.
 
 Do not commit a standalone-project scaffold at the fork's root. Keep the eventual game change
 as focused as `testdrive2`: the game's source files only. Upstream-facing explanation belongs in

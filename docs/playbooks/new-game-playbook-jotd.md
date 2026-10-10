@@ -292,7 +292,8 @@ Add `/tmp/` to the repository’s local exclude file (resolve it with
 `git rev-parse --git-path info/exclude`; do not assume `.git` is a directory). Preserve its
 existing entries. Check `git check-ignore tmp/dev/probe` before copying anything. This local
 exclusion is shared by the repository’s worktrees and does not change tracked `.gitignore`.
-Preserve existing `AGENTS.md`; keep local notes local unless their inclusion in the game’s
+Preserve existing `AGENTS.md`, and give it a local `CLAUDE.md` holding only `@AGENTS.md` (both
+in the local exclude file) so Claude Code reads it too; keep local notes local unless their inclusion in the game’s
 source contribution is deliberate. Inspect staged paths before every commit.
 
 ```sh
