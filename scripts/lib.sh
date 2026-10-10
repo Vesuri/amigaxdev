@@ -30,6 +30,14 @@ fetch() {
   mv "$2.part" "$2"
 }
 
+# local_path PATH: PATH without a file:// prefix and with a leading ~ expanded (make arguments
+# like DEVCD=~/x reach us unexpanded: shells expand ~ after = only in assignments).
+local_path() {
+  local p="${1#file://}"
+  case "$p" in "~") p="$HOME" ;; "~/"*) p="$HOME/${p#\~/}" ;; esac
+  echo "$p"
+}
+
 # fetch_from BASE RELPATH DEST: BASE is a local directory, a file:// URL or an http(s) URL of a
 # directory laid out like the source tree; RELPATH is the file inside it.
 fetch_from() {
@@ -43,11 +51,28 @@ fetch_from() {
       done
       fetch "${1%/}/$enc" "$3" ;;
     *)
-      local src="${1#file://}/$2"
+      local src
+      src="$(local_path "$1")/$2"
       [ -f "$src" ] || return 1
       mkdir -p "$(dirname "$3")"
       cp "$src" "$3" ;;
   esac
+}
+
+# manifest_sha FILE: the sha256 manifest/downloads.tsv pins FILE to.
+manifest_sha() {
+  local sha
+  sha=$(rows downloads.tsv | awk -F'\t' -v f="$1" '$1 == f {print $2}')
+  [ -n "$sha" ] || die "$1 is not in manifest/downloads.tsv"
+  echo "$sha"
+}
+
+# installed NAME VALUE FILE...: the component was installed from VALUE (its stamp) and its files
+# are still there.  Checked before anything is downloaded, so a rerun needs no network.
+installed() {
+  local name="$1" value="$2" f; shift 2
+  stamped "$name" "$value" || return 1
+  for f in "$@"; do [ -e "$f" ] || return 1; done
 }
 
 # download FILE: a file from manifest/downloads.tsv, cached and checked.  Echoes its path.

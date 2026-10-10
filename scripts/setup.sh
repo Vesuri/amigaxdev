@@ -20,21 +20,26 @@ c_host() {
   fi
 }
 
-c_brew() {
-  log "Homebrew packages (Brewfile)"
-  brew bundle --quiet --no-upgrade --file="$REPO/Brewfile"
+# brew_bundle FILE: install what FILE lists and is missing; never upgrade what is there.
+brew_bundle() {
+  brew bundle check --quiet --no-upgrade --file="$1" >/dev/null 2>&1 && return 0
+  log "Homebrew packages ($(basename "$1"))"
+  brew bundle --quiet --no-upgrade --file="$1"
 }
 
+c_brew() { brew_bundle "$REPO/Brewfile"; }
+
 c_brew_extras() {
-  log "Homebrew packages (Brewfile.extras)"
-  brew bundle --quiet --no-upgrade --file="$REPO/Brewfile.extras"
+  brew_bundle "$REPO/Brewfile.extras"
   # Projects reach Ghidra through ~/.local/share/ghidra/ghidra_<major.minor>_PUBLIC.
-  local v
+  local v link target
   v=$(brew list --versions ghidra | awk '{print $2}' | cut -d. -f1-2)
   [ -n "$v" ] || die "ghidra is not installed"
+  link="$PREFIX/share/ghidra/ghidra_${v}_PUBLIC"; target="$(brew --prefix)/opt/ghidra/libexec"
+  [ "$(readlink "$link" 2>/dev/null)" = "$target" ] && return 0
   mkdir -p "$PREFIX/share/ghidra"
-  ln -sfn "$(brew --prefix)/opt/ghidra/libexec" "$PREFIX/share/ghidra/ghidra_${v}_PUBLIC"
-  log "linked $PREFIX/share/ghidra/ghidra_${v}_PUBLIC"
+  ln -sfn "$target" "$link"
+  log "linked $link"
 }
 
 c_python() {
@@ -55,8 +60,9 @@ c_toolchain() {
   # BartmanAbyss amiga-debug: its bin/darwin tree is ~/.local (gcc, gdb, FS-UAE with the gdb
   # stub, vasm, elf2hunk, Shrinkler, exe2adf) and template/support holds gcc8_*_support.
   local vsix st="$BUILD/amiga-debug" f
+  installed toolchain "$(manifest_sha amiga-debug-1.8.2.vsix)" "$PREFIX/opt/bin/m68k-amiga-elf-gcc" \
+    "$PREFIX/fs-uae/fs-uae" "$PREFIX/vasmm68k_mot" "$PREFIX/support" && return 0
   vsix=$(download amiga-debug-1.8.2.vsix)
-  if stamped toolchain "$(sha256 "$vsix")"; then return 0; fi
   log "amiga-debug toolchain into $PREFIX"
   rm -rf "$st"; mkdir -p "$st"
   unzip -q "$vsix" 'extension/bin/darwin/*' 'extension/template/support/*' -d "$st"
@@ -83,8 +89,8 @@ EOF
 
 unpack_whdload() { # ARCHIVE DEST
   local a st="$BUILD/whdload"
+  installed "$2" "$(manifest_sha "$1")" "$AMIGA_SHARE/$2/C/WHDLoad" "$AMIGA_SHARE/$2/Include" && return 0
   a=$(download "$1")
-  if stamped "$2" "$(sha256 "$a")"; then return 0; fi
   rm -rf "$st"; mkdir -p "$st"
   unar -q -D -o "$st" "$a" >/dev/null
   # The .lzx archives do not store empty directories; the .lha release has this one.
@@ -101,8 +107,8 @@ c_whdload() {
 
 c_ndk() {
   local a st="$BUILD/ndk"
+  installed ndk "$(manifest_sha NDK3.2.lha)" "$AMIGA_SHARE/ndk/Include_I" && return 0
   a=$(download NDK3.2.lha)
-  if stamped ndk "$(sha256 "$a")"; then return 0; fi
   rm -rf "$st"; mkdir -p "$st"
   unar -q -D -o "$st" "$a" >/dev/null
   sync_tree "$st" "$AMIGA_SHARE/ndk"
@@ -112,8 +118,8 @@ c_ndk() {
 
 c_installer() {
   local a st="$BUILD/installer"
+  installed installer "$(manifest_sha Installer-43_3.lha)" "$AMIGA_SHARE/Installer43/Installer" && return 0
   a=$(download Installer-43_3.lha)
-  if stamped installer "$(sha256 "$a")"; then return 0; fi
   rm -rf "$st"; mkdir -p "$st"
   unar -q -D -o "$st" "$a" >/dev/null
   install_file "$st/Installer43_3/Installer" "$AMIGA_SHARE/Installer43/Installer" \
@@ -124,9 +130,11 @@ c_installer() {
 
 c_rtb() {
   # WHDLoad's Kickstart relocation tables, one per ROM in manifest/roms.tsv.
-  local a st="$BUILD/skick" dest rtb
+  local a st="$BUILD/skick" dest rtb key
+  key="$(manifest_sha skick346.lha)$(sha256 "$REPO/manifest/roms.tsv")"
+  # shellcheck disable=SC2046  # one path per ROM, none with spaces
+  installed rtb "$key" $(rows roms.tsv | cut -f1 | sed "s|.*|$AMIGA_SHARE/&.RTB|") && return 0
   a=$(download skick346.lha)
-  if stamped rtb "$(sha256 "$a")$(sha256 "$REPO/manifest/roms.tsv")"; then return 0; fi
   rm -rf "$st"; mkdir -p "$st"
   unar -q -D -o "$st" "$a" >/dev/null
   rows roms.tsv | while IFS=$'\t' read -r dest sha rel; do
@@ -135,7 +143,7 @@ c_rtb() {
     install_file "$rtb" "$AMIGA_SHARE/$dest.RTB" "$(sha256 "$rtb")"
   done
   rm -rf "$st"
-  stamp rtb "$(sha256 "$a")$(sha256 "$REPO/manifest/roms.tsv")"
+  stamp rtb "$key"
 }
 
 # --- git checkouts and builds ----------------------------------------------------------------
@@ -218,14 +226,16 @@ c_devcd() {
   # autodocs as AmigaGuide and HTML, Amiga Mail and the DevCon notes.
   local name sha dirs iso="$CACHE/adcd21.iso" st="$BUILD/devcd"
   IFS=$'\t' read -r name sha dirs < <(rows devcd.tsv)
-  if stamped devcd "$sha"; then return 0; fi
+  installed devcd "$sha" "$AMIGA_SHARE/adcd21/Reference/ROM_Kernel_Manuals/Hardware_Manual" && return 0
   if ! sha_ok "$iso" "$sha"; then
     need_source DEVCD "The Amiga Developer CD"
     log "fetching $name"
     case "$DEVCD" in
-      *.iso|*.ISO) fetch_from "$(dirname "$DEVCD")" "$(basename "$DEVCD")" "$iso" ;;
+      # A URL of the ISO itself is used as given (it is usually already %-encoded).
+      http://*.iso|https://*.iso|http://*.ISO|https://*.ISO) fetch "${DEVCD// /%20}" "$iso" ;;
+      *.iso|*.ISO) fetch_from "$(dirname "$(local_path "$DEVCD")")" "$(basename "$DEVCD")" "$iso" ;;
       *)           fetch_from "$DEVCD" "$name" "$iso" ;;
-    esac || die "could not fetch $name from $DEVCD"
+    esac || die "could not fetch the Developer CD from $DEVCD (a path or URL of the ISO, or of the directory holding \"$name\")"
     sha_ok "$iso" "$sha" || die "$name: checksum mismatch (expected $sha)"
   fi
   rm -rf "$st"; mkdir -p "$st"
@@ -240,8 +250,8 @@ c_devcd() {
 c_aga_guide() {
   # The AGA chipset registers, which the Hardware Reference Manual (OCS/ECS) predates.
   local a st="$BUILD/agaguide"
+  installed aga-guide "$(manifest_sha agamanual.lha)" "$AMIGA_SHARE/AGA.Guide" && return 0
   a=$(download agamanual.lha)
-  if stamped aga-guide "$(sha256 "$a")"; then return 0; fi
   rm -rf "$st"; mkdir -p "$st"
   unar -q -D -o "$st" "$a" >/dev/null
   install_file "$st/AGA.Guide" "$AMIGA_SHARE/AGA.Guide" "$(sha256 "$st/AGA.Guide")"

@@ -20,8 +20,10 @@ make setup TOSEC=<TOSEC tree> AMIGA_OS=<Workbench directory> DEVCD=<Developer CD
 
 `make setup` installs Rosetta 2 if needed (the gdb-stub FS-UAE and vasm are x86_64), the
 Homebrew packages in `Brewfile` and `Brewfile.extras`, then everything below, and ends with
-`make check`. A rerun skips what is already installed and current, so it is also how to
-update. It takes about half an hour on a fresh machine, mostly the two FS-UAE builds.
+`make check`. A rerun installs only what is missing or out of date against the manifests:
+on a complete installation it downloads nothing and finishes in seconds, without `TOSEC`,
+`AMIGA_OS` or `DEVCD`. Homebrew packages that are present are never upgraded. It is also how
+to update after pulling this repo. It takes about half an hour on a fresh machine, mostly the two FS-UAE builds.
 
 ### The Kickstart, Workbench and Developer CD sources
 
@@ -34,8 +36,8 @@ URL:
 - `AMIGA_OS` is a flat directory of TOSEC-named Workbench zips, laid out like the Internet
   Archive item "Commodore Amiga - Operating Systems - Workbench". Setup takes the zips named
   in `manifest/os.tsv`. SetPatch comes out of the Workbench 3.1 disk with `xdftool`.
-- `DEVCD` is the Amiga Developer CD v2.1 ISO, or a directory that holds it under its Internet
-  Archive name (`manifest/devcd.tsv`). Setup installs the CD's `Reference/` directory: the ROM
+- `DEVCD` is the Amiga Developer CD v2.1 ISO (a path, or a URL used exactly as given), or a
+  directory that holds it under its Internet Archive name (`manifest/devcd.tsv`). Setup installs the CD's `Reference/` directory: the ROM
   Kernel Manuals (Hardware, Libraries, Devices) and autodocs, as AmigaGuide and as HTML.
 
 Every file is checked against the sha256 in the manifest before it is installed. The
