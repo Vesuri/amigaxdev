@@ -939,3 +939,6 @@ base/target and the complete diff first. No publishing is implied by creating th
   banner's Latin-1 byte and the `d7` comment).
 - The harness in `tmp/dev/` is the standalone project's with paths adapted; commands are in
   `tmp/dev/docs/profiling.md`. Work continues from `tmp/dev/docs/open-work.md`.
+- Indianapolis 500's 3.1b contribution includes extrapolation only while driving, moving
+  cars in instant replays and paced replay wipes; `CUSTOM2` was removed. The contribution
+  is [StingRay PR #2](https://github.com/MK1Roxxor/WHDLoad_Patches/pull/2).
