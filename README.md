@@ -77,3 +77,6 @@ edit back here to commit.
 Downloads are cached in `tmp/cache/` and build trees are in `tmp/build/` (`CACHE=` and `BUILD=`
 move them; the FS-UAE builds need a path without spaces). `PREFIX=` installs somewhere other
 than `~/.local`, for example to try setup without touching a working environment.
+
+For native game ports, [native port validation](docs/native-port-validation.md) covers
+hardware crash regressions, installer updates and final release archive checks.

@@ -42,4 +42,5 @@ The projects follow the same layout. Edit `AGENTS.md`, never `CLAUDE.md`.
 | `README.md` | setting up a Mac, what is installed where |
 | `docs/environment.md` | the shared variables and how a project uses them |
 | `docs/projects.md` | the projects, what each uses, and how far each is migrated |
+| `docs/native-port-validation.md` | hardware crash regressions, installer updates and final archive checks |
 | `docs/playbooks/` | profiling and improving a WHDLoad game: standalone repo, JOTD fork, StingRay fork |
