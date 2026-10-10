@@ -495,6 +495,9 @@ For hardware-only black screens, stale executable stubs and WHDLoad dump analysi
 
 ## 9. Understand game time before optimising anything
 
+For a fixed-step replacement, also read [fixed-time simulation](fixed-time-simulation.md):
+completed-tick versus elapsed-field checks, historical input, native pauses and control feel.
+
 This is where TD2 spent most of its effort, and it was the right call. A faster renderer is
 worthless if it also speeds the game up, and pointless if the simulation only moves things
 8 times a second. Answer these with measurements:
@@ -568,6 +571,12 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
   test with `WHDLOAD=~/.local/share/amiga/WHDLoad`, or only `WHDLOAD_BINARY` pointing there).
   LoV predates the 20.0 convention: its `WHDLOAD` and `WHDLOAD_BINARY` default to the 19.2
   `WHDLoad/` tree (a deliberate, behaviour-preserving exception; new repos use `WHDLoad-20.0/`).
+- **Test paths containing spaces at both make and shell levels.** Quoting `-o "$@"` is
+  insufficient if make has already split `$(OUT)/Game.Slave` into separate targets. Escape
+  spaces in the target/prerequisite spelling, and separately quote assembler, listing and
+  output arguments in the recipe. Exercise release, developer, VERIFY and clean targets with
+  absolute and relative spaced `OUT` paths. LoV `whdload/makefile` implements this; compare
+  the resulting release bytes against the ordinary-path build.
 - **First rebuild the unmodified slave** and confirm it boots and gives the same fixed-window
   state as the shipped one. The bytes will differ (BASM date stamps, a vendored kickemu; I500:
   vasm writes `cmpi.w #imm,Dn` as `cmp.w` even with `-no-opt`, and pads with `nop` where ASM-One
@@ -594,6 +603,12 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
   `$200000`, not slow RAM at `$C00000–$DFFFFF`), and the A500 and stock A1200 then run exactly
   the original. Prefer one splash-window toggle, off by default; keep manual values for tooling
   unlisted.
+- **CPU-only buffers can use `MEMF_PUBLIC` without requiring fast RAM.** Audit every reader
+  and writer for DMA use first; bitplanes, audio and blitter-visible buffers have different
+  requirements. Let Exec choose eligible memory, retain allocation-failure behavior, and pair
+  ownership with the matching free routine and size. Do not infer physical fast RAM merely
+  from an Exec FAST flag: distinguish expansion slow RAM from uncontended fast RAM in profiles.
+  LoV moves only its chunky allocation, not its whole pool, on every CPU.
 - **Pixel twins for renderer replacements** (I500 `pixel_verify.s`): the VERIFY build runs the
   new code into a guarded shadow bitmap, then the native code into the real one, and compares
   every plane plus the registers that survive, including X. Twin the replaced inner loop, not the
@@ -677,7 +692,11 @@ When the work ships, add `make dist` (TFH `tools/package_release.py`): for each 
 ReadMe, and repack to `dist/` (ignored).
 
 - **Lhasa can't create archives.** Use LHa for UNIX (`LHA`, §1) with level-1 headers
-  (`lha a1o5q2`, matching the originals).
+  (`lha a1o5q2`, matching the originals). An alternative for a strict two-file update is LoV
+  `tools/release.py`: retain each unchanged compressed record verbatim and emit standard
+  stored `-lh0-` records for the new slave and ReadMe. This needs no compressor and preserves
+  untouched metadata, but produces larger replacements. Its parser supports the known
+  level-0/1 inputs only; reject unsupported headers rather than guessing boundaries.
 - Keep exactly the original member list and names (including case, `TheirFinestHour.Slave` vs
   `.slave`), and member order.
 - Put the new ReadMe entry above the previous author's, and update its requirements line (WHDLoad

@@ -697,6 +697,9 @@ WHDLoad's options (and its ReadMe recommends `DCache`), TFH enables KickEmu's `C
 
 ## 9. Understand game time before optimising anything
 
+For a fixed-step replacement, also read [fixed-time simulation](fixed-time-simulation.md):
+completed-tick versus elapsed-field checks, historical input, native pauses and control feel.
+
 This is where TD2 spent most of its effort, and it was the right call. A faster renderer is
 worthless if it also speeds the game up, and pointless if the simulation only moves things
 8 times a second. Answer these with measurements:
