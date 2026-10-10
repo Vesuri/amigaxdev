@@ -1,0 +1,5 @@
+# The shared Python environment ($AMIGA_SHARE/python), Python 3.12.
+amitools==0.8.1
+capstone==5.0.7
+numpy==2.5.3
+pillow==12.3.0

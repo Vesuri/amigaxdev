@@ -1,0 +1,5 @@
+# Workbench disks, fetched from a flat directory of TOSEC-named zips laid out like the Internet Archive item
+# "Commodore Amiga - Operating Systems - Workbench" (make setup AMIGA_OS=<path or URL of that directory>).
+# dest (under $AMIGA_SHARE)	sha256	zip in the directory	file inside the ADF (empty: the ADF itself)
+Workbenchv2.04rev37.67Workbench.adf	ac6b2529b2896474401ff51c4fcf79464a5f53331b6ad872f0bb721a0a63b8ab	Workbench v2.04 rev 37.67 (1991)(Commodore)(Disk 1 of 4)(Workbench).zip	
+SetPatch	745b2f90fabcdeccba099b3302593eff89f393d65bd84a9c6bad1b46063ab5cc	Workbench v3.1 rev 40.42 (1994)(Commodore)(M10)(Disk 2 of 6)(Workbench)[!].zip	C/SetPatch

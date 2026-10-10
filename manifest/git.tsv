@@ -1,0 +1,5 @@
+# Git checkouts, pinned to a commit.
+# name	commit	url
+kalms-c2p	d8ecf79a3325615305dd800ae7704b518e0d9dda	https://github.com/Kalmalyzer/kalms-c2p.git
+lha	16619b066b189ef289bb8b07b37d1c38d550da99	https://github.com/jca02266/lha.git
+fs-uae-barto	b70b1180b44ab25b97cd66466c70879897d8a362	https://github.com/grahambates/fs-uae.git

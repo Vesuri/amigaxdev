@@ -1,0 +1,16 @@
+# Reverse-engineering and reference-emulator tools some projects use (make brew-extras).
+
+# Ghidra headless analysis; linked as ~/.local/share/ghidra/ghidra_<version>_PUBLIC.
+brew "ghidra"
+brew "openjdk@21"
+
+# Reference emulators of the original platforms: Macintosh (MAME), DOS (DOSBox-X, DOSBox
+# Staging), and a CPU emulator library for host-side 68k tests.
+brew "mame"
+brew "dosbox-x"
+brew "dosbox-staging"
+brew "unicorn"
+brew "capstone"
+
+# Node toolchain manager for the BBC Micro reference emulator (jsbeeb).
+brew "volta"

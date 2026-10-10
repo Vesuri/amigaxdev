@@ -1,0 +1,247 @@
+#!/bin/bash
+# Install one component of the shared Amiga environment: scripts/setup.sh COMPONENT...
+# The Makefile is the front end (make setup, make help); README.md lists the components.
+set -euo pipefail
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+. "$REPO/scripts/lib.sh"
+
+[ -d /opt/homebrew/bin ] && PATH="/opt/homebrew/bin:$PATH"
+
+# --- host prerequisites ----------------------------------------------------------------------
+
+c_host() {
+  [ "$(uname -s)" = Darwin ] || die "only macOS is supported"
+  xcode-select -p >/dev/null 2>&1 || die "install the Xcode command line tools first: xcode-select --install"
+  command -v brew >/dev/null || die "install Homebrew first (https://brew.sh), then rerun"
+  # FS-UAE with the gdb stub, vasm and Shrinkler from amiga-debug are x86_64 binaries.
+  if [ "$(uname -m)" = arm64 ] && ! arch -x86_64 /usr/bin/true 2>/dev/null; then
+    log "installing Rosetta 2 (the amiga-debug FS-UAE and vasm are x86_64)"
+    softwareupdate --install-rosetta --agree-to-license
+  fi
+}
+
+c_brew() {
+  log "Homebrew packages (Brewfile)"
+  brew bundle --quiet --no-upgrade --file="$REPO/Brewfile"
+}
+
+c_brew_extras() {
+  log "Homebrew packages (Brewfile.extras)"
+  brew bundle --quiet --no-upgrade --file="$REPO/Brewfile.extras"
+  # Projects reach Ghidra through ~/.local/share/ghidra/ghidra_<major.minor>_PUBLIC.
+  local v
+  v=$(brew list --versions ghidra | awk '{print $2}' | cut -d. -f1-2)
+  [ -n "$v" ] || die "ghidra is not installed"
+  mkdir -p "$PREFIX/share/ghidra"
+  ln -sfn "$(brew --prefix)/opt/ghidra/libexec" "$PREFIX/share/ghidra/ghidra_${v}_PUBLIC"
+  log "linked $PREFIX/share/ghidra/ghidra_${v}_PUBLIC"
+}
+
+c_python() {
+  local req="$REPO/manifest/python.txt" key
+  key=$(sha256 "$req")
+  if stamped python "$key" && [ -x "$AMIGA_SHARE/python/bin/python3" ]; then return 0; fi
+  log "Python environment $AMIGA_SHARE/python"
+  command -v uv >/dev/null || die "uv is missing (it comes from the Brewfile)"
+  [ -e "$AMIGA_SHARE/python" ] && set_aside "$AMIGA_SHARE/python"
+  UV_CACHE_DIR="$CACHE/uv" uv venv -q --managed-python --python 3.12 "$AMIGA_SHARE/python"
+  UV_CACHE_DIR="$CACHE/uv" uv pip install -q --python "$AMIGA_SHARE/python/bin/python3" -r "$req"
+  stamp python "$key"
+}
+
+# --- downloaded, unchanged inputs ------------------------------------------------------------
+
+c_toolchain() {
+  # BartmanAbyss amiga-debug: its bin/darwin tree is ~/.local (gcc, gdb, FS-UAE with the gdb
+  # stub, vasm, elf2hunk, Shrinkler, exe2adf) and template/support holds gcc8_*_support.
+  local vsix st="$BUILD/amiga-debug" f
+  vsix=$(download amiga-debug-1.8.2.vsix)
+  if stamped toolchain "$(sha256 "$vsix")"; then return 0; fi
+  log "amiga-debug toolchain into $PREFIX"
+  rm -rf "$st"; mkdir -p "$st"
+  unzip -q "$vsix" 'extension/bin/darwin/*' 'extension/template/support/*' -d "$st"
+  for f in "$st"/extension/bin/darwin/*; do
+    if [ -d "$f" ]; then sync_tree "$f" "$PREFIX/$(basename "$f")"
+    else install_file "$f" "$PREFIX/$(basename "$f")" "$(sha256 "$f")"; fi
+  done
+  sync_tree "$st/extension/template/support" "$PREFIX/support"
+  rm -rf "$st"
+  stamp toolchain "$(sha256 "$vsix")"
+}
+
+unpack_whdload() { # ARCHIVE DEST
+  local a st="$BUILD/whdload"
+  a=$(download "$1")
+  if stamped "$2" "$(sha256 "$a")"; then return 0; fi
+  rm -rf "$st"; mkdir -p "$st"
+  unar -q -D -o "$st" "$a" >/dev/null
+  # The .lzx archives do not store empty directories; the .lha release has this one.
+  mkdir -p "$st/WHDLoad/Src/qa/data/dir"
+  sync_tree "$st/WHDLoad" "$AMIGA_SHARE/$2"
+  rm -rf "$st"
+  stamp "$2" "$(sha256 "$a")"
+}
+
+c_whdload() {
+  unpack_whdload WHDLoad_20.0_dev.lzx WHDLoad-20.0
+  unpack_whdload WHDLoad_19.2_dev.lzx WHDLoad
+}
+
+c_ndk() {
+  local a st="$BUILD/ndk"
+  a=$(download NDK3.2.lha)
+  if stamped ndk "$(sha256 "$a")"; then return 0; fi
+  rm -rf "$st"; mkdir -p "$st"
+  unar -q -D -o "$st" "$a" >/dev/null
+  sync_tree "$st" "$AMIGA_SHARE/ndk"
+  rm -rf "$st"
+  stamp ndk "$(sha256 "$a")"
+}
+
+c_installer() {
+  local a st="$BUILD/installer"
+  a=$(download Installer-43_3.lha)
+  if stamped installer "$(sha256 "$a")"; then return 0; fi
+  rm -rf "$st"; mkdir -p "$st"
+  unar -q -D -o "$st" "$a" >/dev/null
+  install_file "$st/Installer43_3/Installer" "$AMIGA_SHARE/Installer43/Installer" \
+    "$(sha256 "$st/Installer43_3/Installer")"
+  rm -rf "$st"
+  stamp installer "$(sha256 "$a")"
+}
+
+c_rtb() {
+  # WHDLoad's Kickstart relocation tables, one per ROM in manifest/roms.tsv.
+  local a st="$BUILD/skick" dest rtb
+  a=$(download skick346.lha)
+  if stamped rtb "$(sha256 "$a")$(sha256 "$REPO/manifest/roms.tsv")"; then return 0; fi
+  rm -rf "$st"; mkdir -p "$st"
+  unar -q -D -o "$st" "$a" >/dev/null
+  rows roms.tsv | while IFS=$'\t' read -r dest sha rel; do
+    rtb="$st/Kickstarts/$(basename "$dest").RTB"
+    [ -f "$rtb" ] || die "skick346 has no $(basename "$rtb")"
+    install_file "$rtb" "$AMIGA_SHARE/$dest.RTB" "$(sha256 "$rtb")"
+  done
+  rm -rf "$st"
+  stamp rtb "$(sha256 "$a")$(sha256 "$REPO/manifest/roms.tsv")"
+}
+
+# --- git checkouts and builds ----------------------------------------------------------------
+
+c_kalms() {
+  git_checkout kalms-c2p "$AMIGA_SHARE/kalms-c2p"
+}
+
+c_lha() {
+  # LHa for UNIX: the only tool here that creates .lha archives (lhasa only extracts).
+  local d="$AMIGA_SHARE/lha-compressor"
+  git_checkout lha "$d"
+  if [ -x "$d/src/lha" ] && stamped lha "$(git -C "$d" rev-parse HEAD)"; then return 0; fi
+  if [ -x "$d/src/lha" ] && [ ! -f "$STAMP_DIR/lha" ] && "$d/src/lha" --version >/dev/null 2>&1; then
+    stamp lha "$(git -C "$d" rev-parse HEAD)"   # built before setup existed
+    return 0
+  fi
+  log "building LHa for UNIX"
+  (cd "$d" && autoreconf -is >/dev/null 2>&1 && ./configure -q && make -s >/dev/null) \
+    || die "LHa build failed in $d"
+  stamp lha "$(git -C "$d" rev-parse HEAD)"
+}
+
+c_fsuae_arm()   { "$REPO/scripts/build-fsuae.sh" fs-uae-arm; }
+c_fsuae_aprof() { "$REPO/scripts/build-fsuae.sh" fs-uae-aprof "$REPO/patches/fsuae-aprof.patch"; }
+
+# --- licensed inputs -------------------------------------------------------------------------
+
+need_source() { # VAR WHAT
+  eval "local v=\${$1:-}"
+  [ -n "$v" ] || die "$2 are missing or wrong; rerun with $1=<path or URL> (see README.md)"
+}
+
+c_roms() {
+  local dest sha rel out st="$BUILD/roms" rom
+  rows roms.tsv | while IFS=$'\t' read -r dest sha rel; do
+    out="$AMIGA_SHARE/$dest"
+    sha_ok "$out" "$sha" && continue
+    need_source TOSEC "Kickstart ROMs"
+    log "fetching $(basename "$rel")"
+    rm -rf "$st"; mkdir -p "$st"
+    fetch_from "$TOSEC" "$rel" "$st/rom.zip" || die "could not fetch $rel from $TOSEC"
+    (cd "$st" && unzip -q rom.zip)
+    rom=$(find "$st" -name '*.rom' | head -1)
+    [ -n "$rom" ] || die "$rel holds no .rom"
+    sha_ok "$rom" "$sha" || die "$rel: checksum mismatch (expected $sha)"
+    install_file "$rom" "$out" "$sha"
+    rm -rf "$st"
+    sleep 3   # the TOSEC mirrors throttle bursts
+  done
+  # run.sh copies the Kickstarts onto a writable Amiga drive; see the playbook §4.
+  chmod u+w "$AMIGA_SHARE"/Kickstarts/* 2>/dev/null || true
+}
+
+c_os() {
+  local dest sha zip member out st="$BUILD/os" adf
+  rows os.tsv | while IFS=$'\t' read -r dest sha zip member; do
+    out="$AMIGA_SHARE/$dest"
+    sha_ok "$out" "$sha" && continue
+    need_source AMIGA_OS "Workbench files"
+    log "fetching $zip"
+    rm -rf "$st"; mkdir -p "$st"
+    fetch_from "$AMIGA_OS" "$zip" "$st/disk.zip" || die "could not fetch $zip from $AMIGA_OS"
+    (cd "$st" && unzip -q disk.zip)
+    adf=$(find "$st" -name '*.adf' | head -1)
+    [ -n "$adf" ] || die "$zip holds no .adf"
+    if [ -n "$member" ]; then
+      [ -x "$AMIGA_SHARE/python/bin/xdftool" ] || die "xdftool is missing; run make python first"
+      "$AMIGA_SHARE/python/bin/xdftool" "$adf" read "$member" "$st/member" >/dev/null
+      install_file "$st/member" "$out" "$sha"
+    else
+      install_file "$adf" "$out" "$sha"
+    fi
+    rm -rf "$st"
+  done
+}
+
+# --- files tracked in this repo --------------------------------------------------------------
+
+# Hand-written shared files: installed as copies, but never over an edit made in place.
+tracked_files() {
+  echo "share/env.sh env.sh"
+  echo "share/fsuae_common.sh fsuae_common.sh"
+  for f in "$REPO"/docs/playbooks/*.md; do echo "docs/playbooks/${f##*/} ${f##*/}"; done
+}
+
+c_share() {
+  local src dst
+  tracked_files | while read -r src dst; do
+    dst="$AMIGA_SHARE/$dst"
+    if [ -f "$dst" ] && ! cmp -s "$REPO/$src" "$dst"; then
+      if [ -f "$STAMP_DIR/share/$src" ] && cmp -s "$STAMP_DIR/share/$src" "$dst"; then
+        :   # unchanged since the last install: the repo copy is newer
+      else
+        die "$dst was edited in place; run make pull-shared, commit, then rerun"
+      fi
+    fi
+    mkdir -p "$(dirname "$dst")" "$(dirname "$STAMP_DIR/share/$src")"
+    cmp -s "$REPO/$src" "$dst" 2>/dev/null || { cp "$REPO/$src" "$dst"; log "installed $dst"; }
+    cp "$REPO/$src" "$STAMP_DIR/share/$src"
+  done
+}
+
+c_pull_shared() {
+  # Copy shared files that were edited in place back into the repo, for review and commit.
+  local src dst
+  tracked_files | while read -r src dst; do
+    dst="$AMIGA_SHARE/$dst"
+    if [ -f "$dst" ] && ! cmp -s "$REPO/$src" "$dst"; then
+      cp "$dst" "$REPO/$src"
+      mkdir -p "$(dirname "$STAMP_DIR/share/$src")"; cp "$dst" "$STAMP_DIR/share/$src"
+      log "pulled $dst into $src"
+    fi
+  done
+}
+
+for c in "$@"; do
+  fn="c_$(printf '%s' "$c" | tr '-' '_')"
+  declare -F "$fn" >/dev/null || die "unknown component: $c"
+  "$fn"
+done

@@ -1,0 +1,10 @@
+# Freely downloadable inputs, cached under $CACHE and checked before use.
+# file	sha256	url
+amiga-debug-1.8.2.vsix	c1e2b11175a5c5036d47eef095a21a616fbeb9f1a681364519c7910583d7ee3e	https://github.com/BartmanAbyss/vscode-amiga-debug/releases/download/1.8.2/amiga-debug-1.8.2.vsix
+WHDLoad_20.0_dev.lzx	d5134f4f6196188c199a2ce4fda1937e5d2bb290b5c3294caf3fdb02067b167d	https://whdload.de/whdload/WHDLoad_20.0_dev.lzx
+WHDLoad_19.2_dev.lzx	1618ff03b5679e25ad4e7a32146317506fb2a227a9b7def7049ea05f7e2d39a8	https://whdload.de/whdload/old-whdload/WHDLoad_19.2_dev.lzx
+NDK3.2.lha	96cabd4ad683dced632e147bf86dee0f50dcb1254386216c25c362916a6409bb	https://aminet.net/dev/misc/NDK3.2.lha
+Installer-43_3.lha	25da2a3ec06fa8626d1fba171ec853611035d06203c13a43f4d53713d9927aac	https://aminet.net/util/misc/Installer-43_3.lha
+skick346.lha	02b4d01852d12ab391c6469064f917221a0f7319fd0b3ba6c359403ec1d59f96	https://aminet.net/util/boot/skick346.lha
+SDL2_ttf-2.0.15.tar.gz	a9eceb1ad88c1f1545cd7bd28e7cbc0b2c14191d40238f531a15b01b1b22cd33	https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.0.15/SDL2_ttf-2.0.15.tar.gz
+libmpeg2-0.5.1.tar.gz	dee22e893cb5fc2b2b6ebd60b88478ab8556cb3b93f9a0d7ce8f3b61851871d4	https://download.videolan.org/contrib/libmpeg2/libmpeg2-0.5.1.tar.gz

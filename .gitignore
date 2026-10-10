@@ -1,0 +1,29 @@
+# NOTE: gitignore has no inline-comment syntax; comments go on their own line.
+
+# --- OS / local tooling state ------------------------------------------------
+.DS_Store
+.claude/*.lock
+__pycache__/
+*.pyc
+
+# --- Downloads, builds and copyrighted material: kept LOCAL only -------------
+# tmp/ holds the download cache, FS-UAE build trees and scratch output.  The
+# patterns below guard against a ROM, disk image or archive landing anywhere
+# else in the tree.
+/tmp/
+*.png
+*.rom
+*.adf
+*.lha
+*.lzx
+*.zip
+*.vsix
+*.slave
+*.bin
+*.rec
+*.RTB
+kick[0-9]*.A*
+
+# --- Build output ------------------------------------------------------------
+build/
+*.o

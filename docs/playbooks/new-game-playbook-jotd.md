@@ -1,0 +1,969 @@
+# Playbook: improving a game in JOTD’s WHDLoad slave repository
+
+> `$PROJECTS` below is the directory that holds the project checkouts (AmigaXDev's parent) and
+> `$ARCHIVES` the directory with the game archives the user supplies. Neither is ever written
+> into a repo.
+
+> **For an agent working directly in a game branch of the Vesuri fork of JOTD’s
+> `jotd_whdload_slaves` repository.** Start from the existing slave source, not an empty
+> repository. Keep the profiling and correctness workflow below, but make the fork’s
+> `<letter>/<Game>/usr/source/` the single authoritative source tree.
+>
+> Adapted from `new-game-playbook.md`. The integration reference is local branch `testdrive2`,
+> commit `ffd6594`, based on `cd97d6c`: its eight-file change contains the slave, four new
+> assembly/include files, Windows makefile dependencies, ReadMe and icon. It does **not**
+> import the standalone Test Drive 2 harness, docs or vendored SDK. Inspect with
+> `git diff master...testdrive2 -- T/TestDrive2/usr` and reuse the method, not its game offsets.
+> The original harness remains at `$PROJECTS/Test Drive 2`; other useful references are
+> Indianapolis 500 (direct game), Battlehawks 1942 (input tape), Their Finest Hour
+> (routine models), and Legends of Valour (state waits and A/B automation).
+>
+> Current target: branch `redbaron`, worktree `$PROJECTS/Red Baron`, created from `master`
+> at `cd97d6c`. The main checkout at `$PROJECTS/jotd_whdload_slaves` stays on its own branch;
+> `testdrive2` is a reference branch there, not the base of Red Baron. Do not recreate the
+> branch, switch the main checkout, cherry-pick the TD2 implementation, or initialize a new repo.
+
+The end state ("ready to improve") is defined in §12. Getting there means:
+1. a reproducible, cycle-exact trace of real gameplay;
+2. a report saying where the frame time goes;
+3. a frame-rate figure from a fixed window;
+4. a written model of how game time advances.
+
+Patches come after all of that.
+
+---
+
+## 0. Rules (preserve the worktree’s AGENTS.md and existing repository conventions)
+
+- **Never add game, Kickstart or WHDLoad executable bytes**, or generated traces, memory
+  dumps, screenshots, input recordings, built slaves or archives to Git. Existing upstream
+  installer assets are not a reason to remove or rewrite tracked files. Keep local inputs and
+  outputs beneath the worktree’s ignored `tmp/`. Public-domain SDK source/includes are distinct
+  from executable bytes; use shared dependencies locally (§10), rather than vendoring an SDK
+  into the fork as a side effect. Do not copy another project’s `.gitignore` over this one.
+- **Never `pkill fs-uae` or `pkill gdb`.** Other projects run emulators at the same time. Use
+  `~/.local/share/amiga/fsuae_common.sh`, which kills only the pid this directory started and
+  gives each directory its own gdb-stub port. Kill orphans of your own (a `serve`, a `gdb`, an
+  FS-UAE that crashed and left its window up) by pid, after checking the pid is yours.
+- Commits: author **and** committer `Vesa Halttunen <vesuri@jormas.com>`; GitHub account
+  **Vesuri**; no signing of commits, tags or pushes; `core.hooksPath=/dev/null`; no
+  `Co-Authored-By` or assistant-attribution trailers. Nothing work-related in repository
+  activity or content. Check `git var GIT_AUTHOR_IDENT`, `git var GIT_COMMITTER_IDENT` and
+  effective config before committing; environment variables can override repository config.
+  Use one commit per coherent feature and stage explicit game paths. Check `gh`’s selected
+  account before GitHub operations: its account selection is shared across projects.
+- Addresses in docs are **offsets into the game's code hunk or file**, using the same numbering
+  as the slave's patch lists. Never quote absolute addresses, because they move with the memory
+  configuration.
+- **No performance claim without a measurement**, and only from the right instrument (§7, §8).
+- **No local paths in the repo**: no home directories, usernames, `~/Documents/...`, RetroPie or
+  amiberry locations, and no paths into other projects. Name another project without its location
+  ("AmigaXDev `docs/playbooks/new-game-playbook.md`"). Shared files come from `~/.local/share/amiga`
+  through overridable variables in `amiga/env.sh` (§1); scratch output goes to the repo's ignored
+  `tmp/`, never a shared `/tmp` location. `~/.local` and `fsuae_common.sh` are the allowed convention.
+- **History belongs in git.** Docs describe the current state (how to build, run and measure; how
+  the game and the patches work; current numbers; open items). When a finding changes, update the
+  reference in place instead of appending a dated section, and delete tools nothing uses.
+
+## 1. Host prerequisites (installed by AmigaXDev)
+
+AmigaXDev's `make setup` installs everything below and `make check` verifies it; its
+`docs/environment.md` lists every shared variable. A project's `amiga/env.sh` sources the
+shared `~/.local/share/amiga/env.sh` and then sets only what the project changes.
+
+| What | Where | Check |
+|---|---|---|
+| FS-UAE with the Barto gdb stub (x86_64) | `~/.local/fs-uae/fs-uae` | `fs-uae --version` after `source amiga/env.sh` |
+| m68k gdb / objdump / gcc | `~/.local/opt/bin/m68k-amiga-elf-*` | `m68k-amiga-elf-gdb --version` |
+| vasm (Motorola syntax) | `~/.local/vasmm68k_mot` | runs and prints usage |
+| WHDLoad 20.0 (binary, includes, kickemu sources) | `~/.local/share/amiga/WHDLoad-20.0/` (env `WHDLOAD` = the directory, for `Include/` and `Src/`; `WHDLOAD_BINARY` defaults to `$WHDLOAD/C/WHDLoad`); `WHDLoad/` is 19.2, useful to test older versions | `C/WHDLoad` exists |
+| Shared kill/port helper | `~/.local/share/amiga/fsuae_common.sh` | sourced by `run.sh` |
+| Host Kickstart 3.1 | `~/.local/share/amiga/Kickstarts/kick40063.A600` (env `KICKSTART`) | |
+| Kick images for kickemu slaves | `~/.local/share/amiga/Kickstarts/`: `kick34005.A500` + `.RTB` (env `KICKSTART13`, `RTB`; adapt older donors using `KICK13`), `kick40068.A1200` (env `KICKSTART_A1200`, the 68020 capture machine; its `.RTB` for kick31 slaves isn't there yet) | |
+| Workbench 2.04 floppy (gives `C:` and `Libs:`) | `~/.local/share/amiga/Workbenchv2.04rev37.67Workbench.adf` (env `WORKBENCH_ADF`) | |
+| LHa for UNIX (creates archives, §13) | `~/.local/share/amiga/lha-compressor/src/lha` (env `LHA`) | runs and prints usage |
+| `lha` (extract), `unar`, `lldb` | Homebrew / Xcode | |
+| Python 3.12 + Pillow, numpy, capstone, amitools (`xdftool` for ADFs) | `~/.local/share/amiga/python` (first on `PATH` after the shared `env.sh`) | `python3 -c 'import PIL'` |
+
+Take every shared file from the shared `env.sh` variables, never from a path written into the
+repo: `. "${AMIGA_ENV:-$HOME/.local/share/amiga/env.sh}"` at the top of `amiga/env.sh`, with any
+project-specific value set *before* that line (the shared file keeps values already set).
+Python tools read the same variables (`os.environ.get('AMIGA_TOOLCHAIN', ...)`). Document the
+variables the project uses in its development doc. Never fall back to copies elsewhere on
+the machine: if one is missing, fail loudly.
+
+If the FS-UAE binary has changed, the lldb profiler fix (§5) needs new addresses. Do that
+before anything else.
+
+## 2. Unpack and identify the game
+
+First establish the ignored harness and working-directory convention in §3, then return here.
+Use the same layout for every preinstalled archive:
+
+| Path relative to the harness | Purpose |
+|---|---|
+| `tmp/archives/<archive>.lha` | retained, unmodified download |
+| `tmp/archives/<archive>.lha.sha256` | input archive checksum |
+| `tmp/archives/<archive-stem>.files.json` | extracted-file SHA-256 manifest, keyed by relative path |
+| `tmp/game/<archive-stem>/` | pristine extraction of the entire archive |
+| `tmp/game/<archive-stem>/<installed-drawer>/` | `GAME`: directory containing the slave and its data |
+| `tmp/build/` | rebuilt normal and VERIFY slaves, separate from the shipped slave |
+| `amiga/.run/dh1/` | disposable writable copy mounted as `DH1:` for this harness |
+
+Keep the archive’s directory structure and spelling. Do not extract into the tracked game
+`usr/` or `usr/source/`, flatten `data/`, or point `GAME` at `data/` itself. Determine the
+installed drawer and slave filename from the archive listing; do not infer them from the
+archive basename. An archive may include an outer drawer icon beside the installed drawer:
+retain it in the baseline extraction, but mount the installed drawer itself as `DH1:`.
+Use a separate archive-stem directory for each version. If a same-named archive has different
+bytes, give it a distinct local identifier (for example a checksum suffix); never overwrite
+an existing baseline. Inspect a pre-existing extraction instead of extracting over it.
+
+For Red Baron, `$ARCHIVES/RedBaron_v2.1.lha` contains the installed drawer `RedBaron/`, with
+`RedBaron.slave`, `data/baron`, `data/ps`, `data/sim` and the rest of the game, plus an outer
+`RedBaron.info`. Its SHA-256 is
+`ec6d74e3576bf040269f1c078a9df766a8f6e6dd94c2eb29eb5d34307b87ffe4`.
+The baseline has been prepared at
+`$PROJECTS/Red Baron/tmp/dev/tmp/game/RedBaron_v2.1/RedBaron` (54 extracted files in the
+archive directory). The download remains untouched; the retained archive and checksum
+manifests are in the adjacent `tmp/archives/` directory.
+
+For a **new** archive, use this procedure from the harness root after checking its listing
+for unexpected absolute paths, parent-directory components or links. Substitute its names:
+
+```sh
+# Example inputs; do not re-run extraction over the prepared Red Baron baseline.
+DOWNLOAD="$ARCHIVES/RedBaron_v2.1.lha"
+ARCHIVE_NAME=RedBaron_v2.1.lha
+ARCHIVE_ID=RedBaron_v2.1
+INSTALLED_DRAWER=RedBaron
+mkdir -p tmp/archives tmp/game
+lsar "$DOWNLOAD"
+# Continue after inspecting the listing. Fail if either destination already exists.
+(
+  set -eu
+  test ! -e "tmp/archives/$ARCHIVE_NAME"
+  test ! -e "tmp/game/$ARCHIVE_ID"
+  cp "$DOWNLOAD" "tmp/archives/$ARCHIVE_NAME"
+  (cd tmp/archives && shasum -a 256 "$ARCHIVE_NAME" > "$ARCHIVE_NAME.sha256")
+  ARCHIVE="$PWD/tmp/archives/$ARCHIVE_NAME"
+  mkdir "tmp/game/$ARCHIVE_ID"
+  (cd "tmp/game/$ARCHIVE_ID" && lha xq "$ARCHIVE")
+)
+```
+
+After extraction, validate the expected slave and game executables, and generate the
+`<archive-stem>.files.json` manifest by hashing every regular file in the extraction, including
+outer icons. Do not treat a partial extraction as a valid baseline. Keep its manifest outside
+the extraction so checks do not hash the manifest itself.
+
+### Run contract: pristine inputs, writable per-launch copy
+
+Set these defaults in the adapted local harness (resolve `HARNESS_ROOT` from the script,
+not the caller’s current directory):
+
+```sh
+GAME="${GAME:-$HARNESS_ROOT/tmp/game/RedBaron_v2.1/RedBaron}"
+SLAVE_NAME=RedBaron.slave
+# No SLAVE override means the shipped slave from GAME: baseline run.
+# An explicit SLAVE is the rebuilt normal or VERIFY slave for a development run.
+```
+
+Before changing directories, resolve both `GAME` and any `SLAVE` override to absolute paths
+and verify they exist. Quote paths throughout. On each launch, stop only this harness’s old
+emulator and rebuild its own `amiga/.run/dh0` and `dh1` with the shared process helper. Check
+that these disposable paths are inside the harness and distinct from `GAME` before deleting
+anything. **Copy** the installed drawer to `dh1`; do not symlink or mount the pristine baseline
+writable. Put WHDLoad in the runtime copy and, when `SLAVE` is set, copy that build over
+`dh1/$SLAVE_NAME`. Make only the runtime copy writable. Boot with `CD DH1:` and
+`WHDLoad RedBaron.slave PRELOAD ...`; Red Baron’s `slv_CurrentDir` selects `data` itself.
+Keep Kickstart images and RTBs in runtime `DH0:devs/Kickstarts`, using §1 shared inputs.
+
+From the harness root, once the adapted runner and builds exist:
+
+```sh
+# Shipped baseline, even if the parent shell exported a SLAVE override:
+SLAVE= amiga/run.sh
+# Rebuilt development slave, with the same game data:
+SLAVE="$PWD/tmp/build/RedBaron.slave" amiga/run.sh
+# VERIFY build (options depend on the instruments actually implemented):
+SLAVE="$PWD/tmp/build/RedBaron-verify.slave" amiga/run.sh
+```
+
+These are the runner interface to implement, not a claim that the runner or builds already
+exist. TD2’s `amiga/run.sh` already implements the copy-and-replace pattern; adapt its hardcoded
+slave name, root handling and data default. It changes into `amiga/` early, so fix relative
+`SLAVE`/`GAME` resolution rather than relying on the caller happening to use absolute paths.
+
+Save games, preferences and mission tapes written during a run belong to disposable `dh1`.
+Each launch starts from the same baseline. For a required saved scenario, copy selected files
+out before restart and apply them to a **separate**, documented fixture tree or the runtime
+copy; never silently promote a previous run’s state into the baseline. Keep fixtures ignored.
+For A/B captures, use the same archive hash and fixture manifest, retain the exact selected
+slave beside the trace, and check the pristine-file manifest has not changed. Capture one
+run at a time per harness; distinct worktrees have distinct runtime directories and ports.
+
+**Check:** the shipped slave and rebuilt slave can each launch against copies of the same
+installed drawer; the baseline checksums stay unchanged, and `git status` shows no game data,
+archives, runtime files or build products. Preparing the files alone does not pass the boot
+check: the runner and unmodified-slave build still need the validation in §4 and §10.
+
+There are two kinds of archive. Work out which one you have:
+
+- **Pre-installed** (Retroplay style: `Game/Game.slave`, `Game/data/...`, `.info` files). This
+  is everything you need. TD2: `TestDrive2_v1.5_0588.lha`.
+- **Installer** (`GameInstall/Install`, `Game.slave`, often `source/Game*.s`, docs). It has no
+  game data; the data comes from original disks. The installer archive is still valuable for
+  **the slave's source**. TD2: `TestDrive2.lha`, with JOTD's `source/TestDrive2HD.s`.
+
+The fork already supplies the slave source at `R/RedBaron/usr/source/RedBaronHD.s`.
+Inspect that first; the installer archive is useful for a shipped slave and packaging baseline,
+not as a second editable source tree. If installed data or original disk images are missing,
+identify the required inputs and ask for them. Do not reconstruct a slave whose source exists.
+Compare the repository version and shipped slave before attributing behaviour differences to
+new patches. Keep hashes and archive provenance in local development notes.
+
+Set `GAME` to the installed drawer under `tmp/game/<archive-stem>/` as above; `run.sh`
+mounts a disposable copy on `DH1:`, never the baseline itself.
+
+**Read the slave before booting anything.** From the source, or the header at the start of the
+`.slave`, record these in `docs/internals.md` (the doc on how the game and the slave work, §3):
+
+| Field | Why it matters |
+|---|---|
+| `ws_BaseMemSize`, `ws_ExpMem` | how much RAM WHDLoad needs, so you can size the machine (§3) |
+| kickemu include (`kick13.s`, `kick31.s`) or none | **OS game** (LoadSeg'd executable on an emulated Kickstart) or **direct game** (the slave loads disk images/files into memory and jumps in, no OS). Old slaves (before kickemu) are OS games too: BH's v1.0 calls `resload_LoadKick` and `resload_Patch`es the Kickstart image itself (trackdisk → `Disk.N`, a `LoadSeg` hook), and the game boots from `Disk.1`'s own startup-sequence |
+| `slv_config` / `CUSTOM1..5` / `ws_Flags` | existing options; your patches add theirs here |
+| `_patchexe` / `resload_PatchSeg` / `resload_Patch` lists | which file is the game code, which versions are supported (usually by CRC or size), and which instructions are already patched |
+| the buffer-swap or copper patch, if any | often the best frame counter (TD2: `PL_P $0588a,set_copper`) |
+| the main executable's name and size | the region finder byte-matches it (§6) |
+
+Find the code file. For OS games it is the executable the slave LoadSegs. If the game boots
+from disk images, list them (`tools/adf.py Disk.1`, OFS/FFS) and read `s/startup-sequence`
+(BH: `BH`, an Aztec C executable). **If `ws_ExpMem` is just the Kickstart size, the OS has only
+BaseMem: the game and all its buffers are in chip RAM** (BH: code at chip `$22F08`), found in the
+trace's chip snapshot rather than in the "other" memory dump. TD2: `data/duel`, an
+Aztec C overlay executable. Parse its hunk header (`$3F3`, then the hunk sizes) to get each
+code/data/BSS hunk's file offset and size. TD2: hunk 0 at file `$28`, `$1156C` bytes; data hunk
+`$3A38` file-backed, `$7A70` allocated. For direct games the code is in disk images or raw files
+at an address the slave chooses; read it from the slave's `resload_DiskLoad`/`LoadFile` calls.
+**The disk image may hold an ordinary hunk executable that the game's own intro loads and
+relocates.** I500: the slave loads a 19-track intro to address 0; the intro loads a 7-hunk
+executable stored raw at `Disk.1+$1A200` (grep the image for `000003f3`). Parse it like a file
+(`i500_report.game_hunks()`). Expect slack: I500's hunk 4 has `$404` bytes before its HUNK_END.
+The slave's game patch offsets are then hunk-0 offsets. Confirm the hunk base from a `PL_P`/`PL_PS`
+jump into the slave (`4ef9`/`4eb9 <slave address>`) minus its patch-list offset.
+
+**Check:** you can name the code file, its version, its hunk layout, the slave type, and every
+existing slave patch with its offset.
+
+## 3. Set up local tooling around the existing game source
+
+Use the existing Red Baron worktree. Run these inspections there before editing anything:
+
+```sh
+cd "$PROJECTS/Red Baron"
+git status --short --branch
+git worktree list
+git remote -v
+git diff master...testdrive2 -- T/TestDrive2/usr
+```
+
+The remote is the personal fork `git@github.com:Vesuri/jotd_whdload_slaves.git`.
+Inspect any configured upstream before fetching or comparing; do not change remote topology
+or publish a branch merely as part of setup. Repo-local identity settings apply to linked
+worktrees; verify that no worktree or environment override changes the effective settings.
+
+Keep the upstream-facing layout:
+
+| Location | Purpose |
+|---|---|
+| `R/RedBaron/usr/source/RedBaronHD.s` | authoritative slave and patch lists |
+| `R/RedBaron/usr/source/*.s`, `*.i` | new patch modules and VERIFY-only instruments |
+| `R/RedBaron/usr/source/Makefile_windows.mak` | existing build entry; add module dependencies |
+| `R/RedBaron/usr/ReadMe`, installer/icon files | player-facing changes when needed |
+| `tmp/dev/` | local harness: `amiga/`, `tools/`, `docs/`, build wrapper, inputs and outputs |
+
+The ignored harness is a proposed local arrangement; TD2 kept it in its standalone project.
+If already using a separate harness, reuse it with an explicit source-root variable instead.
+Never keep two editable slave copies. Tools must read and build the source in the fork.
+
+Add `/tmp/` to the repository’s local exclude file (resolve it with
+`git rev-parse --git-path info/exclude`; do not assume `.git` is a directory). Preserve its
+existing entries. Check `git check-ignore tmp/dev/probe` before copying anything. This local
+exclusion is shared by the repository’s worktrees and does not change tracked `.gitignore`.
+Preserve existing `AGENTS.md`; keep local notes local unless their inclusion in the game’s
+source contribution is deliberate. Inspect staged paths before every commit.
+
+```sh
+# From the worktree root, after verifying the exclusion:
+export JOTD_ROOT="$PWD"
+export GAME_SOURCE="$JOTD_ROOT/R/RedBaron/usr/source"
+mkdir -p tmp/dev/amiga tmp/dev/tools tmp/dev/docs tmp/dev/tmp/build
+cd tmp/dev
+TD2="$PROJECTS/Test Drive 2"
+cp "$TD2/amiga/env.sh" "$TD2/amiga/run.sh" amiga/
+# Select only needed tools and their imports from TD2 or the other reference projects.
+# Adapt root detection, game names, source paths and output paths before running them.
+```
+
+**Command convention for the remaining sections:** `amiga/`, `tools/`, `docs/`, `tmp/` and
+`dist/` are relative to the harness root (`$JOTD_ROOT/tmp/dev`), not the Git root. Thus all
+captures and local docs stay below the worktree’s ignored `tmp/`. Any `whdload/` reference
+in a donor tool or example means its old source location: adapt it to `$GAME_SOURCE` and
+explicit build outputs under the harness `tmp/build/`; do not create a copied slave tree.
+Set these roots in the local environment/build wrapper so they survive a new shell, and quote
+all paths (the worktree name contains a space). Ensure the harness keeps its own process,
+port and log directory; do not accidentally resolve it to the main Git checkout.
+
+Copy the tools you need, including imported helpers such as `local_env.py`; discard unused
+ones after setup. Copy generic `compare_state.py` from Their Finest Hour if suitable, and
+validate it on this game. Remove inherited machine paths and game assumptions. Shared inputs
+must use §1 variables. Changes intended for the fork must contain no host-specific paths.
+
+What is generic and what has to be adapted:
+
+| File | Generic | Adapt |
+|---|---|---|
+| `barto.py` | trace parser, all of it | nothing |
+| `td2.py` (rename it) | gdb server, `serve/shot/wait/until/gdb/profile/quit`, lldb fix, `BOOT_BREAK` | nothing, unless the FS-UAE binary changed (`BASETEXT_VM`) |
+| `amiga/run.sh` | host boot, DH0/DH1, startup-sequence, port claim | `GAME`, slave file name, kick images copied to `DH0:devs/Kickstarts` (kick13 needs `kick34005.A500`+`.RTB`; kick31 needs `kick40068.A1200`+`.RTB`; direct slaves need none) |
+| `td2_report.py` `regions()` | byte-match voting, BPTR chain to the data hunk | code file path and hunk offset/size, kick image (or none), slave path; `Namer` function starts (`link a5` is Aztec C; SAS/C and asm differ, see §8). I500's version parses the hunk file from the disk image, votes each file-backed hunk into the dump *or* the trace's chip snapshot, and finds the live slave (below) |
+| `frames.py`, `swap_fields.py` | DMA slot counting, blitter-poll counting | frame marker (§7), interrupt-handler addresses (Kick 1.3 level-3 `$FC0D14`/BLIT `$FC0D38`/VERTB `$FC0D4A` only apply to a kick13 game; a direct game has its own handlers, read the level-3 vector at `$6C`) |
+| `profile_demo.sh`, `ingame.py` | boot, poll, trace, dump | the "in gameplay" pixel test (TD2: sky blue above the dashboard) |
+| `fixed_window.sh` | calibrate-then-reboot, retained slave, `STATE_ONLY`/`SWAP_ONLY`/`SERVE_WAIT` | anchor offset and the state watched at the anchor (§6) |
+| `state_fields.py`, `state_writers.py` | per-field snapshots at the VBL entry; finding `d16(a4)` stores | what to snapshot: TD2 and TFH dump the data hunk; I500 keeps its variables at absolute addresses inside the code hunk, so it dumps hunk 0. `state_writers.py` only finds `d16(a4)` stores (Aztec C), so an asm game needs an `abs.l` variant. `task_state.py` and `state_watch.py` are TD2-specific: don't copy them |
+| `compare_state.py` (TFH's) | compares the whole data hunk; a longword pointing into the code or data hunk at the same offset in both runs counts as equal, so builds that load the game elsewhere still compare | hunk sizes, `a4` bias. **TD2's version compares TD2's variable table and reports "identical" on any other game**: TFH quoted meaningless "identical state" results from it for a day. Before trusting any compare, check that two runs of the same build compare equal and two different scenes do not |
+
+Keep a read-first index in the local harness notes, with these current-state documents:
+
+| Doc (relative to the harness) | Holds |
+|---|---|
+| `docs/open-work.md` | current status, uncertainties and ordered next items |
+| `docs/development.md` | source root, build, inputs, variables, run/capture/check/release commands |
+| `docs/internals.md` | executable versions, hunks, patches, display, time model and measurements |
+
+Do not commit a standalone-project scaffold at the fork’s root. Keep the eventual game change
+as focused as `testdrive2`; upstream-facing explanation belongs in the game’s ReadMe and
+source comments, with extra game-scoped documentation only when useful to reviewers.
+
+### Red Baron facts to verify against the installed data
+
+At the branch baseline, `RedBaronHD.s` declares slave 2.1, WHDLoad interface 16, `kick13.s`,
+`CHIPMEMSIZE=$80000`, `FASTMEMSIZE=$80000`, `CACHE`, `BOOTDOS` and `CBDOSLOADSEG`.
+The ReadMe says 0.5 MB ChipMem plus 1.0 MB OtherMem: distinguish game allocations from total
+KickEmu/WHDLoad/preload requirements rather than sizing the machine from one constant.
+The data directory is `data`, boot executable `baron`; the LoadSeg callback also recognizes
+`ps` (menus) and `sim` (flight), with three patch variants for each of the latter two.
+The `sim` signature locations are `$A66A`, `$A5A8`, `$A5CC`; these identify existing variants,
+not proposed instrumentation points. Map each loaded executable and its lifetime separately;
+do not profile only the launcher or assume the menu and simulation share a code/data base.
+Preserve the existing cache flush, keyboard, bit-test, rename and save-file handling.
+Record which supported versions are actually available; unsupported test coverage must be
+stated, and new patches must leave other variants unchanged. Demo availability, compiler,
+frame marker, determinism and game-time model remain to be established by measurement.
+
+## 4. First boot (windowed, real speed)
+
+Boot the preserved shipped slave first. Also perform the unmodified-source build and baseline
+comparison in §10 before adding any instrumentation or game changes. Pass the selected slave
+explicitly with `SLAVE`; adapt donor defaults so they cannot silently run an old TD2 build.
+
+```sh
+source amiga/env.sh
+amiga/run.sh                       # windowed, sound; watch it reach the title and the demo
+```
+
+Size the machine from the slave header. WHDLoad needs base + exp + kick image (256 KB for 1.3)
++ itself + PRELOAD. **The A500-equivalent profiling machine** is 512 KB chip + slow RAM and no
+fast RAM: `CHIP_KB=512 FAST_KB=0 EXTRA_ARGS=--slow_memory=1536`. Slow RAM is contended like
+chip, so every CPU access stays on the chip bus as on a real A500. A literal 512+512 A500 is
+usually too small for WHDLoad.
+
+Traps:
+- `DOS-Error #223 (file is write protected)` looping on the kick file means the Kickstart copies
+  are read-only. `run.sh` already does `chmod -R u+w`.
+- The WHDLoad splash stays up while PRELOAD reads. That is not a hang.
+- `~/FS-UAE/Cache/Logs/fs-uae.log.txt` is shared by every project and block-buffered. Read
+  `amiga/.run/fsuae.log` instead.
+
+Watch the attract sequence and write down whether **the game plays itself** (a demo mode).
+That decides how you drive it (§6).
+
+**Check:** the game reaches gameplay under WHDLoad on the A500-equivalent machine.
+
+## 5. Attach the debugger and get a trace with PCs in it
+
+```sh
+WARP=1 python3 tools/td2.py serve > amiga/.run/serve.log 2>&1 &
+python3 tools/td2.py shot "$PWD/amiga/.run/now.png"     # 1-field trace → screenshot
+python3 tools/td2.py profile 10 "$PWD/tmp/prof/first.bin"
+python3 tools/td2.py quit
+```
+
+Facts about this stub, all verified the hard way:
+
+- **Attach within 20 s of launch.** `--remote_debugger=20` with no trigger stops servicing the
+  port after 20 s. `serve` connects as soon as the port listens and continues from reset.
+- **The stub is read-only.** `M`/`P`/`G` packets are silently ignored, so `set var` does
+  nothing. Every change to the game must go through the slave.
+- **Emulated time stops while gdb holds the CPU**, so stops and the lldb attach cost no emulated
+  time.
+- **Without a trigger the profiler records no PCs.** The window `[baseText, +sizeText)` reads as
+  `[0x0100007f, +0)`. `td2.py profile` fixes it each time by lldb-writing `0`/`0x7fffffff` at
+  link-time `0x32dea04` plus the slide. For a different FS-UAE binary, re-derive that address
+  from the `GDBSERVER: enabled` setup and `start_cpu_profiler` (TD2 `docs/profiling.md` §3). The
+  assert fails loudly if it's wrong.
+- **Screenshots come only from traces** (`shot`). macOS denies screen capture to this process,
+  and posted key events never reach FS-UAE.
+- `gdb` splits arguments at spaces, and repo paths often contain them (`Their Finest Hour`). gdb's
+  working directory must be the harness root, so dump to a **harness-relative** path (`tmp/x-code.bin`), then move
+  the file. Python 3.12's `tempfile.mkdtemp(dir='tmp')` returns an absolute path: pass it through
+  `os.path.relpath` before handing it to gdb. Don't use `/tmp`: parallel jobs share it.
+- At most **100 fields** per `monitor profile`, about 5.4 MB per field.
+- **One capture at a time per repo.** `fsuae_common.sh` gives each directory its own port, so
+  two captures from the same repo collide on the debugger socket. Run them in sequence.
+- `run.sh` changes into `amiga/` before copying the slave, so resolve a relative `SLAVE` against
+  the caller's directory first (I500 `run.sh`).
+- The **68030 backend emits no instruction trace**. Count frames there with `SWAP_ONLY` (§7).
+- **lldb can be slow to attach.** I500 (same FS-UAE binary, 2026-10-05): ~40 s per attach, so
+  TD2's two attaches per capture (image list, then write) overran the 60 s timeout. Use one attach
+  that computes the slide and writes the window in lldb's Python (`LLDB_FIX` in `i500.py`), with a
+  longer timeout.
+- **`until` blocks the server** until its breakpoint hits. If the address is never reached, the
+  only way out is killing your own emulator by `amiga/.run/fsuae.pid`. Hardware watchpoints
+  (`watch`) did not fire within minutes on I500. Prefer counted breakpoints: `break *A`,
+  `ignore $bpnum N`, `continue` (the breakpoint number grows each time, so use `$bpnum`). About
+  3 s per 100 fields in warp.
+- The recorded **SR is stale** (UAE updates it lazily), so tell supervisor and user code apart by
+  which stack SP is in.
+- **Native arm64 FS-UAE** (`~/.local/share/amiga/fs-uae-arm/fs-uae`, env `FSUAE`): host lldb
+  cannot attach, so the profiler window can't be written from outside. LoV's VERIFY-only
+  `PROFILER_WINDOW` fixture (`PROFILE_WINDOW=guest`) configures it from the guest at the tape
+  anchor: in VBL context it saves SR, the current process's segment-list/task-number fields and
+  some chip scratch, presents a synthetic segment, waits for the harness's `qOffsets`
+  acknowledgement, then restores everything before tracing (`profile_window_check.py` verifies
+  the restore). Barto then stores RAM PCs relative to the profiler start (ROM PCs and IRQ markers
+  stay absolute): keep the acknowledged base in a `trace.pc-base` sidecar and normalize in
+  `barto.py`. `until` should wait in the background with a timeout (`UNTIL_TIMEOUT`) and stop
+  the capture cleanly, so a stalled route can still be dumped and quit.
+
+**Check:** `barto.load()` on the trace shows instruction records **with PCs**, and the
+screenshot shows the moment you expected.
+
+## 6. Map memory, then find a reproducible gameplay window
+
+**Regions.** Dump the "other" memory, where WHDLoad puts the slave's memory: `$C00000` slow RAM
+with no fast RAM, `$200000` with fast RAM. Use `td2.py gdb 'dump binary memory tmp/x.bin BASE END'`.
+Adapt `regions()` until `td2_report.py` names the code hunk, the data hunk, the kick image and
+the slave. Relocations make an exact compare impossible, so 16-byte windows vote for a base.
+Also, **the PRELOAD copy of the file is in memory too**: follow LoadSeg's BPTR chain from the
+code hunk to the data hunk rather than byte-searching for it. For a direct game, look for the
+code in base memory (chip, included in the trace's chip snapshot) *and* in the expansion memory.
+I500 runs from ExpMem in slow RAM (for example `$CFFC0C` on the A500-eq. and `$57AC0C` with fast
+RAM; the addresses move with the slave's size and the memory configuration).
+
+**Which slave copy is live.** Several slave-shaped copies sit in memory (PRELOAD, file). The live
+one has its `resload` pointer filled in and some header bytes rewritten by WHDLoad, so match the
+code after the pointer and require it to be non-zero. Trim the file to the hunk length first:
+the trailing `HUNK_END` is not in memory. Anything the tools read *inside* the slave (a tape
+counter, a marker) must be searched for from the live copy's start: with 8 MB of fast RAM
+BH's marker appeared three times and the first one was WHDLoad's file copy, frozen at 0.
+And a byte-vote locator needs a quorum (a third of the windows, address ≥ dump base): DOS
+buffers in chip RAM held pieces of `BH` and outvoted nothing, giving a negative "base".
+
+**Driving.** Prefer the attract demo when there is one (TD2's and I500's drive themselves). Otherwise:
+- **Not** FS-UAE input recordings: in this FS-UAE build playback never works. FS-UAE emits two
+  events of its own at startup (2263, 2272, whatever the ports are), and recording an event
+  during playback truncates the recording at the play position, i.e. at 0. (Recording works;
+  `KEY_RETURN` = 164 in this binary; Battlehawks `tools/splice_rec.py` splices events.)
+- For an OS game, a **VERIFY input tape in the slave** (Battlehawks `whdload/tape.s`, game
+  independent): `_cb_dosLoadSeg` starts an Exec task whose TCB, stack and I/O live in the slave,
+  counts fields with `WaitTOF` and types raw keys with `input.device` `IND_WRITEEVENT`. It
+  publishes a marker and its field count so `fixed_window.sh` can poll it. Map the screens first
+  (a `shot` at each tape step): BH needed four Returns after the credits (menu, mission, ready
+  room, and the manual check, which the slave "removes" but still waits for Return). The timing
+  changes with the slave (v1.0 vs KickEmu), so retime the tape when the boot changes.
+  **Find out how the game consumes a key** before scripting gameplay: BH takes one IDCMP
+  character per frame, and its controller turns one cursor character into full stick for one
+  frame. So the bank grows with the *number* of presses, not with how long a key is held (a
+  real keyboard's auto-repeat sends many). Hold each press longer than a frame, and wait until
+  the gameplay loop is running (BH's first presses 100 fields after the last menu key were lost).
+- **Feed gameplay input inside the game's frame loop**, on frame numbers, once the game
+  steps per frame: BH's VERIFY slave hooks the loop's call of its key reader and returns a
+  scripted character on listed frames. Then every CPU and every run gets the same input on
+  the same frames, the window (a frame number) shows the same scene everywhere, and game state
+  can be compared across CPUs. Two weaker versions failed: keys typed at fixed fields put the
+  68020's frame 90 before the bank (a different scene), and a task polling the frame counter
+  once per field let presses slip a frame when debugger stops shifted the phase.
+- For a gameplay window, script **some manoeuvring**. BH's first flight is straight and level
+  over flat-shaded sea: 1 % of the view changes per frame, which flatters the delta c2p and
+  under-loads the renderer. The user asked for a left circle (8 presses) as the benchmark.
+- **Wait on game state, not on fields** (LoV `whdload/tape.s`, a mouse game): screens arrive
+  hundreds of fields apart from route to route, so fixed waits either misfire or waste minutes.
+  LoV's tape writes the pointer into the window's `MouseX/MouseY` and the buttons into the game's
+  debounced state from its VBL server, and also hooks the game's button hit test to remember the
+  list it was given: a `W` entry holds until that list has a given button id under the pointer,
+  an `H` entry until the heading reaches a value, an `A` entry marks the anchor. Panels that poll
+  through other code are invisible to such a wait (LoV's conversation panel): click them away
+  blindly at intervals, and reject a window that starts inside one.
+- For a direct game, hook the game's joystick read and feed it from a table indexed by
+  field. This is what TD2's `CUSTOM5` fixtures do. Neither tape needs debugger writes.
+
+**Reproducibility. This is the most important step; everything after depends on it.**
+1. Find the game's sources of entropy: reads of `VHPOSR`/`VPOSR` (`$dff004/6`), CIA timers,
+   `DateStamp`, uninitialised memory, **and input ports**. TD2's RNG mixed in VHPOSR, so the demo
+   differed on every boot. Remove them in a **VERIFY build only**, gated by an option (TD2:
+   `CUSTOM3`). I500 reads the port-0 mouse counters (JOY0DAT) every frame, and their raw value
+   differed between boots. The host mouse feeds port 0 even with input grab off, so a mouse moving
+   over the window injects input. Capture with nothing in port 0: **`joystick_port_0=none` is not
+   enough in FS-UAE**: it unplugs the host device but the port's *mode* stays `mouse` (the
+   default for port 0) and the host mouse still moves its counters. Also pass
+   `--joystick_port_0_mode=nothing` (Battlehawks `run.sh` does both for `JOY0=none`). With that,
+   BH's two captures became identical in every register and DMA record. And people watching
+   the emulator window can touch it: tell them, or treat a touched run as void.
+2. Boot with `DETERMINISTIC=1`.
+3. **Anchor on game state, not on wall time or screenshots.** Find a store that marks the start
+   of play. TD2: the race-clock reset `move.l #1,-10146(a4)` at `duel:0bbf8`, then the gameplay
+   loop at `duel:05a4c`. Arm it at CPU reset: `fixed_window.sh` boots once to learn the load
+   address, caches it, and reboots with `BOOT_BREAK` armed so a warp boot can't run past it.
+   Confirm with a gdb watchpoint. A simpler anchor that worked on I500: **the first execution
+   since boot of the renderer's end-of-frame**, if menus and credits don't use that renderer.
+   I500's `game:0b57e` (the swap request) is first hit at the end of the demo's first frame.
+   `SKIP_FRAMES=N` then gives later windows. **A breakpoint armed from reset makes warp slow**:
+   BH's flight starts ~4600 fields after boot and `BOOT_BREAK` did not get there in 5 minutes.
+   With a tape, boot with no breakpoint, poll the tape's field counter (read-only; emulated time
+   stops while gdb holds the CPU) and arm the anchor a few hundred fields before the last key. To find the start, step from the game's entry with
+   counted VBL breakpoints and a `shot` every 100 fields. Traces of the transition show which code
+   runs first.
+4. Retain the exact slave with every capture (`OUT/slave.slave`), and analyse with
+   `SLAVE=$OUT/slave.slave`. A different slave size moves the region bounds and can hide the
+   frame marker.
+
+**Check:** two fresh boots of the fixed window give byte-identical first- and last-field
+screenshots and identical state snapshots. Stronger, and cheap: compare every field's instruction
+records, DMA records and screenshot with `barto` (I500: all identical with `JOY0=none`;
+Battlehawks `tools/compare_traces.py`). BH: identical after the port-mode fix above (before it, JOY0DAT read `$0000`
+in one boot and `$0101` in the other). Don't
+`cmp` whole trace files: the slow-RAM snapshot holds WHDLoad/host bytes that differ between boots. Never compare two windows taken at arbitrary demo
+moments: TD2's demo varied between 4.3 and 7.2 fps by scenery alone.
+
+**Anchor on the game's frame counter, and hold the emulator while searching memory.** With
+8 MB to dump and search, warp left running got thousands of fields past the arming point; and
+a 0.2 s poll step in warp overshoots hundreds of fields. BH's window opens at the c2p pass of
+flight frame N by the game's own counter, which is deterministic whatever the poll did.
+
+**Never edit a script while a capture is running it.** bash reads scripts as it executes, so an
+edit to `fixed_window.sh` mid-run makes it execute garbage from a shifted offset (BH: `h: command
+not found` after 10 minutes). Copy the script, or edit only between runs.
+
+**Memory, PRELOAD and blinking.** A disk-image slave without PRELOAD does a WHDLoad OS switch
+for every disk read: the screen blinks through the boot and loads take longer, enough to break a
+field-timed tape. BH's slave got 512 KB of fast memory (only DMA data in chip RAM), which no longer left room in
+1.5 MB of slow RAM to preload three 880 KB images. The capture machine is now 68000 + 512 KB chip
++ 8 MB Zorro II fast (the user's call). KickEmu's `IOCACHE` only caches `HDINIT` files, not
+disk images.
+
+## 7. A frame counter you can trust
+
+Find the instruction that makes a new frame visible:
+- a COP1LC write (TD2: the slave's `set_copper`, `move.l a0,$dff080`; I500: the game's own VBL
+  handler, `game:0b2e2`, executed only when the renderer has set a swap-request bit);
+- `BPLxPT` writes in a copper list;
+- `LoadView`/`ScrollVPort`;
+- a double-buffer flag flip;
+- or, with **one displayed buffer**, the pass that writes it. BH renders chunky and converts with a
+  delta c2p (`bh:1a2c2`) straight into the visible bitplanes; the c2p entry is the frame counter.
+  Check the destination planes across frames before assuming double buffering.
+
+The level-3 vector may not be the Kickstart's: BH installs its own sound handler there and chains
+to the ROM handler past its prologue. Count level-3 entries at whatever `$6C` holds.
+
+Count those per PAL field. Over 100 fields that gives `fields/frame` and fps. Write it into
+`frames.py`, and as read-only breakpoints into `swap_fields.py` for CPUs whose trace is empty.
+
+Also find how the swap is timed: a beam wait, `WaitTOF`, or a VBL handshake. Count the CPU's
+swap-wait spin separately from blitter waits (I500: `game:0b5ae`, 2.5% of an A500 frame and 10.5%
+on a 68020). And find every blitter-wait idiom, not just `btst #6,2(a6)`: I500 has 78 absolute
+`btst #6,$dff002` and a register form `btst d4,(a6)` with `a6=$dff002`, the hottest of them. TD2's slave waits
+for VPOS ≥ `$84`, so frames are quantised to whole fields and the ceiling is 25 fps. That wait
+is JOTD's flicker fix: **don't touch** it without testing a fast CPU for tearing.
+
+**Check:** `SWAP_ONLY` and the full trace give the identical swap pattern on the same window.
+
+## 8. Baseline profile
+
+Run on the A500-equivalent machine, in the fixed window:
+
+```sh
+tools/fixed_window.sh tmp/prof/base
+python3 tools/td2_report.py tmp/prof/base/trace.bin tmp/prof/base/code.bin --base 0xc00000
+python3 tools/frames.py     tmp/prof/base/trace.bin tmp/prof/base/code.bin 0xc00000
+python3 tools/hotspots.py   tmp/prof/base/trace.bin tmp/prof/base/code.bin 0xc00000 <hunk> <off,...>
+python3 tools/disd.py       tmp/prof/base/code.bin 0xc00000 <hunk> <start> <end>
+```
+
+Record, in `docs/internals.md` (current measurements) with the command in `docs/development.md`:
+- fps;
+- CPU share per routine, both inclusive (call tree) and self;
+- blitter-wait cycles (`btst #6,2(a6)` or `btst #14,dmaconr` polls);
+- interrupt counts and cost per handler;
+- DMA slot shares (free / CPU / blitter / bitplane / copper);
+- whether the CPU ever idles (`STOP`).
+
+Attribution needs care:
+- **Self time** goes to the nearest preceding function start: compiler prologues
+  (`link a5` for Aztec C, `link a6`/`movem` for SAS/C and others) plus every observed call
+  target. **Hand-written asm games have no prologues**, so check big self numbers with
+  `hotspots.py`.
+- **Contexts** come from SP ranges. TD2 had a main task, a second game task, OS device tasks and
+  the supervisor stack. A direct game may run everything, interrupts included, on one supervisor
+  stack. Then interrupt work shows up as "calls" from whatever it interrupted (I500: the SOFT
+  handler's `game:27b78` "under" `0a908`/`0bb42`). Identify handlers from the vectors at
+  `$64..$78` in the chip snapshot and count their entries instead.
+- **Asm with absolute addressing** (I500): take function starts from every static `jsr abs.l` and
+  `bsr` target in the code hunk (after relocation), plus the traced call targets.
+- `jsr d16(a6)` is named after the library at `a6` plus the LVO.
+
+Then repeat the trace on a 68020 with fast RAM, to see what is bus-bound and what is CPU-bound:
+
+```sh
+AMIGA_MODEL=A1200 KICKSTART=$KICKSTART_A1200 CHIP_KB=2048 FAST_KB=4096 \
+  CPU=68EC020 EXTRA_ARGS=--slow_memory=0 tools/fixed_window.sh tmp/prof/a1200
+# 68030 at N Hz (no instruction trace; use SWAP_ONLY=1, and SERVE_WAIT=1700 above ~100 MHz):
+CPU=68030 EXTRA_ARGS='--slow_memory=0 --uae_cpu_speed=real --uae_cpu_multiplier=0 --uae_cpu_frequency=25000000 --uae_cpu_cycle_exact=true'
+```
+
+Use `--base 0x200000` for fast-RAM dumps.
+
+**68040/68060 in FS-UAE.** Use `CPU=68040-NOMMU` (likewise for the 060) with the cycle-exact
+68030 options and the frequency changed. With plain `68040` FS-UAE emulates the MMU, WHDLoad
+turns it on, and the MMU loop then ignores the frequency and the chip timing. The generic loop
+(`cycle_exact=false`, `cpu_compatible=false`) ignores them as well. Sanity check: an 8 MHz run
+must be slower than a 25 MHz one (I500's first 68040 runs gave identical fps at 8, 25 and 40 MHz).
+`cpu_speed=max` is not a real machine: chip accesses are nearly free there, and so is an
+instant blitter, so neither is a ceiling for real hardware.
+
+**Caches on fast CPUs.** Without an MMU (a 68020, or a 68030 without WHDLoad's `MMU` option)
+WHDLoad keeps the caches off, and many old slaves switch them off themselves. Know which state a
+68020/68030 figure was taken in before comparing it (TFH's slave now defines KickEmu's `CACHE`).
+A slave that marks BaseMem non-cacheable (`WCPUF_Base_NC`, as StingRay's I500 slave does)
+makes WHDLoad turn **every** cache off without the MMU: all of I500's early 68020/68030 numbers
+were uncached. Measure with WHDLoad's `DCACHE` (or `CACHE`) when the slave leaves caches alone.
+Whether the slave manages caches is a per-game decision for the user: I500 leaves them to
+WHDLoad's options (and its ReadMe recommends `DCache`), TFH enables KickEmu's `CACHE`.
+
+## 9. Understand game time before optimising anything
+
+This is where TD2 spent most of its effort, and it was the right call. A faster renderer is
+worthless if it also speeds the game up, and pointless if the simulation only moves things
+8 times a second. Answer these with measurements:
+
+1. **Time sources.** Which does the game read? VBL counters, CIA timers, `timer.device`,
+   frame-count deltas, or nothing (a fixed step per rendered frame)? Grep the binary for
+   `$dff004/6`, `$bfe801/$bfd800`, `$6C` vector installs and OS calls, and confirm with traces.
+   Also grep **every** CIA timer register (`$bfe401..$bfe701`, `$bfd400..$bfd700`, CRA/CRB, ICR),
+   in the loader/intro too: I500's hunk 0 never programs its clock. The intro sets CIA-A timer B
+   to 59.7 Hz, and the game divides it by 4 into a SOFT (level-1) interrupt.
+   A tick-driven main loop **caps the frame rate at the tick rate**. I500: 15.2 fps on a 25 MHz
+   68030 against a 14.9 Hz tick. Run the fast-CPU `SWAP_ONLY` early, because it shows the ceiling.
+2. **The state map.** Find the variables that *are* the game: position, speed, clock, opponent
+   state, RNG, lives, and so on. Locate them by watchpoints on what changes on screen, then
+   `state_writers.py`. Snapshot the data hunk every field at the VBL entry (`STATE_FIELDS=N`) and
+   compare with TFH's `compare_state.py` (§3).
+3. **The coupling test.** Run the same fixed window on a 68000, a 68020 with fast RAM, and with
+   deliberately slowed drawing (a VERIFY-only delay in the draw path; TD2: `CUSTOM4`). Compare
+   state field-by-field with `compare_state.py`. Identical state at different fps means the
+   simulation is already decoupled. Divergence tells you exactly where it is coupled.
+4. **Tasks and interrupts.** Which context advances the simulation? TD2 had a separate 8.33 Hz
+   simulation task, plus drawing that shared the RNG. Use `task_state.py` and SP ranges.
+5. **Boot benchmarks.** The time step may come from a benchmark at boot rather than a clock. TFH
+   draws a test scene, sets `T = 380 / fields taken`, and advances `1/T` s of game time per frame,
+   so game speed is right only at the frame rate the benchmark predicted (the A500 ran 1.9× real
+   time, a 68030/50 at 0.55×). Check what else reads that value (TFH: ground detail, menus) before
+   changing it: a per-frame T can replace it in the flight loop while the boot value stays.
+6. **PAL and NTSC.** Find out whether anything assumes 50 fields per second. To detect the rate,
+   take the beam's highest line over a field (PAL 312, NTSC 262; threshold 288), reading
+   `VPOSR`/`VHPOSR` twice so a read across line 255/256 isn't taken as a wrap (TFH `timing.s`).
+   In FS-UAE `run.sh` pins `ntsc_mode=0`, and `uae_ntsc=true` stalled the emulator with GLib
+   errors, so NTSC was checked by arithmetic, not by a flight.
+
+**Raising a tick-capped frame rate** (I500): remove the main loop's tick wait, snapshot the
+published state (camera, car poses) at the simulation tick's common exit, and rewrite only the
+renderer's copies each frame with α = time since that exit / tick period. Interpolation
+(`prev + (cur − prev) × α`) is smooth but shows the scene one tick late; extrapolation
+(`cur + (cur − prev) × α`) removes that delay but overshoots at sudden changes. Snap at cuts and
+teleports, wrap track coordinates and take angles by the shortest arc. Input sampling and the
+simulation stay at the tick rate. **Validate on real gameplay, not only the demo:** I500's
+cockpit prepares its camera on a different path (`game:160..172`) from the demo cameras, and
+demo-only checks missed that interpolation never ran while driving. Add a test build that
+drives the native menus with a held input (I500 `DRIVING_TEST`) and check frames within one
+tick actually move.
+
+A slowed renderer is easy to get when you are testing a replacement anyway: BH's full-frame c2p
+experiment made each frame take 8.7 instead of ~5 fields, and the state comparison at an equal
+frame number is the coupling test (Battlehawks `STATE_ONLY=1` + `compare_state.py`). Compare
+before the first scripted input, or the input lands on different frames.
+
+Write the verdict, evidence and possible designs in local `docs/open-work.md`. Follow the
+user’s authorized scope; ask for a choice when designs materially change gameplay or intent.
+Routine setup and validation can continue while a design decision is pending.
+
+### Before replacing a c2p, measure the change rate
+
+A *delta* c2p (compare with the previous chunky frame, convert only changed longs) wins when
+little changes. BH: 1 % of the view changes in level flight and up to 13 % in a roll; the
+compare is 31 cycles per long, the conversion 382 per changed long. A full-frame merge c2p in
+Kalms' style cost 634,000 cycles per frame against 117,000 and dropped the A500 from 9.7 to
+5.7 fps. Kalms' routines take a byte per pixel; for nibble-packed chunky, search the exchange
+plan (six steps for BH's nibble order) and check the assembly against the game's routine in an
+interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
+
+## 10. Building and gating patches
+
+- **Build the authoritative fork source in place**, with outputs in the local harness’s
+  `tmp/build/`. Red Baron’s `Makefile` is a historical BASM recipe referring to `.asm`, while
+  `Makefile_windows.mak` assembles the tracked `.s` and includes `../../options.mk` (not present
+  at that resolved location in this checkout). The repository-root `options.mk` also has a
+  machine-specific `HDBASE` default. Inspect the include layout and use a local host build
+  wrapper with explicit paths; do not rewrite shared build settings for this Mac.
+- Use vasm’s `-m68000 -pic -x -devpac -Fhunkexe -nosym` as the starting flags, adapting them
+  only as the existing source requires. Resolve API headers, `lvo/` and `whdload/kick13.s`
+  against the shared WHDLoad 20.0 development tree and NDK (§1). If directory names differ,
+  build an ignored include staging tree pointing to the official sources, not a second copy
+  of the game slave. Record the actual dependency versions, flags and paths in local notes.
+  No SDK files were added by `testdrive2`; do not silently vendor them into this fork.
+- First rebuild the **unmodified** source and compare boot, gameplay and fixed-window state
+  with the shipped slave. Different date stamps, assembler encodings and KickEmu revisions
+  can prevent byte identity. Keep the dependency change distinct from game optimizations and
+  validate it before relying on a new baseline. This playbook does not claim Red Baron builds
+  or runs on the proposed host setup until those checks pass.
+- Use the official 20.0 headers/KickEmu for the development build, but retain Red Baron’s
+  `slv_Version = 16` unless a newly used API or macro requires more. TD2 uses interface 17
+  because `PL_IFCx` needs WHDLoad 17.2; that is not a reason to bump every slave to 17 or 20.
+  Change the header and ReadMe requirements together when needed; test the stated minimum
+  runtime and WHDLoad 20.0. Keep normal and VERIFY outputs separate and force rebuilding
+  when defines change. Update `Makefile_windows.mak` dependencies for each added module,
+  following TD2, and check all include files needed by an upstream build are accounted for.
+- Gate every change behind a `CUSTOMn` bit and declare it in `slv_config`. With the bit off, the
+  original bytes must be untouched. Write a checker that reads the local original file and
+  compares those bytes at every patched range (TD2: `check_disabled.py`).
+- Keep instruments (fixtures, RNG pinning, slow drawing, pixel twins, assembly unit tests) in a
+  **`VERIFY` build only**. Normal builds must not contain them.
+- Audit hook boundaries: a `PL_PS`/`PL_PSS` must replace whole instructions, and nothing may
+  branch into the replaced bytes (TD2: `audit_simulation.py`). One wrong return adjustment in
+  TD2 landed two bytes early and crashed later. A sentinel unit test caught it.
+- Choose the patch type deliberately. Use `PL_P` (jump, no return) when the replacement
+  re-executes the original body. TD2's `PL_PS` twin returned into code that had already run and
+  corrupted the stack.
+- Gate per-CPU behaviour on `WHDLTAG_ATTNFLAGS_GET`, read before `resload_PatchSeg`, or on
+  exec's `AttnFlags`. TFH ships a 68000 and a 68020 version of each maths routine (`mulu.l`/`divu.l`
+  where the original paired 16×16 operations give identical bits) and picks one at patch time;
+  assemble them in `MACHINE 68020`/`68000` sections.
+- **Gate on memory too, and measure the slow machines.** A feature that helps a fast CPU can
+  slow a chip-only machine: I500's CPU drawing cost 10–20% on the A500 and 5–15% on a stock
+  A1200. Its single option works only on a 68020+ with hunk 0 in fast RAM (not chip below
+  `$200000`, not slow RAM at `$C00000–$DFFFFF`), and the A500 and stock A1200 then run exactly
+  the original. Prefer one splash-window toggle, off by default; keep manual values for tooling
+  unlisted.
+- **Pixel twins for renderer replacements** (I500 `pixel_verify.s`): the VERIFY build runs the
+  new code into a guarded shadow bitmap, then the native code into the real one, and compares
+  every plane plus the registers that survive, including X. Twin the replaced inner loop, not the
+  whole function: callers may enter partway with their own state (I500's dither phase). The stub
+  ignores memory writes, so select fixtures at boot with `CUSTOMn`, never through gdb. A
+  framebuffer twin cannot show a display-fetch problem: check those on screen.
+- **Check every replaced routine against a model of the original, in the emulator** (TFH
+  `xform_check.py`, `c2p_check.py`): write a Python model of the original routine and check it
+  against the original's own calls first; then, in the VERIFY build's fixed window, break at the
+  replacement's entry and exit for N calls, dump inputs and outputs, and compare with the model.
+  Do it on the A500-eq (68000 code) and a 68020 (68020 code). Include the edge cases the model
+  shows (negative operands in sign-magnitude maths). This is cheaper and stronger than state
+  comparisons, which only show that a scene looks the same.
+- **Declare every hook range where it is installed** (LoV: a `PERF_RANGE hN:OFFSET LEN bit=B`
+  comment beside each patch), so the disabled-bytes checker reads its list from the source and
+  can't drift from it.
+- **Keep the original code on a CPU where the replacement doesn't measure better.** LoV's wall
+  unroll, sprite rows and reciprocal cache helped the 68000 but regressed or did nothing on the
+  68020, so 68020+ keep the original bytes; VERIFY can still force each body on either CPU for
+  its twin. A release build may force all verified performance bits on and expose only the
+  player-facing options, while a `DEVELOPER` build keeps the individual switches for A/B work.
+- **Kalms c2p** (shared checkout `~/.local/share/amiga/kalms-c2p`; vendor the files you use with
+  a README listing every local change): for 16 colours, `bitmap/c2p1x1_4_c5_bm_word.s` on
+  68000/10 and `bitmap/c2p1x1_4_c5_bm.s` on 68020+. They need widths that are multiples of 32.
+  For narrower views convert an **enclosing window** from a staging buffer padded with colour 0,
+  and save and restore the extra destination bytes around the conversion: after a view switch
+  they can still hold the previous view's pixels (LoV's first medium-view twin caught this). Make
+  the pixel twin perturb the bits the game leaves undefined (LoV's low nibble), so a wrong merge
+  can't hide.
+
+## 11. Measuring an improvement
+
+- A/B **only** with `fixed_window.sh`, same build, the option on vs off. The fps figures come
+  from swap counts. Script the whole pair (LoV `tools/ab_window.sh PREFIX OFF ON [ROUTES
+  [MACHINES]]`: both machines, both routes, one capture at a time, then the analysis chain on
+  each capture; `tools/ab_summary.py PREFIX` tabulates them and writes off/on first/last
+  comparison sheets). Delete each 0.5–1 GB trace once its reports exist (`KEEP_TRACE=0`): a
+  deterministic window can be recaptured.
+- When game time depends on frame time, the faster build reaches the anchor in a different
+  scene. Quote fps, but judge the routine by **cycles per completed call** (boundary-partial calls
+  excluded, main task separated from interrupts), and add a scene-stable route (LoV: stop facing
+  a wall, wait, then anchor). Physics and state correctness come from per-field state comparisons, never
+  from screenshots.
+- Skip anything worth under 3% of a frame unless it's free. Bound a candidate's cost by summing
+  its instructions' cycles before writing it.
+- Re-run the fast-CPU configurations. A change can help the A500 and do nothing on a chip-bus
+  bound 68030, or the reverse. TD2's renderer hits a 25 fps chip-bus ceiling at any CPU speed.
+- **A faster CPU does not make chip RAM faster.** On AGA the CPU's 32-bit chip stores beat the
+  16-bit blitter for fills (no reads), but the blitter wins chip-to-chip copies (I500: textured
+  rows by CPU dropped a heavy view from 24.0 to 20.4 fps). A 68040 at 25 or 40 MHz gave I500's
+  heavy views the same 25.0 fps: they are bound by chip RAM and the blitter.
+- The blitter-priority (BLTPRI) setting disturbs the 68020 cycle trace. Use `SWAP_ONLY` for fps
+  when it is on.
+
+## 12. "Ready to improve": the definition of done for setup
+
+- [ ] Existing worktree/branch and `AGENTS.md` respected; personal identity verified; local
+      harness ignored; staged changes contain no new game bytes or generated output.
+- [ ] Game, version, slave type and existing patches documented.
+- [ ] `td2_report.py` names every hot region; traces have PCs.
+- [ ] A fixed gameplay window that is reproducible across boots: same screenshots, same state.
+- [ ] A validated frame counter: full trace and `SWAP_ONLY` agree.
+- [ ] A baseline profile on the A500-equivalent and a 68020, recorded with the commands that
+      reproduce it.
+- [ ] No new host-specific paths in the upstream diff; shared files through §1 variables.
+- [ ] Fork source is authoritative; the harness builds that source with documented dependencies.
+- [ ] Changes are confined to the target game; other games and shared build settings are untouched.
+- [ ] The game-time model: time sources, state map, coupling test results.
+- [ ] Local `docs/open-work.md` lists ordered work items and any unresolved design decisions.
+- [ ] A rebuilt, unmodified slave that behaves identically, with CUSTOM gating and a VERIFY
+      build ready to receive patches.
+
+Effort, for planning: on I500, everything except the state map, the coupling test and the CUSTOM
+gating took one session. On BH, one session reached a reproducible-timing fixed window and an
+A500 baseline, including the slave reconstruction, the KickEmu rebase and the input tape; the
+68020 baseline and the game-time model were left for the next. BH's capture is one boot (~4
+minutes: ~4600 fields of menus in warp). A 100-field fixed-window capture takes about 2 minutes (calibration boot
+plus measurement boot) and about 520 MB.
+
+## 13. Contribution and release archives
+
+The main deliverable is a focused source change on the game branch in the Vesuri fork.
+Review `git diff --stat master...HEAD` and the staged diff separately (the former excludes
+uncommitted work). Keep only the intended game’s source, build dependencies, ReadMe and any
+intentional installer/icon change. Preserve upstream line endings, filename case, notices,
+credits and unrelated bytes. Do not import TD2’s root docs, tools, vendored SDK or game patches.
+Use explicit paths when staging; check new files against ignore rules. Do not commit all of
+`usr/` blindly, since it may contain locally generated files.
+
+Update `DECL_VERSION` and the game’s existing ReadMe together. Preserve JOTD’s historical
+entries; add a concise entry describing supported versions, options, requirements and measured
+behaviour. New features should have an explicit off path. If an icon enables an option, treat
+that as an intentional player-facing change and check its tooltypes (TD2 changed its
+`.exoticon` to enable `CUSTOM2=1`). Do not change every icon variant without inspecting it.
+
+When release packaging is requested, adapt TD2’s `tools/package_release.py` in the local
+harness. Build from `$GAME_SOURCE`, stage below its ignored `tmp/`, and write archives to its
+ignored `dist/`. Use LHa for UNIX (`LHA`, §1), level-1 LH5 headers (`lha a1o5q2`).
+
+- Retain the original installer and preinstalled archives as immutable local inputs.
+- Replace the normal release slave and ReadMe; change icons only when intended. The installer’s
+  `source/` must include the updated slave, all new modules, and a usable build recipe. Include
+  redistributable public-domain SDK sources/headers with provenance when making a self-contained
+  source archive, without automatically committing that SDK into the fork.
+- Validate an explicit member manifest: unchanged names/case/content except the planned files
+  and added source dependencies. TD2’s packager checks sorted membership; LHa sorts members,
+  so do not claim original member order is preserved.
+- Re-extract and compare bytes with the staging tree; check version, requirements, tooltypes,
+  and absence of VERIFY-only options/instruments. Build or validate the packaged source as well.
+- The preinstalled archive contains copyrighted game data: keep it local. Do not add it to Git
+  or publish it as a source release. Inspect installer contents before publishing them too.
+- Preserve beta status until play-testing is complete. Record measurements and remaining
+  limitations in the local notes, with concise reproducible validation in any contribution.
+
+Push or open a pull request only within the user’s authorized scope, using **Vesuri**. Verify
+base/target and the complete diff first. No publishing is implied by creating this playbook.
+
+### Red Baron build and launch smoke check (2026-10-09)
+
+The local harness now builds the fork source with `tmp/dev/tools/build.sh` and runs it with
+`tmp/dev/amiga/run.sh`. From the Red Baron worktree:
+
+```sh
+tmp/dev/tools/build.sh
+SLAVE="$PWD/tmp/dev/tmp/build/RedBaron.slave" tmp/dev/amiga/run.sh
+```
+
+The build uses shared WHDLoad 20.0 headers/KickEmu and `ndk/Include_I`; its generated local
+LVO wrappers map `lvo/dos.i` etc. to NDK `*_lib.i` files with include guards. vasm 1.9 required
+an explicit PC-relative `_resload` reference and word-sized callback exit branches. Naming
+that exit `cb_loadseg_done` also avoids relying on a macro-local `.out` label. These small
+compatibility changes are in the game source; the harness remains ignored.
+
+The rebuilt slave reached the opening sequence and main menu in FS-UAE (68000, 1 MB chip,
+2 MB fast, Kickstart 3.1 host, KickEmu 1.3 guest, WHDLoad 20.0). The runtime slave was compared
+byte-for-byte with the build; all 54 pristine archive files retained their hashes. This is a
+build/startup smoke check, not flight validation, equivalence to the shipped slave, coverage
+of all game versions, or an A500-equivalent performance measurement. Menu evidence:
+`tmp/dev/tmp/build/startup.png`. Debug capture uses local `tools/redbaron.py`, adapted from
+TD2 with its own socket; the runner refuses a port already held by another process.
+
+
+### Red Baron keyboard route and flight recognition
+
+From the Red Baron worktree, run the ignored local harness:
+
+```sh
+python3 tmp/dev/tools/reach_flight.py --bank
+```
+
+This builds the canonical source with `VERIFY`, starts a fresh runtime copy of the
+preinstalled archive, skips the scrolling credits, selects a mission, answers No to the
+pre-flight mission-tape prompt, and opens F10 Preferences. It activates each detail slider
+with Enter before pressing Right to its maximum, confirms it with Enter, enables Ground
+Detail (ON IN COMBAT), leaves Time Scale unchanged, and selects ACCEPT. Reopening Preferences
+confirmed the accepted settings (`tmp/dev/tmp/build/preferences-verified.png`). These are
+runtime settings; persistence back to the pristine archive is neither intended nor claimed.
+The route assumes the original archive preferences and the supported v1 executable layout.
+
+The source-owned `tape.s` and `tape-route.i` inject keys at native polling points:
+`ps:$15b3a` and `sim:$1ef92`. Return must also be held in the native keyboard bitmap to
+activate buttons. OS-task WaitTOF/timer input was unsuitable after graphics takeover.
+The route uses poll counts instead of host timing and disables host joystick input.
+
+For flight recognition, `sim:$1ed82` is a shared input call, so reaching it alone is insufficient.
+Only caller `sim:$21d30`, after the complete menu/preferences tape and key release, increments
+the gameplay step. The live `RBVERIFY` marker contains that counter at +44, a gameplay-only
+breakpoint address at +48, and the current flight/UI flag at +52. The harness stops at step 1;
+`--bank` additionally holds Right at steps 20–34, releases it at 35, and captures step 40.
+It saves screenshots, build/archive hashes and marker state under `tmp/dev/tmp/prof/entry`.
+The emulator is left paused; resume with `python3 tmp/dev/tools/redbaron.py cont` or quit with
+`python3 tmp/dev/tools/redbaron.py quit`.
+
+This provides a flight-entry checkpoint and a visibly verified right-bank input test.
+Gameplay steps are native input calls, not validated display frames. Full state determinism,
+FPS counters and profiling baselines remain to be established. The tested machine remains
+68000 with 1 MB chip and 2 MB fast RAM, not an A500-equivalent performance baseline.
+All instrumentation is excluded from normal builds.
+
+
+### Red Baron short profiling command
+
+A 250-PAL-field (approximately five-second) flight capture and detailed analysis are now
+available. From the Red Baron worktree, run:
+
+```sh
+python3 tmp/dev/tools/profile_flight.py
+```
+
+It boots the accepted maximum-detail fixture, records consecutive 100/100/50-field chunks,
+retains the exact slave, records before/after RAM, and generates routine attribution plus
+exact-PC/hardware metrics in a new timestamped `tmp/dev/tmp/prof/` directory. The first LLDB
+attach may take minutes; that is host preparation time, not emulated capture duration.
+No screenshot or resume may be inserted between chunks. The local report tools are
+`redbaron_report.py`, `trace_series.py`, and `profile_metrics.py`.
+
+The versioned analysis and expanded manual commands are in `R/RedBaron/docs/profiling.md`.
+Baseline evidence is in `tmp/dev/tmp/prof/baseline`. In that short scene the bitmap reflection
+routine at sim:$304d0 consumed 30.96% of cycles; geometry and audio were also significant.
+The candidate presentation marker sim:$3154a writes the copper bitplane-pointer list;
+its frame-rate interpretation and repeatable A/B state still need independent validation.

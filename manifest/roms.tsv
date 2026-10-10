@@ -1,0 +1,7 @@
+# Kickstart ROMs, fetched from a TOSEC tree (make setup TOSEC=<path or URL of the Commodore Amiga TOSEC root>).
+# dest (under $AMIGA_SHARE)	sha256	zip under the TOSEC root (the .rom inside it is taken)
+Kickstarts/kick33180.A500	87cddb1f499e32758de20145e73031a84bab299e3f6e5c8487e76d02b2ee9d16	Firmware/Kickstart v1.2 r33.180 (1986-10)(Commodore)(A500-A1000-A2000)[!].zip
+Kickstarts/kick34005.A500	ee05862d8102a08436ac4056da7d549db31625c7d47b24dfb7b3c9a5c113ca53	Firmware/Kickstart v1.3 r34.005 (1987-12)(Commodore)(A500-A1000-A2000-CDTV)[!].zip
+Kickstarts/kick37175.A500	d0b70e8a1772614b897f92c33cb299bed3fc8e3de488fc12f67f97fc2486eb79	Firmware/Kickstart v2.04 r37.175 (1991-05)(Commodore)(A500+)[!].zip
+Kickstarts/kick40063.A600	8c8a0cf04f91b88eaf0c4f1126041987067e2286a8ee590bdbae447a8000c5ee	Firmware/Kickstart v3.1 r40.063 (1993-07)(Commodore)(A500-A600-A2000)[!].zip
+Kickstarts/kick40068.A1200	6d43840d4099a74170ea0f0425b6257c3891ebcaa39c4d1840075a9ab22b5707	Firmware/Kickstart v3.1 r40.068 (1993-12)(Commodore)(A1200)[!].zip
