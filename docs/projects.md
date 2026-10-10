@@ -1,8 +1,7 @@
 # The projects
 
 Every project is its own repo next to this one. This page records what each takes from the
-shared environment and what remains to change so that it takes *only* that. Nothing below has
-been changed in any project yet; the migration is paused.
+shared environment and how far each is migrated.
 
 ## Migration recipe (per project)
 
@@ -29,30 +28,36 @@ StingRay's slave repository (harness in the ignored `tmp/dev/`).
 
 | Project | Group | State | Needs |
 |---|---|---|---|
-| Test Drive 2 | W | clean | recipe 2, 3, 5 (vendored KickEmu and headers, also shipped by `package_release.py`) |
-| Their Finest Hour | W | clean | 2 (no `KICKSTART_A1200`, `WHDLOAD`), 3, 4, 5; stale playbook path in `CLAUDE.md` |
-| Battlehawks 1942 | W | clean | Kickstarts from `~/Documents/RetroPie/BIOS` (`env.sh`, `run.sh`, `tools/bh_report.py`); 2–6; paths into other projects in docs |
-| Indianapolis 500 | W | clean | 2, 3, 4; stale playbook path |
-| Legends of Valour | W | clean | 2 with WHDLoad 19.2 kept as its deliberate default (set before the source line); 3, 4; `makefile` prefers a repo-local vasm |
-| Powerdrome | W | **active, skip** | 2–5 |
-| Stellar 7 | W | **active, skip** | 2–5 |
-| Pokeri | P | clean | 2, 3, 4 |
-| Revs | P | clean | 2, 3, 4; `LHA` default points at a missing `~/.local/opt/lha` |
-| Slicks | P | clean | 2, 3, 4; `LHA` default as Revs; SetPatch is now 40.16 (was 45.25) |
-| Vette | P | clean | 2, 3 |
-| Alone in the Dark | P | untracked aprof files (another session) | 2, 3; its aprof build now lives in AmigaXDev (`patches/fsuae-aprof.patch`, same sha) |
-| Rescue on Fractalus | P | untracked files | Kickstart from RetroPie; `LHA` default as Revs; 2, 3; `/tmp` use |
-| Secret Weapons of Luftwaffe | P | **active, skip** | Kickstart from RetroPie; fixed toolchain and `openjdk@21` paths; SetPatch now 40.16; its patched dosbox-x build stays in its repo |
-| Downwell | P | **active, skip** | Kickstart from RetroPie; 2, 3, 4 |
-| Stunt Car Racer | P | uncommitted work | no `amiga/env.sh`; makefile defaults to WHDLoad 19.2 |
-| Red Baron | F | **active, skip** | committed tools and docs on the branch; harness `tmp/dev` |
-| 4D Sports Driving | F | **active, skip** | harness `tmp/dev` |
-| Indianapolis 500 JOTD | F | all work uncommitted | harness `tmp/dev`; the playbook calls it abandoned |
-| Indianapolis 500 StingRay | F | clean branch | harness `tmp/dev` (ignored, not in git) |
+| Test Drive 2 | W | migrated | — |
+| Their Finest Hour | W | migrated (uncommitted paused work left alone) | — |
+| Battlehawks 1942 | W | migrated | — |
+| Indianapolis 500 | W | migrated | — |
+| Legends of Valour | W | migrated; keeps WHDLoad 19.2 and its native vasm build deliberately | — |
+| Powerdrome | W | migrated | — |
+| Stellar 7 | W | partly: env, tools, build | `amiga/run.sh` onto the shared launcher once its uncommitted work is committed (it needs `NTSC=1` as default: its new `--uae_ntsc` defaults to NTSC); `docs/development.md`; `tools/stellar7_report.py` defaults |
+| Pokeri | P | migrated; keeps WHDLoad 19.2 for its slave and tests | — |
+| Revs | P | migrated; keeps WHDLoad 19.2; tests use their own `WHDLOAD_BIN` | — |
+| Slicks | P | migrated; keeps WHDLoad 19.2; unstripped `SlicksDiag.exe` differs on every build (stripped release identical) | — |
+| Vette | P | migrated; keeps WHDLoad 19.2 | — |
+| Alone in the Dark | P | migrated; keeps WHDLoad 19.2, its fixed port 24377 and its own machine arguments; uses the shared `fs-uae-aprof` | — |
+| Rescue on Fractalus | P | migrated; keeps WHDLoad 19.2 | — |
+| Secret Weapons of Luftwaffe | P | migrated (uncommitted paused work left alone; not rebuilt, its build runs that work: `make -n` identical) | — |
+| Downwell | P | migrated; its HEAD did not build before the change (`MotionBinary64`), generated files identical | — |
+| Stunt Car Racer | P | migrated (no run script); `tools/test_whdload.py` keeps WHDLoad 19.2 as the binary releases were validated with | — |
+| Red Baron | F | migrated (harness in `tmp/dev`, playbook reference on the branch) | harness probes `w1_build_modes.py`, `probe_menu.py` hardcode `~/.local` paths |
+| 4D Sports Driving | F | migrated (harness in `tmp/dev`) | — |
+| Indianapolis 500 JOTD | F | harness in `tmp/dev` migrated; uncommitted slave work untouched | — |
+| Indianapolis 500 StingRay | F | migrated (harness in `tmp/dev`) | — |
 
 Not Amiga game projects, left alone: dA JoRMaS (an Amiga demo repo; it already uses
 `fsuae_common.sh`, whose old functions are unchanged), Excellence, PETSCIIRobots-SDL, Tutka,
 amiberry, pt2-clone, Apartment, Lego.
+
+What migrated means: the project's `amiga/env.sh` sources the shared one, its run scripts launch
+through the shared `fsuae_options`, and its tools take the toolchain from the environment. Its
+builds were byte-identical before and after, and its FS-UAE command lines differ only in sound
+and window for debug and warp runs. FS-UAE's own log is now under `.run/fsuae/Cache/Logs/`
+(the launcher sets `--base_dir`).
 
 ## Changes in the shared tree that reach every project
 
@@ -74,7 +79,14 @@ Byte-identical or near-identical copies that could move here once the setup migr
 (`td2.py` and its descendants), the Ghidra scripts (identical except `@category`), the dA JoRMaS
 framework in eight ports, `test_whdload.py` and `package_release.py`.
 
+Python tools that start FS-UAE themselves, so they are not silent and come to the front: Rescue
+on Fractalus `tools/test_whdload.py`, `tools/test_rom_failures.py`; Alone in the Dark
+`tools/test_whdload.py`, `tools/install-data/test_installer_script.py`,
+`tools/install-data/test_amiga.py`. Every `run.sh` that honours `DEBUG=1` repeats "claim the
+port, else stop the previous run"; that could be one shared function.
+
 Rule violations found on the way, for each project's owner: `/tmp` scratch files (Test Drive 2,
-Battlehawks, Indianapolis 500 `fixed_window.sh`/`profile_demo.sh`; Rescue on Fractalus), and
-`core.hooksPath` not `/dev/null` in Alone in the Dark, Rescue on Fractalus, Revs (an absolute
-path), Vette and Stunt Car Racer.
+Battlehawks, Indianapolis 500 `fixed_window.sh`/`profile_demo.sh`; Rescue on Fractalus), Rescue on
+Fractalus `audio_ridge.py` suggests a `/tmp` path; `core.hooksPath` not `/dev/null` in Alone in
+the Dark, Rescue on Fractalus, Revs (an absolute path), Vette and Stunt Car Racer; the Red Baron
+harness probes `w1_build_modes.py` and `probe_menu.py` hardcode `~/.local` paths.
