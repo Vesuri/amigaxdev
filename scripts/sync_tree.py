@@ -5,7 +5,8 @@
 
 A file in DEST that differs from SRC is moved to REPLACED/<its path below PREFIX> before the new
 one is copied; nothing is deleted.  Files and directories only in DEST are listed and left alone.
-Empty directories in SRC are created.  Prints a one-line summary.
+Executable bits SRC has are added to identical files in DEST (none are removed). Empty
+directories in SRC are created.  Prints a one-line summary.
 """
 import filecmp, os, shutil, sys
 
@@ -18,6 +19,10 @@ for root, dirs, files in os.walk(src):
     for f in files:
         s, d = os.path.join(root, f), os.path.join(droot, f)
         if os.path.isfile(d) and not os.path.islink(d) and filecmp.cmp(s, d, shallow=False):
+            # Same bytes: only add executable bits the source has (never take any away).
+            have, want = os.stat(d).st_mode & 0o777, os.stat(s).st_mode & 0o111
+            if want & ~have:
+                os.chmod(d, have | want)
             kept += 1
             continue
         if os.path.lexists(d):

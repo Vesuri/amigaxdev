@@ -60,6 +60,18 @@ c_toolchain() {
   log "amiga-debug toolchain into $PREFIX"
   rm -rf "$st"; mkdir -p "$st"
   unzip -q "$vsix" 'extension/bin/darwin/*' 'extension/template/support/*' -d "$st"
+  # The .vsix stores no Unix modes (the editor extension sets them when it starts): make the
+  # Mach-O binaries and scripts executable and everything else plain.
+  python3 -I - "$st" <<'EOF'
+import os, sys
+EXEC = (b'\xcf\xfa\xed\xfe', b'\xce\xfa\xed\xfe', b'\xca\xfe\xba\xbe', b'\xfe\xed\xfa\xcf')
+for root, dirs, files in os.walk(sys.argv[1]):
+    for f in files:
+        p = os.path.join(root, f)
+        with open(p, 'rb') as h:
+            head = h.read(4)
+        os.chmod(p, 0o755 if head in EXEC or head[:2] == b'#!' else 0o644)
+EOF
   for f in "$st"/extension/bin/darwin/*; do
     if [ -d "$f" ]; then sync_tree "$f" "$PREFIX/$(basename "$f")"
     else install_file "$f" "$PREFIX/$(basename "$f")" "$(sha256 "$f")"; fi

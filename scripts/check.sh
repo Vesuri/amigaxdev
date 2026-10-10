@@ -24,8 +24,8 @@ while IFS=$'\t' read -r dest sha rest; do
 done < <(rows os.tsv)
 
 echo "Downloaded and built trees"
-check "WHDLoad 20.0"           test -x "$AMIGA_SHARE/WHDLoad-20.0/C/WHDLoad" -a -f "$AMIGA_SHARE/WHDLoad-20.0/Src/sources/whdload/kick13.s"
-check "WHDLoad 19.2"           test -x "$AMIGA_SHARE/WHDLoad/C/WHDLoad"
+check "WHDLoad 20.0"           test -f "$AMIGA_SHARE/WHDLoad-20.0/C/WHDLoad" -a -f "$AMIGA_SHARE/WHDLoad-20.0/Src/sources/whdload/kick13.s"
+check "WHDLoad 19.2"           test -f "$AMIGA_SHARE/WHDLoad/C/WHDLoad"
 check "NDK 3.2"                test -d "$AMIGA_SHARE/ndk/Include_I"
 check "Installer 43.3"         test -f "$AMIGA_SHARE/Installer43/Installer"
 for n in kalms-c2p:kalms-c2p lha:lha-compressor; do

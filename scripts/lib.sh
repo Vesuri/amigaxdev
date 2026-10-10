@@ -74,9 +74,13 @@ set_aside() {
   warn "replaced $1 (the old one is in $dst)"
 }
 
-# install_file SRC DEST SHA: put SRC at DEST unless DEST already has that sha256.
+# install_file SRC DEST SHA: put SRC at DEST unless DEST already has that sha256.  An
+# executable SRC makes DEST executable either way.
 install_file() {
-  if sha_ok "$2" "$3"; then return 0; fi
+  if sha_ok "$2" "$3"; then
+    if [ -x "$1" ] && [ ! -x "$2" ]; then chmod +x "$2"; fi
+    return 0
+  fi
   [ -e "$2" ] && set_aside "$2"
   mkdir -p "$(dirname "$2")"
   cp "$1" "$2"
