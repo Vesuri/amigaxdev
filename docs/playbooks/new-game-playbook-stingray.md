@@ -1,5 +1,8 @@
 # Playbook: improving a game in StingRay's WHDLoad slave repository
 
+For hardware-only failures and cache-coherency checks, also use
+[Hardware debugging](new-game-playbook-hardware.md).
+
 > `$PROJECTS` below is the directory that holds the project checkouts (AmigaXDev's parent) and
 > `$ARCHIVES` the directory with the game archives the user supplies. Neither is ever written
 > into a repo.

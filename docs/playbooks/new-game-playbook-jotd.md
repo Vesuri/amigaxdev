@@ -654,6 +654,9 @@ were uncached. Measure with WHDLoad's `DCACHE` (or `CACHE`) when the slave leave
 Whether the slave manages caches is a per-game decision for the user: I500 leaves them to
 WHDLoad's options (and its ReadMe recommends `DCache`), TFH enables KickEmu's `CACHE`.
 
+For hardware-only black screens, stale executable stubs and WHDLoad dump analysis, see
+[Hardware debugging](new-game-playbook-hardware.md).
+
 ## 9. Understand game time before optimising anything
 
 This is where TD2 spent most of its effort, and it was the right call. A faster renderer is
