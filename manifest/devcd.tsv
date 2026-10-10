@@ -1,0 +1,3 @@
+# The Amiga Developer CD v2.1 (make setup DEVCD=<path or URL of the directory holding the ISO, or of the ISO itself>).
+# file name in that directory	sha256	directories installed into $AMIGA_SHARE/adcd21
+Amiga Developer CD v2.1.iso	307f34c1a2dec8b6116171ec87b21cdf14c89403a543daf55fe72f17880e55ad	Reference

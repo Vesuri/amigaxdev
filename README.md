@@ -13,7 +13,7 @@ and [Homebrew](https://brew.sh). Then:
 
 ```sh
 git clone <this repo> AmigaXDev && cd AmigaXDev
-make setup TOSEC=<TOSEC tree> AMIGA_OS=<Workbench directory>
+make setup TOSEC=<TOSEC tree> AMIGA_OS=<Workbench directory> DEVCD=<Developer CD>
 ```
 
 `make setup` installs Rosetta 2 if needed (the gdb-stub FS-UAE and vasm are x86_64), the
@@ -21,9 +21,9 @@ Homebrew packages in `Brewfile` and `Brewfile.extras`, then everything below, an
 `make check`. A rerun skips what is already installed and current, so it is also how to
 update. It takes about half an hour on a fresh machine, mostly the two FS-UAE builds.
 
-### The Kickstart and Workbench sources
+### The Kickstart, Workbench and Developer CD sources
 
-Kickstarts and Workbench disks are copyrighted, so they are neither in this repo nor
+Kickstarts, Workbench disks and the Amiga Developer CD are copyrighted, so they are neither in this repo nor
 downloaded from a fixed address. You name the source, as a local directory or an `http(s)://`
 URL:
 
@@ -32,8 +32,11 @@ URL:
 - `AMIGA_OS` is a flat directory of TOSEC-named Workbench zips, laid out like the Internet
   Archive item "Commodore Amiga - Operating Systems - Workbench". Setup takes the zips named
   in `manifest/os.tsv`. SetPatch comes out of the Workbench 3.1 disk with `xdftool`.
+- `DEVCD` is the Amiga Developer CD v2.1 ISO, or a directory that holds it under its Internet
+  Archive name (`manifest/devcd.tsv`). Setup installs the CD's `Reference/` directory: the ROM
+  Kernel Manuals (Hardware, Libraries, Devices) and autodocs, as AmigaGuide and as HTML.
 
-Every file is checked against the sha256 in the manifest before it is installed. Both
+Every file is checked against the sha256 in the manifest before it is installed. The
 variables can be left out once those files are installed.
 
 ## What gets installed where
@@ -46,6 +49,8 @@ variables can be left out once those files are installed.
 | Installer 43.3 | `installer` | Aminet `util/misc/Installer-43_3` | `Installer43/Installer` |
 | Kickstart relocation tables (`.RTB`) | `rtb` | Aminet `util/boot/skick346` | `Kickstarts/*.RTB` |
 | Kickstarts 1.2, 1.3, 2.04, 3.1 (A600), 3.1 (A1200) | `roms` | your TOSEC tree | `Kickstarts/` |
+| Developer CD 2.1 `Reference/`: Hardware Reference Manual and the other RKMs, autodocs, Amiga Mail | `devcd` | your Developer CD | `adcd21/Reference/` |
+| AGA hardware reference (AmigaGuide) | `aga-guide` | Aminet `docs/misc/agamanual` | `AGA.Guide` |
 | Workbench 2.04 disk 1, SetPatch 40.16 | `os` | your Workbench directory | `Workbenchv2.04rev37.67Workbench.adf`, `SetPatch` |
 | Kalms c2p routines | `kalms` | GitHub `Kalmalyzer/kalms-c2p` | `kalms-c2p/` |
 | LHa for UNIX (creates `.lha`) | `lha` | GitHub `jca02266/lha`, built | `lha-compressor/src/lha` |

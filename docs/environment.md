@@ -45,6 +45,8 @@ Makefiles use `?=` with the same default, so they work with or without `env.sh`.
 | `WHDLOAD` | `WHDLoad-20.0` | WHDLoad 20.0: `Include/`, `Src/sources/whdload/` (KickEmu), `C/WHDLoad` |
 | `WHDLOAD_BINARY` | `$WHDLOAD/C/WHDLoad` | the WHDLoad executable put on the game drive |
 | `INSTALLER43` | `Installer43/Installer` | Commodore Installer 43.3 |
+| `ADCD` | `adcd21/Reference` | Developer CD 2.1 `Reference/`: `ROM_Kernel_Manuals/Hardware_Manual` (and `Libraries_Manual`, `Devices_Manual`, AmigaGuide text), `HTML/` (the same as pages), autodocs, Amiga Mail |
+| `AGA_GUIDE` | `AGA.Guide` | AGA chipset registers (the Hardware Reference Manual covers OCS/ECS) |
 | `FSUAE_COMMON` | `fsuae_common.sh` | pid-scoped emulator handling, a gdb-stub port per directory |
 | `LHA` | `lha-compressor/src/lha` | LHa for UNIX, which creates release archives |
 

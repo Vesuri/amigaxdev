@@ -78,6 +78,7 @@ shared `~/.local/share/amiga/env.sh` and then sets only what the project changes
 | Workbench 2.04 floppy (gives `C:` and `Libs:`) | `~/.local/share/amiga/Workbenchv2.04rev37.67Workbench.adf` (env `WORKBENCH_ADF`) | |
 | LHa for UNIX (creates archives, §13) | `~/.local/share/amiga/lha-compressor/src/lha` (env `LHA`) | runs and prints usage |
 | `lha` (extract), `unar`, `lldb` | Homebrew / Xcode | |
+| Hardware Reference Manual, RKMs, autodocs; AGA registers | `~/.local/share/amiga/adcd21/Reference/` (env `ADCD`; `ROM_Kernel_Manuals/Hardware_Manual` is AmigaGuide text, `HTML/` has pages); `~/.local/share/amiga/AGA.Guide` (env `AGA_GUIDE`) | |
 | Python 3.12 + Pillow, numpy, capstone, amitools (`xdftool` for ADFs) | `~/.local/share/amiga/python` (first on `PATH` after the shared `env.sh`) | `python3 -c 'import PIL'` |
 
 Take every shared file from the shared `env.sh` variables, never from a path written into the

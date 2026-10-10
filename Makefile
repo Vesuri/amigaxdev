@@ -1,19 +1,20 @@
 # Shared Amiga development environment.  `make setup` installs everything; see README.md.
 #
-#   make setup TOSEC=<path or URL> AMIGA_OS=<path or URL>
+#   make setup TOSEC=<path or URL> AMIGA_OS=<path or URL> DEVCD=<path or URL>
 #
-# TOSEC and AMIGA_OS are only needed while a Kickstart or Workbench file is missing or wrong.
+# TOSEC, AMIGA_OS and DEVCD are only needed while a Kickstart, Workbench file or the Developer
+# CD's manuals are missing or wrong.
 
 PREFIX      ?= $(HOME)/.local
 AMIGA_SHARE ?= $(PREFIX)/share/amiga
 CACHE       ?= $(CURDIR)/tmp/cache
 BUILD       ?= $(CURDIR)/tmp/build
-export PREFIX AMIGA_SHARE CACHE BUILD TOSEC AMIGA_OS
+export PREFIX AMIGA_SHARE CACHE BUILD TOSEC AMIGA_OS DEVCD
 
 SETUP = scripts/setup.sh
 
 # Order matters: python provides xdftool for os; brew provides unar, uv and the build tools.
-CORE   = host brew python toolchain whdload ndk installer rtb kalms lha roms os share
+CORE   = host brew python toolchain whdload ndk installer rtb kalms lha roms os devcd aga-guide share
 EXTRAS = brew-extras fsuae-arm fsuae-aprof
 
 .PHONY: help setup core extras check pull-shared $(CORE) $(EXTRAS)
@@ -24,7 +25,7 @@ help:
 	@echo 'make check         verify the installed environment against the manifests'
 	@echo 'make pull-shared   copy shared files edited in place back into this repo'
 	@echo 'components:        $(CORE) $(EXTRAS)'
-	@echo 'variables:         TOSEC, AMIGA_OS (sources), PREFIX=$(PREFIX), CACHE, BUILD'
+	@echo 'variables:         TOSEC, AMIGA_OS, DEVCD (sources), PREFIX=$(PREFIX), CACHE, BUILD'
 
 setup: core extras check
 

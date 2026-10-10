@@ -213,6 +213,42 @@ c_os() {
   done
 }
 
+c_devcd() {
+  # The Amiga Developer CD's reference manuals: the RKMs (Libraries, Devices, Hardware) and
+  # autodocs as AmigaGuide and HTML, Amiga Mail and the DevCon notes.
+  local name sha dirs iso="$CACHE/adcd21.iso" st="$BUILD/devcd"
+  IFS=$'\t' read -r name sha dirs < <(rows devcd.tsv)
+  if stamped devcd "$sha"; then return 0; fi
+  if ! sha_ok "$iso" "$sha"; then
+    need_source DEVCD "The Amiga Developer CD"
+    log "fetching $name"
+    case "$DEVCD" in
+      *.iso|*.ISO) fetch_from "$(dirname "$DEVCD")" "$(basename "$DEVCD")" "$iso" ;;
+      *)           fetch_from "$DEVCD" "$name" "$iso" ;;
+    esac || die "could not fetch $name from $DEVCD"
+    sha_ok "$iso" "$sha" || die "$name: checksum mismatch (expected $sha)"
+  fi
+  rm -rf "$st"; mkdir -p "$st"
+  # shellcheck disable=SC2086  # dirs is a space-separated list
+  bsdtar -xf "$iso" -C "$st" $dirs
+  chmod -R u+rwX "$st"   # the ISO gives some directories no x bit
+  sync_tree "$st" "$AMIGA_SHARE/adcd21"
+  rm -rf "$st"
+  stamp devcd "$sha"
+}
+
+c_aga_guide() {
+  # The AGA chipset registers, which the Hardware Reference Manual (OCS/ECS) predates.
+  local a st="$BUILD/agaguide"
+  a=$(download agamanual.lha)
+  if stamped aga-guide "$(sha256 "$a")"; then return 0; fi
+  rm -rf "$st"; mkdir -p "$st"
+  unar -q -D -o "$st" "$a" >/dev/null
+  install_file "$st/AGA.Guide" "$AMIGA_SHARE/AGA.Guide" "$(sha256 "$st/AGA.Guide")"
+  rm -rf "$st"
+  stamp aga-guide "$(sha256 "$a")"
+}
+
 # --- files tracked in this repo --------------------------------------------------------------
 
 # Hand-written shared files: installed as copies, but never over an edit made in place.

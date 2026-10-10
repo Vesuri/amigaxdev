@@ -35,6 +35,12 @@ export WHDLOAD="${WHDLOAD:-$AMIGA_SHARE/WHDLoad-20.0}"
 export WHDLOAD_BINARY="${WHDLOAD_BINARY:-$WHDLOAD/C/WHDLoad}"
 export INSTALLER43="${INSTALLER43:-$AMIGA_SHARE/Installer43/Installer}"
 
+# Reference: the Amiga Developer CD 2.1's Reference/ (ROM_Kernel_Manuals/Hardware_Manual and the
+# other RKMs as AmigaGuide, HTML/ the same as web pages, autodocs, Amiga Mail), and the AGA
+# register guide.
+export ADCD="${ADCD:-$AMIGA_SHARE/adcd21/Reference}"
+export AGA_GUIDE="${AGA_GUIDE:-$AMIGA_SHARE/AGA.Guide}"
+
 # Process helper for run scripts (pid-scoped kills, a gdb-stub port per directory), and
 # LHa for UNIX, which creates release archives.
 export FSUAE_COMMON="${FSUAE_COMMON:-$AMIGA_SHARE/fsuae_common.sh}"
