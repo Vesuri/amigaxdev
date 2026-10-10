@@ -12,6 +12,9 @@ brew "dosbox-staging"
 brew "unicorn"
 brew "capstone"
 
+# Builds the patched Unicorn in $AMIGA_SHARE/unicorn (make unicorn).
+brew "cmake"
+
 # Video of reference captures (ffmpeg) and the PC originals' 7-Zip archives (7zz).
 brew "ffmpeg"
 brew "sevenzip"

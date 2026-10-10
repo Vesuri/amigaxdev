@@ -17,6 +17,9 @@ export VASM="${VASM:-$AMIGA_PREFIX/vasmm68k_mot}"
 export NDK="${NDK:-$AMIGA_TOOLCHAIN/m68k-amiga-elf/sys-include}"
 # Native arm64 FS-UAE with the gdb stub (lldb cannot attach to it; see the playbook §5).
 export FSUAE_ARM="${FSUAE_ARM:-$AMIGA_SHARE/fs-uae-arm/fs-uae}"
+# Unicorn 2.1.4 with the arm64 constant-subtract fix (lib/libunicorn.2.dylib, include/), for
+# projects that opt in; Homebrew's unicorn dies with SIGILL there (patches/, README.md).
+export AMIGA_UNICORN="${AMIGA_UNICORN:-$AMIGA_SHARE/unicorn}"
 
 # Kickstarts: the host ROMs, and the images (with .RTB) that WHDLoad's KickEmu slaves boot.
 export KICKSTART="${KICKSTART:-$AMIGA_SHARE/Kickstarts/kick40063.A600}"

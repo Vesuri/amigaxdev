@@ -54,6 +54,7 @@ check "FS-UAE arm64"           "$AMIGA_SHARE/fs-uae-arm/fs-uae" --version
 check "FS-UAE aprof"           "$AMIGA_SHARE/fs-uae-aprof/fs-uae" --version
 check "LHa for UNIX"           sh -c "'$AMIGA_SHARE/lha-compressor/src/lha' --version 2>&1 | grep -q LHa"
 check "Python packages"        "$AMIGA_SHARE/python/bin/python3" -c 'import PIL, numpy, capstone, amitools'
+check "Unicorn (patched)"      "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_unicorn.py" "$AMIGA_SHARE/unicorn/lib/libunicorn.2.dylib"
 check "xdftool"                "$AMIGA_SHARE/python/bin/xdftool" --help
 for t in lha unar lsar uv lldb hmount hcopy ffmpeg 7zz; do check "$t" command -v "$t"; done
 # The projects' `#!/usr/bin/env bash` scripts need bash 4 or later first on PATH.

@@ -170,6 +170,32 @@ c_lha() {
 c_fsuae_arm()   { "$REPO/scripts/build-fsuae.sh" fs-uae-arm; }
 c_fsuae_aprof() { "$REPO/scripts/build-fsuae.sh" fs-uae-aprof "$REPO/patches/fsuae-aprof.patch"; }
 
+c_unicorn() {
+  # Unicorn 2.1.4 with patches/unicorn-aarch64-addsub2.patch: Homebrew's 2.1.4 dies with SIGILL
+  # on arm64 where a subtract with borrow folds to a constant.  Homebrew's stays installed.
+  local a key st="$BUILD/unicorn" dest="$AMIGA_SHARE/unicorn"
+  local patch="$REPO/patches/unicorn-aarch64-addsub2.patch"
+  key="$(manifest_sha unicorn-2.1.4.tar.gz)$(sha256 "$patch")"
+  installed unicorn "$key" "$dest/lib/libunicorn.2.dylib" "$dest/include/unicorn/unicorn.h" && return 0
+  command -v cmake >/dev/null || die "cmake is missing (it comes from Brewfile.extras)"
+  a=$(download unicorn-2.1.4.tar.gz)
+  log "building Unicorn 2.1.4 (a few minutes; log in $st/build.log)"
+  rm -rf "$st"; mkdir -p "$st"
+  tar xzf "$a" -C "$st"
+  patch -p1 -s -N -d "$st/unicorn-2.1.4" < "$patch" || die "unicorn: $patch does not apply"
+  cmake -S "$st/unicorn-2.1.4" -B "$st/build" -DCMAKE_BUILD_TYPE=Release -DUNICORN_BUILD_TESTS=OFF \
+    -DCMAKE_INSTALL_PREFIX="$dest" -DCMAKE_INSTALL_NAME_DIR="$dest/lib" >"$st/build.log" 2>&1 \
+    && cmake --build "$st/build" -j"$(sysctl -n hw.ncpu)" >>"$st/build.log" 2>&1 \
+    || die "unicorn: build failed, see $st/build.log"
+  "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_unicorn.py" "$st/build/libunicorn.2.dylib" \
+    || die "unicorn: the new library fails scripts/test_unicorn.py"
+  [ -e "$dest" ] && set_aside "$dest"
+  cmake --install "$st/build" >>"$st/build.log" 2>&1 || die "unicorn: install failed, see $st/build.log"
+  rm -rf "$st"
+  stamp unicorn "$key"
+  log "installed $dest"
+}
+
 # --- licensed inputs -------------------------------------------------------------------------
 
 need_source() { # VAR WHAT

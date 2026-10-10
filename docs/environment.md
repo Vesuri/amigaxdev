@@ -36,6 +36,7 @@ Makefiles use `?=` with the same default, so they work with or without `env.sh`.
 | `VASM` | `$AMIGA_PREFIX/vasmm68k_mot` | vasm, Motorola syntax (x86_64) |
 | `NDK` | `$AMIGA_TOOLCHAIN/m68k-amiga-elf/sys-include` | NDK includes for vasm (`lvo/*_lib.i`, `exec/*.i`) |
 | `FSUAE_ARM` | `$AMIGA_SHARE/fs-uae-arm/fs-uae` | native arm64 FS-UAE with the gdb stub |
+| `AMIGA_UNICORN` | `unicorn` | Unicorn 2.1.4 with QEMU's fix for constant subtract-with-borrow on arm64 (`lib/libunicorn.2.dylib`, `include/`); Homebrew's 2.1.4 dies there with SIGILL. Opt-in: a Makefile can take `UNICORN_PREFIX ?= $(AMIGA_UNICORN)`, a ctypes binding `$AMIGA_UNICORN/lib/libunicorn.2.dylib` |
 | `KICKSTART` | `Kickstarts/kick40063.A600` | host ROM: Kickstart 3.1 r40.063 |
 | `KICKSTART_A1200` | `Kickstarts/kick40068.A1200` | 68020 host ROM: Kickstart 3.1 r40.068 |
 | `KICK13`, `KICKSTART13` | `Kickstarts/kick34005.A500` | Kickstart 1.3 for KickEmu `kick13` slaves (two names, same file) |

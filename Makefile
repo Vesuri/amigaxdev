@@ -15,7 +15,7 @@ SETUP = scripts/setup.sh
 
 # Order matters: python provides xdftool for os; brew provides unar, uv and the build tools.
 CORE   = host brew python toolchain whdload ndk installer rtb kalms lha roms os devcd aga-guide share
-EXTRAS = brew-extras fsuae-arm fsuae-aprof
+EXTRAS = brew-extras fsuae-arm fsuae-aprof unicorn
 
 .PHONY: help setup core extras check pull-shared $(CORE) $(EXTRAS)
 
