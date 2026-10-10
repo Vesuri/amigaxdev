@@ -193,16 +193,17 @@ fsuae_options() {
   return 0
 }
 
-# The environment a launch runs in: a background app never comes to the front.
+# Exported for one launch: a background app never comes to the front.
 fsuae_env() {
-  if [ "${FSUAE_WINDOW:-front}" = front ]; then env "$@"; else env SDL_MAC_BACKGROUND_APP=1 "$@"; fi
+  [ "${FSUAE_WINDOW:-front}" = front ] || export SDL_MAC_BACKGROUND_APP=1
 }
 
 fsuae_launch() {
   [ -n "${FSUAE_ARGS+set}" ] || fsuae_options
   local log="${FSUAE_LOG:-$FSUAE_RUN/fsuae.log}"
+  # The subshell execs, so $! is the emulator itself (what fsuae_stop_previous checks).
   # shellcheck disable=SC2086  # EXTRA_ARGS is word-split on purpose
-  fsuae_env "${FSUAE:-fs-uae}" "${FSUAE_ARGS[@]}" "$@" ${EXTRA_ARGS:-} > "$log" 2>&1 &
+  ( fsuae_env; exec "${FSUAE:-fs-uae}" "${FSUAE_ARGS[@]}" "$@" ${EXTRA_ARGS:-} ) > "$log" 2>&1 &
   fsuae_track $!
   echo "fs-uae pid $FSUAE_PID (log $log, port $DEBUG_PORT)"
 }
@@ -210,7 +211,7 @@ fsuae_launch() {
 fsuae_exec() {
   [ -n "${FSUAE_ARGS+set}" ] || fsuae_options
   fsuae_track_self
+  fsuae_env
   # shellcheck disable=SC2086
-  exec env $( [ "${FSUAE_WINDOW:-front}" = front ] || echo SDL_MAC_BACKGROUND_APP=1 ) \
-    "${FSUAE:-fs-uae}" "${FSUAE_ARGS[@]}" "$@" ${EXTRA_ARGS:-}
+  exec "${FSUAE:-fs-uae}" "${FSUAE_ARGS[@]}" "$@" ${EXTRA_ARGS:-}
 }
