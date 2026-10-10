@@ -41,7 +41,7 @@ StingRay's slave repository (harness in the ignored `tmp/dev/`).
 | Vette | P | migrated; keeps WHDLoad 19.2 | — |
 | Alone in the Dark | P | migrated; keeps WHDLoad 19.2, its fixed port 24377 and its own machine arguments; uses the shared `fs-uae-aprof` | — |
 | Rescue on Fractalus | P | migrated; keeps WHDLoad 19.2 | — |
-| Secret Weapons of Luftwaffe | P | migrated (uncommitted paused work left alone; not rebuilt, its build runs that work: `make -n` identical) | — |
+| Secret Weapons of Luftwaffe | P | migrated (uncommitted paused work left alone; not rebuilt, its build runs that work: `make -n` identical); its tests take Unicorn from `AMIGA_UNICORN` | — |
 | Downwell | P | migrated; its HEAD did not build before the change (`MotionBinary64`), generated files identical | — |
 | Stunt Car Racer | P | migrated (no run script); `tools/test_whdload.py` keeps WHDLoad 19.2 as the binary releases were validated with | — |
 | Red Baron | F | migrated (harness in `tmp/dev`, playbook reference on the branch) | harness probes `w1_build_modes.py`, `probe_menu.py` hardcode `~/.local` paths |
