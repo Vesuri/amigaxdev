@@ -697,11 +697,21 @@ ReadMe, and repack to `dist/` (ignored).
   stored `-lh0-` records for the new slave and ReadMe. This needs no compressor and preserves
   untouched metadata, but produces larger replacements. Its parser supports the known
   level-0/1 inputs only; reject unsupported headers rather than guessing boundaries.
+- Stage a fresh extraction of each original archive under ignored `tmp/`, not a game drawer
+  used for emulator runs: that drawer can contain saves, changed preferences or `.uaem` files.
 - Keep exactly the original member list and names (including case, `TheirFinestHour.Slave` vs
-  `.slave`), and member order.
+  `.slave`). Compare sorted lists: LHa for UNIX sorts members, so original order is not preserved.
+  Preserve icons and tooltypes unless changing the defaults is explicitly intended.
+- Force a fresh normal release build before packaging; a previous `VERIFY` build can occupy
+  the same output filename. Check that VERIFY-only options and instruments are absent.
 - Put the new ReadMe entry above the previous author's, and update its requirements line (WHDLoad
   version, memory) to match the slave header.
-- Check the result by unpacking it again: member list equal to the original's except the two
-  files, the slave's `ws_Version`, and that the slave is not the `VERIFY` build.
-- The version string (`DECL_VERSION`) and the ReadMe entry change together; a "b" suffix marks a
-  beta until play-testing is done.
+- Test archive integrity with `"$LHA" t`, then extract the result into a separate temporary
+  directory. Require exactly the original member names, every extracted file equal to its
+  staged copy, and every file except the slave and ReadMe byte-identical to the original.
+  Require those two replacements to differ from the originals as well. This verifies package
+  contents; it does not replace gameplay checks of the slave.
+- Derive the output archive version from the built slave's `$VER` string and require a matching
+  ReadMe entry. The release version (`DECL_VERSION`, e.g. `1.2b`) is separate from `ws_Version`,
+  which declares the WHDLoad interface version. A "b" suffix marks a beta until play-testing
+  is done.
