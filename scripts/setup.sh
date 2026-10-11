@@ -288,10 +288,23 @@ c_aga_guide() {
 # --- files tracked in this repo --------------------------------------------------------------
 
 # Hand-written shared files: installed as copies, but never over an edit made in place.
+# Everything under share/ keeps its path below $AMIGA_SHARE (share/pylib/amigaxdev/env.py ->
+# pylib/amigaxdev/env.py); the playbooks go to the top level.
 tracked_files() {
-  echo "share/env.sh env.sh"
-  echo "share/fsuae_common.sh fsuae_common.sh"
+  (cd "$REPO" && find share -type f ! -name '*.pyc' ! -path '*/__pycache__/*' ! -name .DS_Store) |
+    LC_ALL=C sort | while read -r f; do echo "$f ${f#share/}"; done
   for f in "$REPO"/docs/playbooks/*.md; do echo "docs/playbooks/${f##*/} ${f##*/}"; done
+}
+
+# The shared venv finds the amigaxdev package through a .pth file in its site-packages.
+pylib_pth() {
+  local site
+  [ -x "$AMIGA_SHARE/python/bin/python3" ] || return 0
+  site=$("$AMIGA_SHARE/python/bin/python3" -I -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
+  if [ "$(cat "$site/amigaxdev.pth" 2>/dev/null)" != "$AMIGA_SHARE/pylib" ]; then
+    echo "$AMIGA_SHARE/pylib" > "$site/amigaxdev.pth"
+    log "installed $site/amigaxdev.pth"
+  fi
 }
 
 c_share() {
@@ -309,6 +322,7 @@ c_share() {
     cmp -s "$REPO/$src" "$dst" 2>/dev/null || { cp "$REPO/$src" "$dst"; log "installed $dst"; }
     cp "$REPO/$src" "$STAMP_DIR/share/$src"
   done
+  pylib_pth
 }
 
 c_pull_shared() {

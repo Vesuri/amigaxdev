@@ -51,6 +51,13 @@ export AGA_GUIDE="${AGA_GUIDE:-$AMIGA_SHARE/AGA.Guide}"
 export FSUAE_COMMON="${FSUAE_COMMON:-$AMIGA_SHARE/fsuae_common.sh}"
 export LHA="${LHA:-$AMIGA_SHARE/lha-compressor/src/lha}"
 
+# Shared tools: the amigaxdev Python package (on the shared venv's path already), the Ghidra
+# scripts (-scriptPath "ghidra_scripts;$AMIGA_GHIDRA_SCRIPTS"), and the
+# canonical dA JoRMaS framework the ports compare their copies with.
+export AMIGA_PYLIB="${AMIGA_PYLIB:-$AMIGA_SHARE/pylib}"
+export AMIGA_GHIDRA_SCRIPTS="${AMIGA_GHIDRA_SCRIPTS:-$AMIGA_SHARE/ghidra_scripts}"
+export AMIGA_FRAMEWORK="${AMIGA_FRAMEWORK:-$AMIGA_SHARE/framework}"
+
 # PATH: the shared Python environment (Pillow, numpy, capstone, amitools), the cross tools,
 # vasm and friends, and the x86_64 FS-UAE.  Each is added once.
 for _amiga_dir in "$AMIGA_PREFIX/fs-uae" "$AMIGA_PREFIX" "$AMIGA_TOOLCHAIN/bin" "$AMIGA_SHARE/python/bin"; do
