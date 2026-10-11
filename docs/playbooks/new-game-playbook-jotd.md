@@ -18,10 +18,21 @@
 > Indianapolis 500 (direct game), Battlehawks 1942 (input tape), Their Finest Hour
 > (routine models), and Legends of Valour (state waits and A/B automation).
 >
-> Current target: branch `redbaron`, worktree `$PROJECTS/Red Baron`, created from `master`
-> at `cd97d6c`. The main checkout at `$PROJECTS/jotd_whdload_slaves` stays on its own branch;
-> `testdrive2` is a reference branch there, not the base of Red Baron. Do not recreate the
-> branch, switch the main checkout, cherry-pick the TD2 implementation, or initialize a new repo.
+> Game branches in progress, each in its own worktree created from `master`: `redbaron`
+> (`$PROJECTS/Red Baron`, from `cd97d6c`), `4dsportsdriving` (`$PROJECTS/4D Sports Driving`, from
+> `cd97d6c`) and `harddrivin` (`$PROJECTS/Hard Drivin`). Red Baron keeps its docs and tools
+> tracked beside the game (`R/RedBaron/docs`, `R/RedBaron/tools`); 4D Sports Driving and Hard
+> Drivin' keep their harness and docs in the worktree's ignored `tmp/dev/` and only their current
+> plan tracked beside the slave source (`smooth-play-plan.md`, `PERFORMANCE_PLAN.md`). The main
+> checkout at `$PROJECTS/jotd_whdload_slaves` stays on its own branch; `testdrive2` is a reference
+> branch there, not the base of any game branch. Do not recreate a branch, switch the main
+> checkout, cherry-pick the TD2 implementation, or initialize a new repo.
+>
+> Later projects added: Powerdrome (fast-RAM staged renderer, self-modifying-code audit, loader
+> equivalence: §10), Stellar 7 (choosing a tick rate, NTSC timing: §9), Red Baron (memory pool,
+> instruction cache, game-speed acceptance, validation budget: §8–§11), Hard Drivin' (rendering
+> ceiling, cache audit: §7–§8) and 4D Sports Driving (a clock shared with sound, blitter
+> latency: §8–§9).
 
 The end state ("ready to improve") is defined in §12. Getting there means:
 1. a reproducible, cycle-exact trace of real gameplay;
@@ -377,16 +388,23 @@ amiga/run.sh                       # windowed, sound; watch it reach the title a
 
 Size the machine from the slave header. WHDLoad needs base + exp + kick image (256 KB for 1.3)
 + itself + PRELOAD. **The A500-equivalent profiling machine** is 512 KB chip + slow RAM and no
-fast RAM: `CHIP_KB=512 FAST_KB=0 EXTRA_ARGS=--slow_memory=1536`. Slow RAM is contended like
-chip, so every CPU access stays on the chip bus as on a real A500. A literal 512+512 A500 is
-usually too small for WHDLoad.
+fast RAM: `CHIP_KB=512 FAST_KB=0 SLOW_KB=1536`. Slow RAM is contended like chip, so every CPU
+access stays on the chip bus as on a real A500. A literal 512+512 A500 is usually too small for
+WHDLoad. Set the machine through the launcher's variables rather than `EXTRA_ARGS`: FS-UAE keeps
+the first value of a repeated option and `EXTRA_ARGS` goes first, so a `--slow_memory` left there
+(a `run.sh` default, say) silently overrides `SLOW_KB`.
 
 Traps:
 - `DOS-Error #223 (file is write protected)` looping on the kick file means the Kickstart copies
   are read-only. `run.sh` already does `chmod -R u+w`.
 - The WHDLoad splash stays up while PRELOAD reads. That is not a hang.
-- `~/FS-UAE/Cache/Logs/fs-uae.log.txt` is shared by every project and block-buffered. Read
-  `amiga/.run/fsuae.log` instead.
+- Each run has two logs, both under the run directory: `amiga/.run/fsuae.log` is the emulator's
+  stdout and stderr (the shared launcher redirects them there), and FS-UAE's own log is
+  `amiga/.run/fsuae/Cache/Logs/fs-uae.log.txt`, because the launcher passes
+  `--base_dir=$PWD/.run/fsuae`. FS-UAE's log is block-buffered: read it after the emulator exits.
+  `~/FS-UAE/Cache/Logs/` only collects runs that bypassed the shared launcher.
+- Never repeat a WHDLoad option on its command line: a capture driver that adds `CUSTOM5` itself
+  plus a user-supplied `CUSTOM5` stops the boot at an AmigaDOS argument error (Stellar 7).
 
 Watch the attract sequence and write down whether **the game plays itself** (a demo mode).
 That decides how you drive it (§6).
@@ -416,7 +434,9 @@ Facts about this stub, all verified the hard way:
   from the `GDBSERVER: enabled` setup and `start_cpu_profiler` (TD2 `docs/profiling.md` §3). The
   assert fails loudly if it's wrong.
 - **Screenshots come only from traces** (`shot`). macOS denies screen capture to this process,
-  and posted key events never reach FS-UAE.
+  and posted key events never reach FS-UAE. A shot taken at an arbitrary checkpoint (a keyboard
+  task, a tape step) can catch a partial redraw: stop at the frame-publication instruction (§7)
+  before saving a picture you will compare (4D Sports Driving).
 - `gdb` splits arguments at spaces, and repo paths often contain them (`Their Finest Hour`). gdb's
   working directory must be the harness root, so dump to a **harness-relative** path (`tmp/x-code.bin`), then move
   the file. Python 3.12's `tempfile.mkdtemp(dir='tmp')` returns an absolute path: pass it through
@@ -427,6 +447,10 @@ Facts about this stub, all verified the hard way:
 - `run.sh` changes into `amiga/` before copying the slave, so resolve a relative `SLAVE` against
   the caller's directory first (I500 `run.sh`).
 - The **68030 backend emits no instruction trace**. Count frames there with `SWAP_ONLY` (§7).
+  The cycle-exact 68030/68040/68060 configurations have no validated instruction timing, and with
+  `blitter_cycle_exact=false` their traces carry no blitter DMA records although the blitter runs.
+  Report those routine and blitter costs as unavailable, never as zero, and never transfer A500
+  percentages to them (Hard Drivin').
 - **lldb can be slow to attach.** I500 (same FS-UAE binary, 2026-10-05): ~40 s per attach, so
   TD2's two attaches per capture (image list, then write) overran the 60 s timeout. Use one attach
   that computes the slide and writes the window in lldb's Python (`LLDB_FIX` in `i500.py`), with a
@@ -455,7 +479,8 @@ screenshot shows the moment you expected.
 ## 6. Map memory, then find a reproducible gameplay window
 
 **Regions.** Dump the "other" memory, where WHDLoad puts the slave's memory: `$C00000` slow RAM
-with no fast RAM, `$200000` with fast RAM. Use `td2.py gdb 'dump binary memory tmp/x.bin BASE END'`.
+with no fast RAM, `$200000` with fast RAM, and chip from address 0 on a machine with neither
+(a stock A1200: TFH). Use `td2.py gdb 'dump binary memory tmp/x.bin BASE END'`.
 Adapt `regions()` until `td2_report.py` names the code hunk, the data hunk, the kick image and
 the slave. Relocations make an exact compare impossible, so 16-byte windows vote for a base.
 Also, **the PRELOAD copy of the file is in memory too**: follow LoadSeg's BPTR chain from the
@@ -577,6 +602,14 @@ Find the instruction that makes a new frame visible:
   delta c2p (`bh:1a2c2`) straight into the visible bitplanes; the c2p entry is the frame counter.
   Check the destination planes across frames before assuming double buffering.
 
+A VBL handler that rewrites the bitplane pointers every field is not a frame counter by itself:
+Hard Drivin's handler writes `BPLxPT` on every VBL and publishes a new frame only through a
+conditional buffer exchange, which is the marker. Where the trace is empty (68030 and up), a
+read-only watch of the front-buffer pointer at successive VBLs counts the exchanges; check first
+that it reproduces the swap breakpoints on the 68000 and 68020. Where you can, confirm the
+marker against the display: the COP1LC or pointer write must be followed by bitplane DMA from the
+new buffer in the next field (4D Sports Driving).
+
 The level-3 vector may not be the Kickstart's: BH installs its own sound handler there and chains
 to the ROM handler past its prologue. Count level-3 entries at whatever `$6C` holds.
 
@@ -630,12 +663,31 @@ Then repeat the trace on a 68020 with fast RAM, to see what is bus-bound and wha
 
 ```sh
 AMIGA_MODEL=A1200 KICKSTART=$KICKSTART_A1200 CHIP_KB=2048 FAST_KB=4096 \
-  CPU=68EC020 EXTRA_ARGS=--slow_memory=0 tools/fixed_window.sh tmp/prof/a1200
+  CPU=68EC020 SLOW_KB=0 tools/fixed_window.sh tmp/prof/a1200
 # 68030 at N Hz (no instruction trace; use SWAP_ONLY=1, and SERVE_WAIT=1700 above ~100 MHz):
-CPU=68030 EXTRA_ARGS='--slow_memory=0 --uae_cpu_speed=real --uae_cpu_multiplier=0 --uae_cpu_frequency=25000000 --uae_cpu_cycle_exact=true'
+CPU=68030 SLOW_KB=0 EXTRA_ARGS='--uae_cpu_speed=real --uae_cpu_multiplier=0 --uae_cpu_frequency=25000000 --uae_cpu_cycle_exact=true'
 ```
 
 Use `--base 0x200000` for fast-RAM dumps.
+
+**The machine matrix.** The projects converged on one set, all running the same build and window:
+the A500-equivalent (68000, 512 KB chip + 1.5 MB slow); a stock A1200 (68EC020, 2 MB chip, no
+fast RAM), which TFH found behaves differently from an A1200 with fast RAM; an A1200 with 4–8 MB
+fast; a cycle-exact 68030/50 with and without WHDLoad's `MMU` option, whose out-of-box cache states
+differ (Red Baron); and a 68040/25 and 68060/50 as `-NOMMU` (below). Add NTSC cells only when the
+game supports NTSC (§9). Script the matrix to run one capture at a time (Stellar 7
+`rate_matrix.sh`, LoV `ab_window.sh`) and give each boot a deadline, so a hung cell fails instead
+of blocking the queue.
+
+**Find the ceiling before choosing work** (Hard Drivin'). On the fastest configuration, build a
+matched control and a bypass with identical size, placement and alignment that differ only in two
+bytes (`rts` at the polygon filler's entry), and also run the control with an instant blitter.
+Hard Drivin's control drew 38.5 fps, instant blits 44.2 and no polygons 49.9: no publication cap,
+and a material blitter and bus share. Use the matched control as the reference, not the regular
+build, whose different layout changes the timing. The two gains don't add, and the bypass is not
+a visual test. Read the DMA slot shares beside the blitter-wait cycles: 4D Sports Driving's 68020
+spent 30% of its frame in blitter waits with half the chip-bus slots free, so the cost was the
+latency of many small serial blits, not bandwidth.
 
 **68040/68060 in FS-UAE.** Use `CPU=68040-NOMMU` (likewise for the 060) with the cycle-exact
 68030 options and the frequency changed. With plain `68040` FS-UAE emulates the MMU, WHDLoad
@@ -644,6 +696,10 @@ turns it on, and the MMU loop then ignores the frequency and the chip timing. Th
 must be slower than a 25 MHz one (I500's first 68040 runs gave identical fps at 8, 25 and 40 MHz).
 `cpu_speed=max` is not a real machine: chip accesses are nearly free there, and so is an
 instant blitter, so neither is a ceiling for real hardware.
+Run a separate functional boot with the MMU on (`CPU=68040`, `68060`). FS-UAE's MMU core has no
+real cache model, so that boot tests MMU setup and game logic, not cache coherency, and its timing
+is not comparable (Powerdrome, Hard Drivin'). Real-hardware cache failures are in
+[Hardware debugging](new-game-playbook-hardware.md).
 
 **Caches on fast CPUs.** Without an MMU (a 68020, or a 68030 without WHDLoad's `MMU` option)
 WHDLoad keeps the caches off, and many old slaves switch them off themselves. Know which state a
@@ -653,6 +709,16 @@ makes WHDLoad turn **every** cache off without the MMU: all of I500's early 6802
 were uncached. Measure with WHDLoad's `DCACHE` (or `CACHE`) when the slave leaves caches alone.
 Whether the slave manages caches is a per-game decision for the user: I500 leaves them to
 WHDLoad's options (and its ReadMe recommends `DCache`), TFH enables KickEmu's `CACHE`.
+
+Record the cache state behind every figure from the hardware, not from the API. A VERIFY-only
+boot can log `CACR` right after the slave's `resload_SetCPU` (Hard Drivin'); the API state
+reports instruction and data caches requested even on CPUs that have neither. Read `CACR` only
+on a 68020 or later (the 68000 has none, so never execute `MOVEC` there), and keep the audit out
+of the normal build: `resload_Log` needs WHDLoad 18. When KickEmu's non-cacheable BaseMem has
+turned every cache off without the MMU, enabling only the instruction cache through
+`resload_SetCPU`, leaving the data cache as WHDLoad set it and respecting `NoCache`, gained 10% on
+a 68020 and 7% on a 68030 without the `MMU` option (Red Baron). Like any cache policy in the
+slave, that is the user's decision: I500's user rejected a slave that enables caches itself.
 
 For hardware-only black screens, stale executable stubs and WHDLoad dump analysis, see
 [Hardware debugging](new-game-playbook-hardware.md).
@@ -674,6 +740,10 @@ worthless if it also speeds the game up, and pointless if the simulation only mo
    to 59.7 Hz, and the game divides it by 4 into a SOFT (level-1) interrupt.
    A tick-driven main loop **caps the frame rate at the tick rate**. I500: 15.2 fps on a 25 MHz
    68030 against a 14.9 Hz tick. Run the fast-CPU `SWAP_ONLY` early, because it shows the ceiling.
+   **Check the clock's rate against emulated time.** A timer that the sound code also programs
+   can run the game at the wrong speed: 4D Sports Driving's sound driver reloads the shared CIA-B
+   latch, so its 10 Hz simulation makes 8.3 steps/s on the A500 and game time runs 17% slow.
+   Measure steps per second and game clock against emulated time on every machine first.
 2. **The state map.** Find the variables that *are* the game: position, speed, clock, opponent
    state, RNG, lives, and so on. Locate them by watchpoints on what changes on screen, then
    `state_writers.py`. Snapshot the data hunk every field at the VBL entry (`STATE_FIELDS=N`) and
@@ -682,6 +752,14 @@ worthless if it also speeds the game up, and pointless if the simulation only mo
    deliberately slowed drawing (a VERIFY-only delay in the draw path; TD2: `CUSTOM4`). Compare
    state field-by-field with `compare_state.py`. Identical state at different fps means the
    simulation is already decoupled. Divergence tells you exactly where it is coupled.
+   In a coupled game a field-indexed input tape feeds different inputs per simulation step once
+   drawing slows, so the slowed run legitimately reaches a different scene (Hard Drivin's slowed
+   tape crashed at field 594 instead of jumping): compare per step, with the input each step
+   consumed, not the same scene at the same field. Keep the slow-drawing instrument from
+   disturbing what it measures: count VBL transitions in the handler and wait N of them before
+   the frame is marked ready, with no `STOP`, host sleep or state writes; preserve the flags the
+   displaced instruction sets; and install nothing when the option is 0 (Hard Drivin'
+   `VERIFY_SLOW`).
 4. **Tasks and interrupts.** Which context advances the simulation? TD2 had a separate 8.33 Hz
    simulation task, plus drawing that shared the RNG. Use `task_state.py` and SP ranges.
 5. **Boot benchmarks.** The time step may come from a benchmark at boot rather than a clock. TFH
@@ -689,11 +767,20 @@ worthless if it also speeds the game up, and pointless if the simulation only mo
    so game speed is right only at the frame rate the benchmark predicted (the A500 ran 1.9× real
    time, a 68030/50 at 0.55×). Check what else reads that value (TFH: ground detail, menus) before
    changing it: a per-frame T can replace it in the flight loop while the boot value stays.
+   Smooth a per-frame T. TFH first set T from the last frame alone; with uneven frame lengths T
+   alternated (25 and 17 on the 68020), so intervals the game counts in multiples of T (a gun's
+   reload T/3, a bullet's life 2T) jittered between 12 and 20 fields. T from the average frame
+   length, with the time owed carried, gave 14–18 fields at unchanged game speed. Large T also
+   exposes truncation: carrying 16.16 fractions in step lengths and turn rates took TFH's 68030/50
+   ground speed from 4,649 to the nominal 4,712 units/s.
 6. **PAL and NTSC.** Find out whether anything assumes 50 fields per second. To detect the rate,
    take the beam's highest line over a field (PAL 312, NTSC 262; threshold 288), reading
    `VPOSR`/`VHPOSR` twice so a read across line 255/256 isn't taken as a wrap (TFH `timing.s`).
-   In FS-UAE `run.sh` pins `ntsc_mode=0`, and `uae_ntsc=true` stalled the emulator with GLib
-   errors, so NTSC was checked by arithmetic, not by a flight.
+   NTSC runs need FS-UAE's core option `uae_ntsc=true`: the frontend's `ntsc_mode=1` alone left
+   this build in PAL timing, so its "60 Hz" results were PAL (Stellar 7). The shared launcher's
+   `NTSC=1` passes both. GLib queue warnings appear in successful PAL and NTSC runs alike and are
+   not a stall. Have the capture driver compare the mode it asked for with the measured field
+   rate (the beam's highest line, or Exec's) and fail on a mismatch.
 
 **Raising a tick-capped frame rate** (I500): remove the main loop's tick wait, snapshot the
 published state (camera, car poses) at the simulation tick's common exit, and rewrite only the
@@ -706,6 +793,32 @@ cockpit prepares its camera on a different path (`game:160..172`) from the demo 
 demo-only checks missed that interpolation never ran while driving. Add a test build that
 drives the native menus with a held input (I500 `DRIVING_TEST`) and check frames within one
 tick actually move.
+
+**Choosing a simulation rate.** Price the tick on the A500 first: a finer fixed tick multiplies
+the simulation cost, and on a 68000 it can leave nothing for drawing. Stellar 7's native update
+cost about 90k cycles of the 97k available per NTSC field, so 60 Hz substeps presented 0.4 fps;
+two dozen accepted optimisations took the tick from 137k to 90k cycles against a 40k target, a
+structural gap no tuning closes. Red Baron's 225-unit world quantum needed 101% of an A500 in a
+squadron scene, and LoV's 25 Hz tick dropped the A500 from 3.3 to 1.2 fps. What worked: keep the
+native step on the 68000 (Stellar 7's 5 Hz, Red Baron's original 450-unit clamp) and use a finer
+step only where it measures affordable (TD2's per-CPU tick period, Red Baron's 225 units on
+68020+), chosen once at start and never changed mid-game. Decide with a measured matrix, not a
+cost model: Stellar 7's model predicted 3–4 fps at 15–20 Hz, but only the native 5 Hz met both
+A500 gates. If the steps per native update become a build constant (Stellar 7 `S60_SUBSTEPS`),
+the native-rate build must stay byte-identical, every constant derived from the step count must
+be found (grep the patch sources, fixtures and checkers for the old literals), and states at
+native boundaries are compared across step counts with every divergence classified. Interpolate
+only where frames are shorter than a tick: on the 68000 Red Baron presents the latest state and
+skips pose capture (23k cycles per tick) and blending (170k per frame).
+
+**Acceptance for game speed** (Red Baron, adopted once whole-state identity across CPUs proved
+unreachable and unnecessary): at equal wall time, completed world time is within ±1% of nominal
+for every render schedule (normal, deliberately slowed, one field) whenever the world cost fits
+the CPU; the number of funded ticks never depends on render time; one-shot commands run exactly
+once and held controls apply to every catch-up tick; pause, menus and preferences rebase the clock
+without catch-up; and with the option off the original bytes remain. Bound the debt (Red Baron:
+1 s of world time) and count dropped time in VERIFY. Record the residual state differences between
+quanta or CPUs instead of demanding byte identity, and leave the feel to the user's play-test.
 
 See [simulation and presentation](simulation-and-presentation.md) for replay-specific
 snapshots, native-rate prediction, load-address controls in state comparisons, and the
@@ -759,6 +872,14 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
 - Gate every change behind a `CUSTOMn` bit and declare it in `slv_config`. With the bit off, the
   original bytes must be untouched. Write a checker that reads the local original file and
   compares those bytes at every patched range (TD2: `check_disabled.py`).
+- **Compare the rebuilt slave with the shipped one by behaviour, and state what was compared.**
+  A rebuild on the WHDLoad 20 KickEmu changes allocation and OS timing (Powerdrome's 68000 pit
+  sequence took 387 fields instead of 195), so measure performance only with the same loader on
+  both sides. Hard Drivin' compared the sequences of distinct sampled poses and stable screen
+  images (functional equivalence, not per-field equality); Powerdrome compared the game bytes
+  after undoing relocations, the main state block with named exceptions (RNG seed, clock samples)
+  and both bitmaps outside the on-screen clock, with negative checks proving the comparator fails
+  on any other byte.
 - Keep instruments (fixtures, RNG pinning, slow drawing, pixel twins, assembly unit tests) in a
   **`VERIFY` build only**. Normal builds must not contain them.
 - Audit hook boundaries: a `PL_PS`/`PL_PSS` must replace whole instructions, and nothing may
@@ -767,6 +888,21 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
 - Choose the patch type deliberately. Use `PL_P` (jump, no return) when the replacement
   re-executes the original body. TD2's `PL_PS` twin returned into code that had already run and
   corrupted the stack.
+- **Find self-modifying code before moving or caching code.** Powerdrome's audit decodes the
+  executed instructions of a capture, evaluates each write's destination from the recorded
+  registers (indexed and register-indirect as well as absolute) and intersects the written bytes
+  with executed instruction bytes. It found two branch-displacement writers in the rasterizer;
+  data words inside a code hunk are not self-modifying code. Its fast path replaced them with
+  static specialised loops and a dispatcher that keeps the continuation in data, so drawing never
+  writes code. Build generated code before the slave's final `resload_Patch` flush, or flush after
+  it ([Hardware debugging](new-game-playbook-hardware.md)), and leave cache selection to
+  WHDLoad's `CACHE`/`DCACHE` options.
+- Reading `SR` is privileged on the 68010 and later. A hook that may run in user mode saves the
+  condition codes with `MOVE CCR` there (it doesn't exist on the 68000) (Powerdrome).
+- **Give the game the entry registers its contract promises.** Powerdrome's loader jumped into the
+  DOS program with the `a0`/`d0` that `resload_Patch` may destroy; the game dereferenced them as
+  its command line, and only an MMU boot exposed it. Pass a valid empty command line (`a0` → a
+  newline, `d0` = 0).
 - Gate per-CPU behaviour on `WHDLTAG_ATTNFLAGS_GET`, read before `resload_PatchSeg`, or on
   exec's `AttnFlags`. TFH ships a 68000 and a 68020 version of each maths routine (`mulu.l`/`divu.l`
   where the original paired 16×16 operations give identical bits) and picks one at patch time;
@@ -775,8 +911,35 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
   slow a chip-only machine: I500's CPU drawing cost 10–20% on the A500 and 5–15% on a stock
   A1200. Its single option works only on a 68020+ with hunk 0 in fast RAM (not chip below
   `$200000`, not slow RAM at `$C00000–$DFFFFF`), and the A500 and stock A1200 then run exactly
-  the original. Prefer one splash-window toggle, off by default; keep manual values for tooling
-  unlisted.
+  the original. Prefer one player-facing toggle and keep manual values for tooling unlisted.
+  Whether it defaults on is the user's call: I500's is off; TFH and Red Baron turned theirs on,
+  with the original game one switch away, because faster rendering, frame pacing and real-time
+  simulation only behave as intended together (TFH).
+- **Check what spills into chip RAM when the expansion pool fills.** Red Baron's 512 KB ExpMem had
+  24 bytes free, so the game's `MEMF_ANY` blocks landed in chip. A VERIFY-only census through the
+  KickEmu `AllocMem` vector listed every spilled block; once no DMA was found touching them,
+  raising the slave's fast-memory size to the measured peak plus headroom gained 4–13% on the
+  68020 to 68060. Check that the minimum A500 configuration still boots, update the ReadMe's
+  memory line, and keep DMA data in chip.
+- **Draw in fast RAM, copy to chip** on a 68020+ with real fast RAM (Powerdrome): copy the
+  rasterizer into fast RAM along with a staging bitmap, draw the scene there, then wait for the
+  display handshake immediately before a `MOVEM` copy of the drawn rows into the chip back buffer,
+  so the wait overlaps fast-RAM drawing. The code fetch was the win: the bitmap alone gained
+  nothing on the 68020, bitmap and code took it from 15.7 to 22.2 fps, a 68040/25 from 17.9 to
+  41.2 and a 68060/50 from 17.9 to 42.7. A 68000 with fast RAM was 17% slower, so gate it by CPU.
+  Require real fast RAM (`TypeOfMem`; reject WHDLoad expansion backed by slow RAM at `$C00000`)
+  and fall back to native drawing otherwise. The extra expansion memory raises the slave's
+  requirement even with the option off. Twin it as below, and also poison the staging areas the
+  scene must not touch, guard both ends of every buffer, and compare raw registers before
+  translating relocated pointers.
+- **AGA fetch mode.** On AGA a slave can switch bitplane DMA to 64-bit fetch (`FMODE` = 3) when
+  the game's bitplanes and modulos meet the 64-bit alignment, freeing chip-bus slots for the CPU
+  and blitter ([the Chip bus](../reference/amiga-hardware.md#the-chip-bus)). JOTD's Fighter Bomber
+  and Killing Cloud slaves do it on AGA only, with a `DDFSTOP` of `$b8` for the wider fetch:
+  Fighter Bomber measured 4.53 → 4.98 fps, and Killing Cloud keeps an option to leave the fetch
+  mode alone. Indianapolis 500 measured no gain and a corrupted display was reported. Treat it as
+  an option-gated candidate: check the picture, and expect most from games with five or more
+  lores planes whose CPU or blitter waits on chip RAM.
 - **Pixel twins for renderer replacements** (I500 `pixel_verify.s`): the VERIFY build runs the
   new code into a guarded shadow bitmap, then the native code into the real one, and compares
   every plane plus the registers that survive, including X. Twin the replaced inner loop, not the
@@ -821,15 +984,28 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
   a wall, wait, then anchor). Physics and state correctness come from per-field state comparisons, never
   from screenshots.
 - Skip anything worth under 3% of a frame unless it's free. Bound a candidate's cost by summing
-  its instructions' cycles before writing it.
+  its instructions' cycles before writing it. An fps window cannot even resolve the sign of a
+  change under about 2% (Red Baron): bound such changes statically, and drop any step that
+  measures under 2% on every CPU class once implemented.
 - Re-run the fast-CPU configurations. A change can help the A500 and do nothing on a chip-bus
   bound 68030, or the reverse. TD2's renderer hits a 25 fps chip-bus ceiling at any CPU speed.
 - **A faster CPU does not make chip RAM faster.** On AGA the CPU's 32-bit chip stores beat the
   16-bit blitter for fills (no reads), but the blitter wins chip-to-chip copies (I500: textured
   rows by CPU dropped a heavy view from 24.0 to 20.4 fps). A 68040 at 25 or 40 MHz gave I500's
-  heavy views the same 25.0 fps: they are bound by chip RAM and the blitter.
-- The blitter-priority (BLTPRI) setting disturbs the 68020 cycle trace. Use `SWAP_ONLY` for fps
-  when it is on.
+  heavy views the same 25.0 fps: they are bound by chip RAM and the blitter. Red Baron's cached
+  68030 at 200 MHz still drew 12 fps, and Stellar 7's 68060/50 gained 0.3 fps over a 68040/25.
+- **Blitter priority (`BLTPRI`) helps when the CPU polls the blitter.** TD2 sets it while the game
+  runs and restores it on exit, so the CPU's `DMACONR` polls stop taking blitter slots: A500 5.2 →
+  5.4, A1200 16.1 → 16.7, 68020/100 21.1 → 25.0 fps. I500 measured no effect. It disturbs the
+  68020 cycle trace: use `SWAP_ONLY` for fps when it is on.
+- **Spend measurement on decisions.** Red Baron's agent made 209 commits in three days; the last
+  132 did not change the player build, and 81 of the last 100 were verification or measurement.
+  4D Sports Driving and Powerdrome stalled the same way. Give each feature a fixed budget: build
+  every mode; run the host tests and the hook audit; one same-build A/B window per affected CPU
+  class (≥2,000 fields, or 1,000 of steady play on the A500); one native twin for an exact-output
+  replacement; two or three deliberate sabotages for any new checker. Run the full machine matrix
+  only at checkpoints, never rerun the emulator without a source change in between, and open a
+  work item only for a demonstrated defect.
 
 ## 12. "Ready to improve": the definition of done for setup
 
@@ -839,8 +1015,8 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
 - [ ] `td2_report.py` names every hot region; traces have PCs.
 - [ ] A fixed gameplay window that is reproducible across boots: same screenshots, same state.
 - [ ] A validated frame counter: full trace and `SWAP_ONLY` agree.
-- [ ] A baseline profile on the A500-equivalent and a 68020, recorded with the commands that
-      reproduce it.
+- [ ] A baseline on the machine matrix (§8), with a profile on at least the A500-equivalent and a
+      68020, each machine's cache state, and the commands that reproduce it.
 - [ ] No new host-specific paths in the upstream diff; shared files through §1 variables.
 - [ ] Fork source is authoritative; the harness builds that source with documented dependencies.
 - [ ] Changes are confined to the target game; other games and shared build settings are untouched.
