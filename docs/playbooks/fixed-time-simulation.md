@@ -3,8 +3,10 @@
 Use this after identifying the game's time sources and getting the user's decision on
 simulation cadence. These checks complement the [new-game playbook](new-game-playbook.md#9-understand-game-time-before-optimising-anything).
 Legends of Valour `docs/simulation-timing.md`, `docs/one-degree-turning.md` and
-`tools/turning_input_validate.sh` provide concrete implementations. Their constants and
-patch offsets are game-specific.
+`tools/turning_input_validate.sh` provide concrete implementations; Stunt Car Racer shows
+what changes when the physics rate itself is raised. Their constants and patch offsets are
+game-specific. Uncapping drawing and smaller timesteps are in
+[simulation and presentation](simulation-and-presentation.md).
 
 ## Separate completed ticks from elapsed-time observations
 
@@ -66,6 +68,41 @@ editing routes; a synthetic state toggle does not prove the real boundary is han
 Measure logic-only catch-up ticks separately from ticks that also draw. A faster-looking
 renderer can still lose frame rate when a slow machine must do more world updates. Keep
 rendering caps and beam synchronization separate from the simulation decision.
+
+## Raising the update rate: decide per quantity what scales
+
+Stunt Car Racer runs its physics six times as often as the original (about 8.3 Hz to 50 Hz,
+with several physics iterations per displayed frame when drawing is slow). The lessons are
+in its `AGENTS.md` §Frame Rate Conversion; the per-operation conversions are in
+[simulation and presentation](simulation-and-presentation.md#analyze-a-smaller-timestep-by-units-and-writers).
+
+- **Read what a "velocity" really is before scaling its thresholds.** Stunt Car Racer's
+  suspension "velocity" is `delta × momentum / 256 + position`, so the position term
+  dominates hard landings: the same landing reads `$1968` at 10 FPS and `$1A50` at 60 FPS
+  (1.05×). Damage and impact thresholds on it need no scaling; scaling them would have been
+  the bug. Collision forces and distances are magnitudes, not rates, and stay too.
+- **Scale what integrates over the step,** and only that: forces and accelerations that are
+  added once per tick (momentum amplification and pitch/roll rates, ×6 in Stunt Car Racer).
+- **Keep spring-to-damping ratios, not individual constants.** A stiffness scaled with the
+  rate makes the body that much stiffer. Stunt Car Racer kept its spring at ×2 and made
+  ground damping about 6× stronger per iteration.
+- **Damping scaled for the rate is only right where a restoring force compensates.** Airborne,
+  with no spring, the scaled damping removed angular momentum about 36× faster per real
+  second and dipped the nose past level after every ramp; the airborne branch keeps the
+  original `÷16`. Split damping by the state that decides whether the force exists.
+- **Classify every timer by where it runs:**
+
+  | Timer runs | Scale |
+  |---|---|
+  | at display rate, outside the physics loop | the initial value, and decrement by the elapsed fields |
+  | inside the physics loop, every iteration | the initial value only |
+  | inside the physics loop behind a fixed-rate pulse (an accumulator that overflows at a constant wall-clock rate) | nothing |
+
+- **Over-sampling is not mis-scaling.** An accumulation that fires per physics iteration fires
+  six times as often during the same bounce. Stunt Car Racer divides that accumulation
+  (by 8, close to 6) rather than changing the constants it compares with.
+- **Test the behaviour, not the arithmetic.** What the maths says should scale can differ from
+  what the code's structure does; judge ramps, landings and bounces in play.
 
 ## Precision and control feel are separate decisions
 

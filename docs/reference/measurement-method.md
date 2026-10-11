@@ -68,11 +68,11 @@ each need a different one.
 | FS-UAE instruction profile (Barto format, `monitor profile`) | Exact cycles per PC over whole fields; call stacks can be rebuilt from `jsr`/`bsr` and SP, with interrupts kept on a separate stack (Downwell, Vette) | Code must be in the first hunk. No breakpoints in the window. The first and last frames are partial. A blitter stall can carry its cycles into the next field. Moving code changes attribution |
 | aprof FS-UAE, installed by AmigaXDev (`fs-uae-aprof`, `monitor aprof start/stop`) | Every instruction's cycle units, wait states included, per PC; timing for every CPU Chip-bus access; a call tree that includes Line-A traps (Alone in the Dark) | Cycle-exact 68020/68030 only. Refuses MMU, 040/060 and fast mode. The emulator's memory model, not hardware proof |
 | In-process differential: new and reference code on identical state in one run | The cost ratio of a replacement, and correctness | Quote the ratio; absolutes swing 15% between runs while the ratio holds to 0.5% (Rescue on Fractalus). Below about 500 cycles per call the timing column can have the wrong sign |
-| Shape probes: counters over a routine's own input distribution | Which cases dominate. Two cases covered 47.7% of a rasteriser's calls (Rescue on Fractalus) | One-off; remove them afterwards and keep the record |
+| Shape probes: counters over a routine's own input distribution | Which cases dominate. Two special cases absorbed 47.7% of a rasteriser's subdivisions (Rescue on Fractalus) | One-off; remove them afterwards and keep the record |
 | Host build as a census | Exact call and line counts, matching the target (Revs) | Never timing |
 | Doubling or removal arms: run an idempotent pass twice, or delete it | The price of a sub-step without a bracket | Removal gives a ceiling only |
 | Static objdump cycle count | Finds defects | Over-reads about 6× at a grain of 2–7 instructions (Revs). Use it to find a defect, never to size one |
-| Read-only probes on the normal build | Acceptance figures | Ledger and trace observers add 6–7%, and inflated cold start by about 45% (Pokeri) |
+| Read-only probes on the normal build | Acceptance figures | Ledger and trace observers add about 6–7%, and once inflated cold start by about 45% (Pokeri) |
 
 Instrument rules:
 

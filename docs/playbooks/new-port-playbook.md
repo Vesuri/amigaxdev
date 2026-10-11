@@ -87,12 +87,12 @@ port-specific tools come from `Brewfile.extras`. `make check` verifies them.
 | What | For |
 |---|---|
 | m68k-amiga-elf gcc/g++/gdb/objdump, vasm, `elf2hunk` | the Amiga build ([port toolchain](../reference/port-toolchain.md)) |
-| FS-UAE x86_64 with the gdb stub, arm64 (`FSUAE_ARM`), arm64 aprof (`fs-uae-aprof`) | running, debugging and profiling ([headless FS-UAE](../reference/headless-fsuae.md)) |
+| FS-UAE x86_64 with the gdb stub, arm64 (`FSUAE_ARM`), arm64 aprof (`FSUAE_APROF`) | running, debugging and profiling ([headless FS-UAE](../reference/headless-fsuae.md)) |
 | Kickstarts (`KICKSTART`, `KICKSTART_A1200`, `KICK13` + `RTB`), `SETPATCH`, `WORKBENCH_ADF` | boot and the KickEmu slave |
 | WHDLoad (`WHDLOAD`; 19.2 in `WHDLoad/`), `INSTALLER43`, `LHA` | slave, installer test, release archive |
 | `ADCD`, `AGA_GUIDE` | Hardware Reference Manual, RKMs, autodocs, AGA registers |
 | Ghidra (`~/.local/share/ghidra`), openjdk@21 | headless static analysis (§5) |
-| MAME, DOSBox-X, DOSBox Staging, volta (jsbeeb) | reference emulators (§4) |
+| MAME, DOSBox-X, DOSBox Staging, atari800, volta (jsbeeb) | reference emulators (§4) |
 | Unicorn (`AMIGA_UNICORN`, patched for arm64), capstone | host-side x86/68k oracles and decoders |
 | hfsutils, unar/lsar, lhasa, 7zz, ffmpeg, amitools (`xdftool`) | extracting originals, decoding captures (§3) |
 | Python 3.12 + Pillow, numpy, capstone, amitools | the tools; first on `PATH` after the shared `env.sh` |
@@ -108,8 +108,8 @@ The project's `amiga/env.sh` sources the shared file and sets only what differs:
 
 Source it in the same shell command as the build or run (`cd amiga && . ./env.sh && make`).
 Python tools read the same variables with the same defaults; Makefiles use `?=`. Never fall back
-to copies elsewhere on the machine. A tool the shared environment lacks (Atari800 for an 8-bit
-reference; Downwell's UndertaleModTool) is pinned by version and sha256 in the project's own
+to copies elsewhere on the machine. A tool the shared environment lacks (Downwell's
+UndertaleModTool, for one) is pinned by version and sha256 in the project's own
 bootstrap script and installed under ignored `tools/vendor/`.
 
 Gate: `make check` in AmigaXDev passes; `m68k-amiga-elf-gcc --version` works after `. amiga/env.sh`.
@@ -224,6 +224,29 @@ for memory-mapped hardware). `tools/ghidra` links the shared install.
   must implement.
 - Classify every byte as code, data, padding or unresolved; an executed byte must never be
   unclassified.
+- **Disassemble the image that executes, not the file.** Prove the runtime image with two
+  independent captures (§3); Slicks' packer and Revs' self-relocation both made the file image
+  wrong where it mattered.
+- **One address convention, never mixed**: Mac `(segment, offset)`; DOS normalised to load
+  segment 0 with the relocations reversed (Slicks); `(overlay, segment, offset)` when overlays
+  exist (Secret Weapons of Luftwaffe).
+- **Never classify mixed code and data by linear sweep.** A linear sweep of an overlay invents
+  hundreds of plausible instructions from ASCII (Secret Weapons of Luftwaffe; Vette rejects it).
+- **Static analysis is an upper bound, the trace a lower bound**: combine them, and check every
+  live surface site against the static map (Vette). A body no scenario drives is unproven, not
+  dead.
+- **The map is done when no referenced address is undecoded** and the residue is counted and
+  reported (Revs accepted 685 bytes explicitly). A coverage number that improves because the
+  tool got looser is worse than none: Revs reverted a widened pointer lookback that fabricated
+  targets.
+- **Code at an address can be different code at another time**: overlays, runtime-built pages
+  (Revs). Key translated code by resident image, not by address alone.
+- **Report every orphan run and nested call;** never infer function membership from
+  fall-through. Revs dropped code that ended in a terminator and turned a call into a goto.
+- **Classify every code write mechanically** (operand, opcode, branch, call, extent: Revs had 59
+  sites in five classes) and prove the absence of writes to executed bytes by a byte-level trace
+  check per path (Slicks). A patched call or jump target set is explicit and checked at
+  generation time.
 
 Gate: static and live evidence agree on the executable surface (a check target, e.g. Vette
 `make static-map-check`); generation does not silently treat unknown targets as data.
@@ -268,6 +291,42 @@ Gate: `make` builds an empty host program and `cd amiga && . ./env.sh && make` a
 executable that `./run.sh` boots and quits cleanly.
 
 ## 7. The port core, by approach
+
+### Rules for any generator or translator (transpiled 6502, translated x86)
+
+Slicks planned an x86 → IR → 68020 translator and shipped without one: its rules banned the
+emulation failure mode (generated C, a CPU struct, a dispatcher) but not hand-porting, the
+translated-skeleton gate could be ticked from hand-written code, and hand work gave visible
+pixels per hour while the translator gave none for days. Every hand routine passed its oracle,
+so every step looked right. The guardrails Secret Weapons of Luftwaffe adopted from that
+(`docs/translation-lessons.md`), in generic form:
+
+| Guardrail | Enforced by |
+|---|---|
+| Guest routines exist only as generator output, with a generator/annotation hash header, never edited | a build check of the headers; regeneration is byte-identical |
+| Hand-written code is the runtime only (OS/BIOS services, device models, overlay loader, interrupt delivery, display, audio, input), named by surface item, never by guest address | a lint: no guest-address-named symbol outside generated code |
+| Native replacements of guest routines are an explicit table (guest range, reason, oracle), empty by default; callers of a replaced leaf stay generated | `make gen` prints the table and its count (Revs keeps `MANUAL_FUNCS` empty) |
+| A wrong result is fixed in the IR semantics, lowering or annotations, then regenerated | the hash check |
+| Phases are hard gates: instruction differential green before block lowering, block lowering green before game code links on the target; no target milestone counts unless its pixels come from generated code | phase exit criteria name generated-code coverage, not pictures |
+| Generation reports coverage against the reference trace: executed guest instructions translated, interpreted, replaced or untranslated | the report fails on executed-but-unclassified bytes |
+| The first visible output comes early **from the translator**: a small, self-contained traced subgraph on the target in the first days | the first vertical slice is planned around generator output |
+| No captured frames, invented behaviour or speculative names in shipped code; names carry an evidence class | review; Vette's `symbols.csv` evidence column |
+
+- **Standing rules name both failure modes you expect**: emulation and hand-porting.
+- **Make the generator's output good before mass generation**; one generator fix upgrades the
+  whole corpus (Rescue on Fractalus postmortem, Revs).
+- **Generation fails rather than emitting a plausible stub** for an unknown OS call, an
+  annotation that is not an instruction start or an unresolvable target.
+- **Loops spanning a mid-function entry stay branches.** Splitting at entries turned loops into
+  mutual recursion and stack growth in Revs' C. A guest jump is a branch and a guest call a call;
+  never conflate them.
+- **Replace device-bound routines, not device ports one by one**: Slicks saw 10.3 M port
+  operations and 1.36 M VGA writes from 16 sites, which per-port emulation cannot translate ahead
+  of time. Every such seam has an explicit register, flag and memory contract in both directions.
+- **The original's timer interrupt is asynchronous state, not a call** (Slicks' INT 08h ran from
+  game code and during DOS services); deliver interrupts at safe guest boundaries.
+- **Spin-waits:** a wait on an I/O port is a device-model gap; a wait on RAM is a hook candidate.
+  Report the candidates and hook only waits that own a frame (Revs hooked 1 of 41).
 
 ### Original 68k instructions run natively (Vette, Alone in the Dark, Pokeri)
 
@@ -356,7 +415,8 @@ Read [Amiga hardware](../reference/amiga-hardware.md) first. The rules every por
   with DOS error 20 before takeover if it is wrong; restore everything on a normal quit.
 - A `__chip` static initialiser is silently discarded (`.MEMF_CHIP` is a BSS hunk): fill chip
   data at runtime.
-- Simulation timing that must survive a faster renderer: [fixed-time simulation](fixed-time-simulation.md).
+- Simulation timing that must survive a faster renderer: [fixed-time simulation](fixed-time-simulation.md)
+  and [simulation and presentation](simulation-and-presentation.md).
 
 ## 10. First Amiga boot under FS-UAE
 
@@ -397,7 +457,7 @@ the repo from the first twin:
 - Measure target-only code with an **in-process differential** against its C oracle (same run,
   same inputs), never a cross-run picture: a faster renderer changes the trajectory.
 - Before trusting a new gate, plant a few deliberate defects, confirm it fails, then remove them
-  (`make test-sabotage`).
+  (a make target such as Secret Weapons of Luftwaffe's `make test-sabotage`).
 - A change to the transpiler, CPU model or memory representation changes the oracle too: record
   determinism baselines first, never re-record one to make a failure pass.
 - Know what each check answers: installation, execution and the resulting picture are separate
