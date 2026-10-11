@@ -80,7 +80,8 @@ def report(project, template=None):
     ppre, cpre = prefixes(port), prefixes(canon)
     tdir = Path(template) if template else None
     tpre = prefixes(tdir) if tdir else None
-    print(f'{port}: prefixes {ppre[0] or "-"}_ / {ppre[1] or "-"}_')
+    print(f'{port}: prefixes ' + (f'{ppre[0] or "-"}_ / {ppre[1] or "-"}_'
+                                   if ppre[0] or ppre[1] else 'none (no prefixed macros or math helpers)'))
     for name in sorted(files(port) | files(canon)):
         if name not in files(canon):
             print(f'  port only           {name}')
