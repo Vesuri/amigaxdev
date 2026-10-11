@@ -37,6 +37,7 @@ drives and program options:
 | `fsuae_launch ARGS...` | background start; logs to `$FSUAE_LOG` (default `.run/fsuae.log`), records the pid, prints it. `$FSUAE_PID` is the emulator itself |
 | `fsuae_exec ARGS...` | the same in the foreground, for interactive `run.sh` |
 | `fsuae_claim_port` | before a `DEBUG=1` run: picks a free `$DEBUG_PORT`, killing only this directory's leftover |
+| `fsuae_prepare` | what a `run.sh` does before launching: `fsuae_claim_port` for `DEBUG=1`, otherwise stops this directory's previous run. `FSUAE_CLAIM_STRICT=1` makes the claim never take or move a port: any listener on `$DEBUG_PORT`, even this directory's, makes it fail (for a fixed port, Alone in the Dark) |
 | `fsuae_stop` | kills the tracked emulator; safe in `trap fsuae_stop EXIT` |
 | `fsuae_gdb_script F` | a copy of a checked-in `.gdb` with `127.0.0.1:NNNN` patched to `$DEBUG_PORT` |
 

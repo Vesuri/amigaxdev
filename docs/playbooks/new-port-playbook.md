@@ -151,7 +151,7 @@ generated manifest records the extraction tool's version and the input hashes.
 
 | Container | Tool | Notes |
 |---|---|---|
-| classic Mac HFS volume | `hmount`/`hcopy -m`/`humount` (hfsutils) | keep both forks (MacBinary); Vette `tools/hfs_extract.py`, `macbin.py`, `resource_fork.py` |
+| classic Mac HFS volume | `hmount`/`hcopy -m`/`humount` (hfsutils) | keep both forks (MacBinary); `python3 -m amigaxdev.mac.hfs_extract`, `amigaxdev.mac.macbin`, `amigaxdev.mac.resource_fork` |
 | NDIF/StuffIt archive | `unar`; Vette `tools/ndif2raw.py` | both forks again |
 | PC archives (7-Zip, ZIP) | `7zz`, `unar` | |
 | `.lha`, `.lzx` | `lha` (lhasa), `unar` | |
@@ -204,11 +204,15 @@ Gate: one command boots the original, reaches a named state and writes a reprodu
 
 ## 5. Map the original statically and live
 
-Ghidra runs headless from make targets (`make ghidra`, `make map`). The ports share the same
-scripts in `ghidra_scripts/`: `MarkEntries.java` (seeds `entrypoints.csv`), `ApplyNames.java`
-(applies `disasm/symbols.csv`), `ExportListing.java` (writes the listing the generators read),
-`DumpCallGraph.java`, and a surface dump (`DumpTraps.java` for Mac traps, `DumpHwAccesses.java`
-for memory-mapped hardware). `tools/ghidra` links the shared install.
+Ghidra runs headless from make targets (`make ghidra`, `make map`), started from the project root
+with `-scriptPath "ghidra_scripts;$AMIGA_GHIDRA_SCRIPTS"`. AmigaXDev ships the scripts that are
+the same for every port: `ExportListing.java` (writes the listing the generators read; Slicks and
+Secret Weapons of Luftwaffe use `ExportAuditListing.java`), `DumpCallGraph.java`,
+`DumpZeroPage.java`, and for 68000 Mac originals `MacMarkEntries.java` (seeds
+`ghidra_scripts/entrypoints.csv`), `MacApplyNames.java` and `MacDumpTraps.java`. The project's
+`ghidra_scripts/` keeps what is tied to its original CPU or machine: a `MarkEntries.java` that
+seeds `entrypoints.csv`, an `ApplyNames.java` that applies `disasm/symbols.csv`, and a surface dump
+such as `DumpHwAccesses.java` for memory-mapped hardware. `tools/ghidra` links the shared install.
 
 - **Seed every entry point before generating anything** (the postmortem's highest-leverage
   finding): every computed jump, jump table and RTS-dispatch idiom, all hardware and OS vectors
@@ -263,18 +267,20 @@ src/                  game core, generated code (src/gen/, regenerated, never ha
 src/platform/host|sdl/  host backend
 src/platform/amiga/   Amiga backend; framework/ (vendored dA JoRMaS subset + UPSTREAM.md)
 amiga/                Makefile, env.sh, run.sh, debug.sh, diag_run.sh, *.gdb probes
-ghidra_scripts/       the scripts above + entrypoints.csv
+ghidra_scripts/       the CPU-specific scripts above + entrypoints.csv
 disasm/symbols.csv    names (the rest of disasm/ is ignored)
-tools/                reference drivers, extraction, generators, oracles, packaging
-whdload/              slave source and Makefile; smoke slave
+tools/                reference drivers, extraction, generators, oracles, packaging; _amigaxdev.py
+whdload/              slave source and Makefile; smoke_name.i for the shared smoke slave
 release/              Install, ReadMe, icons as base64 text
 tmp/ ref/ data/ build/  ignored
 ```
 
 Copy from the project chosen in §2, then strip its game: `$PROJECTS/<that project>/`
 `.gitignore` (adapt the originals' names and extensions), `Makefile` and `amiga/Makefile`,
-`amiga/env.sh`, `run.sh`, `debug.sh`, `diag_run.sh`, `ghidra_scripts/`, and the framework under
-`src/platform/amiga/framework/`.
+`amiga/env.sh`, `run.sh`, `debug.sh`, `diag_run.sh` and `ghidra_scripts/`. Take the framework
+from AmigaXDev's canonical tree (`$AMIGA_FRAMEWORK`) into `src/platform/amiga/framework/`, and the
+shared Python tools (release, Mac and DOS helpers, disassembly) from the `amigaxdev` package
+rather than from another port's `tools/` (AmigaXDev `docs/environment.md`, "Shared tools").
 
 **The dA JoRMaS framework.** `AmigaHardware` (takeover, interrupts, blitter queue), `Bitmap`,
 `CopperList`, `Palette`/`Palette24Bit`, `Sprite`, `Util`, with `SASCCompat.h` and
@@ -282,10 +288,13 @@ Copy from the project chosen in §2, then strip its game: `$PROJECTS/<that proje
 `ASSEMBLER` variant backed by `*Assembler.s` (`NO_ASSEMBLER=1` selects the portable bodies). The
 dual SAS/C + GCC guide is dA JoRMaS `Template/C++/GCC-PORT.md`. Ports vendor only the subset
 they use and replace `Production`/`Part`/`ProductionRunner` with a plain `main()` + VBI server
-loop. Record the source commit, the classes taken and every local change in `UPSTREAM.md`
-(Revs, Vette and Alone in the Dark have the full asm set; Slicks and Secret Weapons of Luftwaffe
-the AGA `Palette24Bit` variant; Downwell adds `AmigaMemory`). Take later fixes from the port
-that carries them, and say so in `UPSTREAM.md`.
+loop. The canonical tree uses the neutral `DAJ_`/`daj_` prefixes and carries both lineages
+(the full asm set of Revs, Vette and Alone in the Dark; the AGA `Palette24Bit` variant of Slicks
+and Secret Weapons of Luftwaffe) with the measured AGA FMODE 3 fetch values. Record the AmigaXDev
+commit, the classes taken and every local change in `UPSTREAM.md` (Slicks and Secret Weapons of
+Luftwaffe keep this in `framework/README.md`). `python3 -m amigaxdev.framework diff PROJECT`
+shows what differs from the canonical tree, and `sync` copies canonical files in under the
+port's prefixes; a fix made in a port goes back to AmigaXDev `share/framework/`.
 
 Gate: `make` builds an empty host program and `cd amiga && . ./env.sh && make` an empty Amiga
 executable that `./run.sh` boots and quits cleanly.
@@ -500,8 +509,8 @@ the repo from the first twin:
 A port needs the OS, so its slave is a KickEmu slave (`kick13.s` for a Kickstart 1.3 target,
 `kick31.s` + `kickfs.s` for 3.1) that mounts `data` and `LoadSeg`s the executable; Rescue on
 Fractalus `docs/whdload-slave.md` §0 explains why a plain loader is not enough. The slave builds
-on the Mac with vasm against `$WHDLOAD`; a smoke slave (Pokeri, Vette `whdload/SmokeSlave.s`)
-tests the harness without a game.
+on the Mac with vasm against `$WHDLOAD`; a smoke slave (AmigaXDev `whdload/SmokeSlave.s`,
+assembled with `-I.` and the project's `whdload/smoke_name.i`) tests the harness without a game.
 
 - Size chip/expansion memory and the stack from measurements, not guesses (Rescue on Fractalus
   §2); set `WHDLF_EmulLineA` when the original uses Line-A (Mac ports).
@@ -514,18 +523,19 @@ tests the harness without a game.
   refuses any member matching an original's hash (Revs also scans for any 256-byte block of the
   original engine), then an independent checker. Version and date come from `VERSION` and must
   match in the executable, slave, installer and ReadMe.
-- Archive with the shared `LHA` (LH5, sorted members, fixed dates); verify each member with
-  Lhasa. Converged package layout, icons, ReadMe sections, Installer 43 script rules and the
+- Archive with `amigaxdev.release` (the shared `LHA`, LH5, members in the given order, a fixed
+  DOS stamp, the installer and drawer icons, refusal of originals and of an existing archive);
+  the project's `package_release.py` keeps only its file map. Verify each member with Lhasa. Converged package layout, icons, ReadMe sections, Installer 43 script rules and the
   Installer test traps: Secret Weapons of Luftwaffe `docs/release.md`; the WHDLoad playbook
   [§13](new-game-playbook.md#13-release-archives) for archive mechanics.
 - Hardware-only failures: [hardware debugging](new-game-playbook-hardware.md) and
   [MMU compatibility](whdload-mmu.md).
 
 Copy from a released port: `$PROJECTS/Pokeri/` `release/Install`, `release/ReadMe`,
-`release/icons/`, `tools/package_release.py`, `tools/check_release.py`,
-`tools/test_release_installer.py`, `tools/test_whdload.py`, `tools/installer_icon.py`,
-`whdload/Makefile` and `SmokeSlave.s` (Pokeri's Installer script is the newest); Slicks for a
-bundled extraction helper; Vette for Mac-fork extraction.
+`release/icons/`, `tools/package_release.py`, `tools/_amigaxdev.py`, `tools/check_release.py`,
+`tools/test_release_installer.py`, `tools/test_whdload.py`, `whdload/Makefile` and
+`whdload/smoke_name.i` (Pokeri's Installer script is the newest); Slicks for a bundled
+extraction helper; Vette for Mac-fork extraction.
 
 ## 14. Definition of done
 

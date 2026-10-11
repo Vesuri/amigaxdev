@@ -306,6 +306,8 @@ Each port keeps a host build of the same core sources: Clang, GNU Make, SDL2 fro
   - Ignore the symlink as `tools/ghidra` with no trailing slash: a trailing slash doesn't match
     a symlink to a directory.
   - Don't open a project in the GUI while headless uses it; Ghidra locks it.
+  - Start it from the project root with `-scriptPath "ghidra_scripts;$AMIGA_GHIDRA_SCRIPTS"`:
+    the shared scripts (`ExportListing`, `DumpCallGraph`, `Mac*`) are in AmigaXDev.
   - Run `MarkEntries` as a `-preScript` so analysis disassembles the new entries;
     `-noanalysis` only for export-only runs; `-process NAME` instead of `-import` for an
     existing program.

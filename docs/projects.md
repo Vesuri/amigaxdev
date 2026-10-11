@@ -44,7 +44,7 @@ StingRay's slave repository (harness in the ignored `tmp/dev/`).
 | Secret Weapons of Luftwaffe | P | migrated; its tests take Unicorn from `AMIGA_UNICORN` | — |
 | Downwell | P | migrated; its HEAD did not build before the change (`MotionBinary64`), generated files identical | — |
 | Stunt Car Racer | P | migrated (no run script); `tools/test_whdload.py` keeps WHDLoad 19.2 as the binary releases were validated with | — |
-| Red Baron | F | migrated (harness in `tmp/dev`, playbook reference on the branch) | harness probes `w1_build_modes.py`, `probe_menu.py` hardcode `~/.local` paths |
+| Red Baron | F | migrated (harness in `tmp/dev`, playbook reference on the branch) | — |
 | 4D Sports Driving | F | migrated (harness in `tmp/dev`) | — |
 | Hard Drivin' | F | on the shared environment from the start (harness in `tmp/dev`; slave changes, VERIFY variants and performance docs on the branch) | — |
 | Indianapolis 500 JOTD | F | harness in `tmp/dev` migrated; uncommitted slave work untouched | — |
@@ -75,12 +75,31 @@ and window for debug and warp runs. FS-UAE's own log is now under `.run/fsuae/Ca
 
 ## Shared tools and what stays per project
 
-AmigaXDev now ships the copied tools once (docs/environment.md, "Shared tools"): `barto.py`,
+AmigaXDev ships the copied tools once (docs/environment.md, "Shared tools"): `barto.py`,
 `local_env.py`, `adf.py`, `patchlist.py`, `dis.sh`/`disd.py`/`hotspots.py`, the gdb-server
 skeleton, the release archive and icon code, the Mac and DOS helpers, the identical Ghidra
-scripts, the smoke slave, and the claim-or-stop block of the run scripts. The projects still
-carry their own copies until each switches (one repo at a time, verified like the setup
-migration: same tool output, byte-identical archives and slaves).
+scripts, the smoke slave, and the claim-or-stop block of the run scripts. A project's tools find
+the package through `tools/_amigaxdev.py`; `python3 -m amigaxdev...` needs `. amiga/env.sh`
+first (or `PYTHONPATH=$(AMIGA_PYLIB)` in a Makefile).
+
+Each switch was verified like the setup migration: the project's report and frame tools give
+the same output on a stored trace, each gdb server ran `shot`, `profile 2` and a game command
+against a live emulator, and archives, smoke slaves and Ghidra exports are byte-identical.
+
+| Switched | Kept on top of the shared code |
+|---|---|
+| Battlehawks 1942, Indianapolis 500, Indianapolis 500 JOTD and StingRay harnesses | `i500.py` exports `SOCK` for its state tools |
+| Powerdrome | its gdb server's PD1 request framing, captures of up to 500 fields |
+| Legends of Valour | its boot, capture (both window modes, `.pc-base`), multi-address `until`, `gdb` handshake |
+| Stellar 7 | its lldb profiler-window fix; `run.sh` uses the launcher's `NTSC` and `SLOW_KB` |
+| Red Baron and Hard Drivin' harnesses | Red Baron's `until`; Hard Drivin's instances, `host`, `poke`, long `profile`, `barto_mmap.py` |
+| Pokeri, Slicks, Vette | their release file maps; Pokeri's save slots |
+| Alone in the Dark | `require_production`, scratch in `tmp/`; `tools/resource_fork.py` re-exports the shared module for its 124 importers; `FSUAE_CLAIM_STRICT=1` |
+| Secret Weapons of Luftwaffe, Revs | their CPU-specific Ghidra scripts; Secret Weapons of Luftwaffe's `run.sh` uses `fsuae_prepare` |
+
+Not switched yet, because they had uncommitted work: Test Drive 2, Their Finest Hour, Rescue on
+Fractalus, Downwell, and the 4D Sports Driving harness. Red Baron's committed branch `tools/`
+stay standalone, because the branch is meant for JOTD's repository.
 
 Stays in each project, because it is the game's own: `frames.py`, `swap_fields`,
 `check_disabled`, `fixed_window.sh`, `compare_*`, `audit_hooks`, `state_*` (frame counters and
@@ -93,8 +112,9 @@ Rescue on Fractalus).
 The dA JoRMaS framework stays vendored in each port: converging the copies would change every
 port's binary except Slicks' and Secret Weapons of Luftwaffe's (which share theirs byte for byte).
 `$AMIGA_FRAMEWORK` is the canonical tree to compare with and take fixes from
-(`python3 -m amigaxdev.framework diff PROJECT`); each port's `UPSTREAM.md` records the AmigaXDev
-commit its copy is based on.
+(`python3 -m amigaxdev.framework diff PROJECT`); each port's `UPSTREAM.md` (Secret Weapons of
+Luftwaffe: `framework/README.md`) records the AmigaXDev commit its copy is based on. Downwell
+and Rescue on Fractalus don't have that line yet.
 
 Python tools that start FS-UAE themselves, so they are not silent and come to the front: Rescue
 on Fractalus `tools/test_whdload.py`, `tools/test_rom_failures.py`; Alone in the Dark
@@ -104,5 +124,6 @@ on Fractalus `tools/test_whdload.py`, `tools/test_rom_failures.py`; Alone in the
 Rule violations found on the way, for each project's owner: `/tmp` scratch files (Test Drive 2,
 Battlehawks, Indianapolis 500 `fixed_window.sh`/`profile_demo.sh`; Rescue on Fractalus), Rescue on
 Fractalus `audio_ridge.py` suggests a `/tmp` path; `core.hooksPath` not `/dev/null` in Alone in
-the Dark, Rescue on Fractalus, Revs (an absolute path), Vette and Stunt Car Racer; the Red Baron
-harness probes `w1_build_modes.py` and `probe_menu.py` hardcode `~/.local` paths.
+the Dark, Rescue on Fractalus, Revs (an absolute path), Vette and Stunt Car Racer; Alone in the
+Dark's smoke slave calls itself "Vette slave smoke test" (copied from Vette; kept for
+byte-identical builds).

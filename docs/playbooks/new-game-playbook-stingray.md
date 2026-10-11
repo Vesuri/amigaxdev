@@ -266,7 +266,7 @@ Indianapolis 500: `docs/game.md`):
 | the main executable's name and size | the region finder byte-matches it (§6) |
 
 Find the code file. For OS games it is the executable the slave LoadSegs. If the game boots
-from disk images, list them (`tools/adf.py Disk.1`, OFS/FFS) and read `s/startup-sequence`
+from disk images, list them (`python3 -m amigaxdev.adf Disk.1`, OFS/FFS) and read `s/startup-sequence`
 (BH: `BH`, an Aztec C executable). **If `ws_ExpMem` is just the Kickstart size, the OS has only
 BaseMem: the game and all its buffers are in chip RAM** (BH: code at chip `$22F08`), found in the
 trace's chip snapshot rather than in the "other" memory dump. TD2: `data/duel`, an
@@ -359,8 +359,12 @@ Set these roots in the local environment/build wrapper so they survive a new she
 all paths (the worktree name contains spaces). Ensure the harness keeps its own process,
 port and log directory; do not accidentally resolve it to the main Git checkout.
 
-Copy the tools you need, including imported helpers such as `local_env.py`; discard unused
-ones after setup. Copy generic `compare_state.py` from Their Finest Hour if suitable, and
+Copy the tools you need and discard unused ones after setup. Don't copy `barto.py`, `disd.py`,
+`hotspots.py`, `dis.sh`, `adf.py`, `patchlist.py` or `local_env.py` from an older repo: take
+`bh.py` (the shared gdb server; rename it) and `_amigaxdev.py` (the shim that puts `$AMIGA_PYLIB`
+on `sys.path`) from Battlehawks 1942, import `amigaxdev.barto` and `amigaxdev.env`, and run
+`python3 -m amigaxdev.disasm|adf|patchlist` after `. amiga/env.sh` (AmigaXDev
+`docs/environment.md`, "Shared tools"). Copy generic `compare_state.py` from Their Finest Hour if suitable, and
 validate it on this game. Remove inherited machine paths and game assumptions. Shared inputs
 must use §1 variables. Changes intended for the fork must contain no host-specific paths,
 including in source comments (the port dropped comments naming local docs and tools).
@@ -369,8 +373,8 @@ What is generic and what has to be adapted:
 
 | File | Generic | Adapt |
 |---|---|---|
-| `barto.py` | trace parser, all of it | nothing |
-| `td2.py` (rename it) | gdb server, `serve/shot/wait/until/gdb/profile/quit`, lldb fix, `BOOT_BREAK` | nothing, unless the FS-UAE binary changed (`BASETEXT_VM`) |
+| `amigaxdev.barto` (shared, imported) | trace parser, all of it | nothing |
+| `bh.py` (rename it, here `game.py`) | `Server(name, root=ROOT).main(argv)` from `amigaxdev.gdbserve`: `serve/stop/cont/shot/wait/until/gdb/profile/quit`, lldb window fix, `BOOT_BREAK` | the name; game commands go in `commands={'op': fn(server, g, rest)}` (they can replace a built-in); `profile_window=False` where the stub needs no window fix. Shared-code changes (`BASETEXT_VM` for a new FS-UAE binary) go to AmigaXDev |
 | `amiga/run.sh` | host boot, DH0/DH1, startup-sequence, port claim | `GAME`, slave file name, kick images copied to `DH0:devs/Kickstarts` (kick13 needs `kick34005.A500`+`.RTB`; kick31 needs `kick40068.A1200`+`.RTB`; direct slaves need none) |
 | `td2_report.py` `regions()` | byte-match voting, BPTR chain to the data hunk | code file path and hunk offset/size, kick image (or none), slave path; `Namer` function starts (`link a5` is Aztec C; SAS/C and asm differ, see §8). I500's version parses the hunk file from the disk image, votes each file-backed hunk into the dump *or* the trace's chip snapshot, and finds the live slave (below) |
 | `frames.py`, `swap_fields.py` | DMA slot counting, blitter-poll counting | frame marker (§7), interrupt-handler addresses (Kick 1.3 level-3 `$FC0D14`/BLIT `$FC0D38`/VERTB `$FC0D4A` only apply to a kick13 game; a direct game has its own handlers, read the level-3 vector at `$6C`) |
@@ -447,10 +451,10 @@ That decides how you drive it (§6).
 ## 5. Attach the debugger and get a trace with PCs in it
 
 ```sh
-WARP=1 python3 tools/td2.py serve > amiga/.run/serve.log 2>&1 &
-python3 tools/td2.py shot "$PWD/amiga/.run/now.png"     # 1-field trace → screenshot
-python3 tools/td2.py profile 10 "$PWD/tmp/prof/first.bin"
-python3 tools/td2.py quit
+WARP=1 python3 tools/game.py serve > amiga/.run/serve.log 2>&1 &
+python3 tools/game.py shot "$PWD/amiga/.run/now.png"     # 1-field trace → screenshot
+python3 tools/game.py profile 10 "$PWD/tmp/prof/first.bin"
+python3 tools/game.py quit
 ```
 
 Facts about this stub, all verified the hard way:
@@ -462,7 +466,7 @@ Facts about this stub, all verified the hard way:
 - **Emulated time stops while gdb holds the CPU**, so stops and the lldb attach cost no emulated
   time.
 - **Without a trigger the profiler records no PCs.** The window `[baseText, +sizeText)` reads as
-  `[0x0100007f, +0)`. `td2.py profile` fixes it each time by lldb-writing `0`/`0x7fffffff` at
+  `[0x0100007f, +0)`. The shared server's `profile` fixes it each time by lldb-writing `0`/`0x7fffffff` at
   link-time `0x32dea04` plus the slide. For a different FS-UAE binary, re-derive that address
   from the `GDBSERVER: enabled` setup and `start_cpu_profiler` (TD2 `docs/profiling.md` §3). The
   assert fails loudly if it's wrong.
@@ -502,8 +506,8 @@ Facts about this stub, all verified the hard way:
   some chip scratch, presents a synthetic segment, waits for the harness's `qOffsets`
   acknowledgement, then restores everything before tracing (`profile_window_check.py` verifies
   the restore). Barto then stores RAM PCs relative to the profiler start (ROM PCs and IRQ markers
-  stay absolute): keep the acknowledged base in a `trace.pc-base` sidecar and normalize in
-  `barto.py`. `until` should wait in the background with a timeout (`UNTIL_TIMEOUT`) and stop
+  stay absolute): keep the acknowledged base in a `trace.pc-base` sidecar and `amigaxdev.barto`
+  normalizes it. `until` should wait in the background with a timeout (`UNTIL_TIMEOUT`) and stop
   the capture cleanly, so a stalled route can still be dumped and quit.
 
 **Check:** `barto.load()` on the trace shows instruction records **with PCs**, and the
@@ -513,7 +517,7 @@ screenshot shows the moment you expected.
 
 **Regions.** Dump the "other" memory, where WHDLoad puts the slave's memory: `$C00000` slow RAM
 with no fast RAM, `$200000` with fast RAM, and chip from address 0 on a machine with neither
-(a stock A1200: TFH). Use `td2.py gdb 'dump binary memory tmp/x.bin BASE END'`.
+(a stock A1200: TFH). Use `game.py gdb 'dump binary memory tmp/x.bin BASE END'`.
 Adapt `regions()` until `td2_report.py` names the code hunk, the data hunk, the kick image and
 the slave. Relocations make an exact compare impossible, so 16-byte windows vote for a base.
 Also, **the PRELOAD copy of the file is in memory too**: follow LoadSeg's BPTR chain from the
@@ -666,8 +670,8 @@ Run on the A500-equivalent machine, in the fixed window:
 tools/fixed_window.sh tmp/prof/base
 python3 tools/td2_report.py tmp/prof/base/trace.bin tmp/prof/base/code.bin --base 0xc00000
 python3 tools/frames.py     tmp/prof/base/trace.bin tmp/prof/base/code.bin 0xc00000
-python3 tools/hotspots.py   tmp/prof/base/trace.bin tmp/prof/base/code.bin 0xc00000 <hunk> <off,...>
-python3 tools/disd.py       tmp/prof/base/code.bin 0xc00000 <hunk> <start> <end>
+python3 -m amigaxdev.disasm hotspots --label game tmp/prof/base/trace.bin tmp/prof/base/code.bin 0xc00000 <hunk> <off,...>
+python3 -m amigaxdev.disasm disd tmp/prof/base/code.bin 0xc00000 <hunk> <start> <end>
 ```
 
 Record, in `docs/internals.md` (current measurements) with the command in `docs/development.md`
@@ -683,7 +687,7 @@ Attribution needs care:
 - **Self time** goes to the nearest preceding function start: compiler prologues
   (`link a5` for Aztec C, `link a6`/`movem` for SAS/C and others) plus every observed call
   target. **Hand-written asm games have no prologues**, so check big self numbers with
-  `hotspots.py`.
+  `amigaxdev.disasm hotspots`.
 - **Contexts** come from SP ranges. TD2 had a main task, a second game task, OS device tasks and
   the supervisor stack. A direct game may run everything, interrupts included, on one supervisor
   stack. Then interrupt work shows up as "calls" from whatever it interrupted (I500: the SOFT
