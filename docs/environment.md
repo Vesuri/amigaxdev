@@ -24,6 +24,16 @@ TOOLCHAIN = os.environ.get('AMIGA_TOOLCHAIN', os.path.expanduser('~/.local/opt')
 OBJDUMP = os.path.join(TOOLCHAIN, 'bin', 'm68k-amiga-elf-objdump')
 ```
 
+or, simpler, through the shared `amigaxdev` package (`from amigaxdev.env import path, tool`).
+The shared venv has it on its path already; a tool that may run under another `python3` puts
+this shim (`tools/_amigaxdev.py`) next to itself and imports it first:
+
+```python
+# Find AmigaXDev's shared Python package (amigaxdev) under any python3.
+import os, sys
+sys.path.insert(0, os.environ.get('AMIGA_PYLIB') or os.path.expanduser('~/.local/share/amiga/pylib'))
+```
+
 Makefiles use `?=` with the same default, so they work with or without `env.sh`.
 
 ## Variables
@@ -51,6 +61,9 @@ Makefiles use `?=` with the same default, so they work with or without `env.sh`.
 | `AGA_GUIDE` | `AGA.Guide` | AGA chipset registers (the Hardware Reference Manual covers OCS/ECS) |
 | `FSUAE_COMMON` | `fsuae_common.sh` | pid-scoped emulator handling, a gdb-stub port per directory |
 | `LHA` | `lha-compressor/src/lha` | LHa for UNIX, which creates release archives |
+| `AMIGA_PYLIB` | `pylib` | the `amigaxdev` Python package (below) |
+| `AMIGA_GHIDRA_SCRIPTS` | `ghidra_scripts` | shared Ghidra scripts: `-scriptPath "ghidra_scripts;$AMIGA_GHIDRA_SCRIPTS"` |
+| `AMIGA_FRAMEWORK` | `framework` | the canonical dA JoRMaS framework the ports compare their copies with |
 
 Paths without a directory are under `$AMIGA_SHARE`. The shared `env.sh` also puts
 `$AMIGA_SHARE/python/bin`, `$AMIGA_TOOLCHAIN/bin`, `$AMIGA_PREFIX` and
@@ -67,6 +80,23 @@ Other shared files have no variable of their own:
 | `kalms-c2p/` | Mikael Kalms' c2p routines; vendor the ones used (playbook §10) |
 | `python/` | Python 3.12 with Pillow, numpy, capstone and amitools (`xdftool` reads and writes ADFs) |
 | `new-game-playbook*.md` | the playbooks, from `docs/playbooks/` |
+
+## Shared tools
+
+| What | Use | Replaces the per-project |
+|---|---|---|
+| `amigaxdev.env` | `path(NAME)`, `tool('objdump')`: the shared defaults with environment overrides | `local_env.py`, inline `AMIGA_TOOLCHAIN` lookups |
+| `amigaxdev.barto` | `load(trace)`, `Trace.instructions(field)`, `capture_part_starts()`; honours `NAME.pc-base` | `barto.py` |
+| `amigaxdev.gdbserve` | `Server(name, root, commands={...}).main(argv)`: serve / one-shot commands through the gdb stub (`stop`, `cont`, `gdb`, `shot`, `profile`, `wait`, `until`, `quit`; `commands` add or replace) | the `td2.py` skeleton |
+| `amigaxdev.disasm` | `python3 -m amigaxdev.disasm dis\|disd\|hotspots [--label NAME] ...` | `dis.sh`, `disd.py`, `hotspots.py` |
+| `amigaxdev.adf`, `amigaxdev.patchlist` | `python3 -m amigaxdev.adf DISK`, `python3 -m amigaxdev.patchlist SLAVE OFFSET` | `adf.py`, `patchlist.py` |
+| `amigaxdev.release` | `archive(prefix, files, drawer_icon, dos_stamp(y, m, d))`, `write()`, `refuse_originals()`, `installer_icon(icons_dir, appname)` | the body of `package_release.py`, `installer_icon.py` |
+| `amigaxdev.mac` | `macbin`, `resource_fork`, `hfs_extract`, `gen_trap_names`, `m68k_sweep` | the Macintosh ports' copies |
+| `amigaxdev.dos` | `mz_info` (with Compack detection), `verify_amiga_runtime` | the DOS ports' copies |
+| `amigaxdev.framework` | `python3 -m amigaxdev.framework diff\|sync PROJECT`: the port's framework against `$AMIGA_FRAMEWORK` | — |
+| Ghidra scripts | `DumpCallGraph`, `ExportListing`, `ExportAuditListing`, `DumpZeroPage`, `MacMarkEntries`, `MacApplyNames`, `MacDumpTraps` (Ghidra started from the project root: they read `ghidra_scripts/entrypoints.csv` and `tmp/trap_names.lua` there) | the identical per-port copies |
+| `whdload/SmokeSlave.s` | assemble with `-I.` and a project `smoke_name.i` holding the name line | `whdload/SmokeSlave.s` |
+| `fsuae_prepare`, `FSUAE_CLAIM_STRICT=1` | in `fsuae_common.sh`: claim for DEBUG=1 else stop the previous run; a strict claim that never takes a busy port | the `run.sh` claim block, Alone in the Dark's override |
 
 Project-specific names (`KICKSTART_RTB`, `WHDLOAD_HOST_KICKSTART`, `FSUAE`, `GDB`, ...) stay
 in the projects, defined from these. `FSUAE` is deliberately not shared: most run scripts use

@@ -73,18 +73,33 @@ and window for debug and warp runs. FS-UAE's own log is now under `.run/fsuae/Ca
 - The Python environment `~/.local/share/amiga/python` is new; it comes first on `PATH` only
   for projects that source the shared `env.sh`.
 
-## Shared code still copied per project (later)
+## Shared tools and what stays per project
 
-Byte-identical or near-identical copies that could move here once the setup migration is done:
-`barto.py` (six WHDLoad repos identical), `adf.py`, `patchlist.py`, the gdb-server skeleton
-(`td2.py` and its descendants), the Ghidra scripts (identical except `@category`), the dA JoRMaS
-framework in eight ports, `test_whdload.py` and `package_release.py`.
+AmigaXDev now ships the copied tools once (docs/environment.md, "Shared tools"): `barto.py`,
+`local_env.py`, `adf.py`, `patchlist.py`, `dis.sh`/`disd.py`/`hotspots.py`, the gdb-server
+skeleton, the release archive and icon code, the Mac and DOS helpers, the identical Ghidra
+scripts, the smoke slave, and the claim-or-stop block of the run scripts. The projects still
+carry their own copies until each switches (one repo at a time, verified like the setup
+migration: same tool output, byte-identical archives and slaves).
+
+Stays in each project, because it is the game's own: `frames.py`, `swap_fields`,
+`check_disabled`, `fixed_window.sh`, `compare_*`, `audit_hooks`, `state_*` (frame counters and
+state at game addresses), the game commands of the gdb server, `release/Install`, `diag_run.sh`,
+`check_release.py` and `test_whdload.py` (per-game checks), `stage_original_data.sh`, the
+transpilers and translators, and the Ghidra scripts tied to one original CPU or machine
+(`MarkEntries` CSV variants, `DumpHwAccesses`, `SeedLiveMap`, `ApplyNames` for Pokeri, Revs and
+Rescue on Fractalus).
+
+The dA JoRMaS framework stays vendored in each port: converging the copies would change every
+port's binary except Slicks' and Secret Weapons of Luftwaffe's (which share theirs byte for byte).
+`$AMIGA_FRAMEWORK` is the canonical tree to compare with and take fixes from
+(`python3 -m amigaxdev.framework diff PROJECT`); each port's `UPSTREAM.md` records the AmigaXDev
+commit its copy is based on.
 
 Python tools that start FS-UAE themselves, so they are not silent and come to the front: Rescue
 on Fractalus `tools/test_whdload.py`, `tools/test_rom_failures.py`; Alone in the Dark
 `tools/test_whdload.py`, `tools/install-data/test_installer_script.py`,
-`tools/install-data/test_amiga.py`. Every `run.sh` that honours `DEBUG=1` repeats "claim the
-port, else stop the previous run"; that could be one shared function.
+`tools/install-data/test_amiga.py`.
 
 Rule violations found on the way, for each project's owner: `/tmp` scratch files (Test Drive 2,
 Battlehawks, Indianapolis 500 `fixed_window.sh`/`profile_demo.sh`; Rescue on Fractalus), Rescue on
