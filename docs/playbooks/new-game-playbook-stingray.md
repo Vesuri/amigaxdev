@@ -745,6 +745,10 @@ demo-only checks missed that interpolation never ran while driving. Add a test b
 drives the native menus with a held input (I500 `DRIVING_TEST`) and check frames within one
 tick actually move.
 
+See [simulation and presentation](simulation-and-presentation.md) for replay-specific
+snapshots, native-rate prediction, load-address controls in state comparisons, and the
+units/precision audit needed before reducing the simulation timestep.
+
 A slowed renderer is easy to get when you are testing a replacement anyway: BH's full-frame c2p
 experiment made each frame take 8.7 instead of ~5 fields, and the state comparison at an equal
 frame number is the coupling test (Battlehawks `STATE_ONLY=1` + `compare_state.py`). Compare
