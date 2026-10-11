@@ -104,9 +104,10 @@ The Barto stub in both FS-UAE builds, driven by `m68k-amiga-elf-gdb`.
 - **Emulated time stops while gdb holds the CPU**, so stops cost no emulated time but a stop
   inside a timed window distorts host-side pacing. Quote timings only from scripts with no stop
   in the window.
-- **A conditional breakpoint throttles the emulator about 2.5×**: the host evaluates it on every
-  hit. 45 s of wall bought 18 emulated seconds with one, 288 s without (Revs). Count in the
-  program and print once at the end.
+- **A conditional breakpoint slows the emulator below real time**: gdb evaluates the condition
+  on the host, with a stub round trip, on every hit. One on a per-render function ran Revs at
+  about 0.4× real time: 45 s of wall bought 18 emulated seconds, against 288 s for the same warp
+  script with a plain `continue`. Count in the program and print once at the end.
 - **gdb interrupts are serviced at vsync only**, so gdb PC sampling is vsync-locked and distorts
   shares (Slicks: C2P doubled, car physics hidden). Use a target-side sampler; see
   [measurement method](measurement-method.md).
@@ -120,7 +121,10 @@ The Barto stub in both FS-UAE builds, driven by `m68k-amiga-elf-gdb`.
 - **The SR in the stub is stale** (UAE updates it lazily): tell supervisor from user code by
   which stack SP is in.
 - `until` blocks the server until its address is reached. Prefer `break *A`,
-  `ignore $bpnum N`, `continue`. Hardware watchpoints did not fire in Indianapolis 500.
+  `ignore $bpnum N`, `continue`.
+- The stub stops on CPU exceptions: an address error or illegal instruction stops with a usable
+  backtrace (the framework's `GCC-PORT.md`). It also accepts hardware watchpoints, but one did
+  not fire in Indianapolis 500: prove a watchpoint on a known write before trusting its silence.
 - `dump binary memory FILE A B` works; a 1 MiB dump takes a few seconds. gdb splits arguments
   at spaces and repo paths often contain them, so dump to a repo-relative path. gdb types
   `a0`–`a7` as pointers; symbols without debug type need a cast.
@@ -216,8 +220,9 @@ are audible and in front. `SOUND=1|0` (`SILENT=1`) and `WINDOW=front|back|none` 
 Several projects run emulators at once.
 
 - **Never `pkill fs-uae` or `pkill gdb`**, and never kill an emulator you did not start. The
-  launcher kills only the pid in this directory's `.run/fsuae.pid`, and only if it is still an
-  `fs-uae`; anything else, kill by pid.
+  launcher kills only what this directory started: the pid recorded in `.run/fsuae.pid` (a
+  leftover only if it is still an `fs-uae`), or, in `fsuae_claim_port`, an `fs-uae` whose working
+  directory is this one. Kill your own gdb by its pid.
 - `Remote connection closed` mid-run usually means another session killed your emulator, not
   that your build crashed. Revs read three such runs as "the PROBES build dies past vbi 262"
   before finding a sibling project's `pkill`. Check `pgrep -fl "diag_run.sh|fs-uae"` first. A

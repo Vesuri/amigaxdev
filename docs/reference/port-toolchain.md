@@ -79,7 +79,7 @@ backtraces.
 | Choice | Measured | Project |
 |---|---|---|
 | `-O3` vs `-O2` on the native surface | `-O3` 4.5 ms (6%) faster a frame | Revs |
-| `-funroll-loops` on top of `-O3` | nothing measurable for +43 KB; dropped. Loops that need unrolling carry `#pragma GCC unroll` or are asm | Revs |
+| `-funroll-loops` on top of `-O3` | nothing measurable for +43 KB; dropped. Loops that need unrolling are hand-unrolled or asm (`#pragma GCC unroll` is not reliable: [m68k optimisation §4](m68k-optimisation.md#4-loops-and-memory-access-in-c)) | Revs |
 | `-fno-tree-loop-distribute-patterns` on hot code | without it a short constant fill became two `memset` calls per segment, ~368 cycles each: 24.63 → 35.38 ms | Revs |
 | `-fno-tree-loop-vectorize` on hot code | without it GCC widened a byte fill and spilled table addresses: it cost 7.55 ms | Revs |
 | `-fno-unroll-loops -fno-unroll-all-loops` everywhere | code-size control on a 68000 | Pokeri |
@@ -96,14 +96,18 @@ the Makefile (Downwell rejects anything but `-O2`, `-O3`, `-Os`).
 Hand-written code goes through vasm; gcc's `as` handles the CRT and small `.s` with GNU syntax.
 
 ```make
-VASMFLAGS = -m68010 -Felf -quiet -x -no-opt -nowarn=62
+VASMFLAGS = -m68010 -Felf -quiet -x -no-opt -nowarn=62     # 68000 targets
+VASMFLAGS = -m68020 -Felf -quiet -x -no-opt -nowarn=62     # 68020 targets
 ```
 
 - **`-no-opt` is load-bearing** for hand-written code: it keeps encodings and branch sizes
   exactly as written, so PC-relative jump tables don't move. Mark in-range hot branches `.s`
   yourself, or they assemble long.
-- `-m68010` only because the framework's `getVBR` uses `movec vbr,d0`; it is behaviour-neutral
-  on a 68000 (the framework can also emit it as `dc.w $4e7a,$0801` under `-m68000`).
+- `-m68010` on 68000 targets (Revs, Rescue on Fractalus, Vette) only because the framework's
+  `getVBR` uses `movec vbr,d0`; it is behaviour-neutral on a 68000, and the post-68000
+  instruction audit below still applies. Pokeri assembles with `-m68000` (the framework can emit
+  the `movec` as `dc.w $4e7a,$0801`). 68020 targets (Slicks, Alone in the Dark, Secret Weapons of
+  Luftwaffe) use `-m68020`.
 - Generated assembly is different: Secret Weapons of Luftwaffe assembles its translator output
   with vasm's default optimisations (branch sizing) and `-m68020`. vasm then drops a `bra` to
   the next instruction, so labels can share an address.

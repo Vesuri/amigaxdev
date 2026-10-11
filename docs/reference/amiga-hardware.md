@@ -50,8 +50,11 @@ AmigaXDev installs these ([environment](../environment.md)):
 
 - **Detect AGA with `GfxBase->ChipRevBits0 & GFXF_AA_LISA`.** On Kickstart 3.1 the AA bits are
   set only after `SetPatch`, so every boot path (Shell, Workbench, the slave) runs `SetPatch`
-  first; otherwise an A1200 silently takes the OCS path (Slicks, Rescue on Fractalus). Keep an
-  ECS path if the port supports it (Pokeri).
+  first; otherwise an A1200 silently takes the OCS path (Slicks, Rescue on Fractalus). Some
+  Kickstarts expose only the internal MLISA flag (`$13` measured on an A1200): Pokeri requires
+  both `GFXF_AA_ALICE` and `GFXF_AA_LISA`, or falls back to the chip IDs (Lisa `$F8` in `LISAID`
+  `$DFF07C`, Alice in `VPOSR`), never the CPU type. Keep an ECS path if the port supports it
+  (Pokeri).
 - Code that must stay correct on accelerated machines must not rely on 24-bit addresses: Stunt
   Car Racer tags the top byte of pointers (`and.l #$00FFFFFF`), which breaks when a buffer lands
   in 32-bit Fast RAM at `$01000000` or above. Keep such buffers in Chip RAM, or separate flags
@@ -64,8 +67,8 @@ AmigaXDev installs these ([environment](../environment.md)):
 - **The CPU, blitter, copper and display DMA share the Chip bus.** On a 68000 every CPU access is
   a Chip-bus access; on a Chip-only A1200 every data access and every instruction fetched outside
   the 256-byte cache is one.
-- **Up to four lores bitplanes cost the 68000 nothing**: below the fifth plane, bitplane DMA uses
-  only the even slots of a line and leaves the odd ones to the CPU (Hardware Reference Manual
+- **Up to four lores bitplanes cost the 68000 nothing**: the 68000 uses only every other Chip-bus
+  slot, and up to four lores planes fetch only in the slots it leaves (Hardware Reference Manual
   chapter 6, "Blitter Operations and System DMA"). Below five lores planes the question is Chip
   RAM, not cycles; Revs went from two to four planes for 16.6 KB and no cycles. Five or six lores
   planes, or hires, take CPU slots.
@@ -79,14 +82,18 @@ AmigaXDev installs these ([environment](../environment.md)):
   and copper-heavy code gains. It does nothing for code that rarely touches Chip RAM, or outside
   the fetch window. Alone in the Dark's eight-plane book screen went from 88.5 to 69.0 ms per step
   (Chip-bus time 26.5 → 8.08 ms) on FMODE 3 alone; its gameplay, which is not Chip-bound, stayed
-  at about 100 ms per frame. Alone in the Dark, Slicks, Pokeri and Secret Weapons of Luftwaffe
-  run FMODE 3; Vette pins FMODE 0 on purpose so an A1200 fetches like an A500.
+  at about 100 ms per frame. Alone in the Dark and Slicks (eight lores planes), Pokeri (four
+  hires planes) and Secret Weapons of Luftwaffe run FMODE 3; Vette pins FMODE 0 on purpose so an
+  A1200 fetches like an A500.
 - **What FMODE 3 requires:**
   - every bitplane pointer on an 8-byte boundary, checked in code (Alone in the Dark
     `static_assert`s the picture size and checks its buffers at run time);
-  - a fetched width that is a multiple of 64 pixels, and modulos that keep every row 8-byte aligned;
+  - a fetched width that is a multiple of 64 pixels, and modulos that keep every row 8-byte
+    aligned. The displayed width need not be: Pokeri shows 608 hires pixels from 640-pixel rows
+    and masks the padding with the display window;
   - its own `DDFSTRT`/`DDFSTOP`: the OCS formulas do not apply. Alone in the Dark's 320-pixel lores
-    window moved from `$38/$d0` to `$20/$98`. The framework's AGA branch is an unmeasured donor pair,
+    window moved from `$38/$d0` to `$20/$98`; Pokeri's hires window fetches `$38..$c8` on AGA
+    against `$3c..$cc` on ECS. The framework's AGA branch is an unmeasured donor pair,
     so derive the values for your width and validate the picture ([AGA display and
     palette](#aga-display-and-palette));
   - coarser hardware scrolling: at 64-bit fetch a smooth horizontal scroll needs the extra AGA
@@ -94,7 +101,8 @@ AmigaXDev installs these ([environment](../environment.md)):
   - an OCS/ECS path that writes FMODE 0 (detect AGA as in [Targets](#targets)).
 
   FMODE bits 2–3 set the sprite fetch width separately; writing 3 leaves sprites at 16 bits.
-  Write FMODE with the rest of the mode, never inherit it: the OS leaves its own value behind.
+  Write FMODE with the rest of the mode, on both paths, never inherit it: nothing guarantees what
+  the last OS screen left there.
 - CPU reads of blitter targets wait for pending blits ([Blitter](#blitter)).
 
 ## Memory
@@ -292,6 +300,8 @@ re-inserts the system copper list after every `WaitTOF`.
   interleaved 320-byte rows, `BPL1MOD`/`BPL2MOD` 280, `DIWSTRT` `$3881`, `DIWSTOP` `$00c1`,
   `DIWHIGH` `$2100`. The framework's AGA data-fetch branch is otherwise unverified.
 - **`DIWHIGH` is always written, never inherited**; DIW is in lores, non-interlaced units.
+- **Clear `BPLCON4` (`$10C`) on AGA**: an inherited bitplane XOR value remaps every pen
+  (Pokeri writes 0 in its list).
 - **Interleave the bitmap so chunky and planar share the row offset** (`y * 320`): one multiply
   serves both (Slicks).
 - **A 24-bit colour is two MOVEs**: high nibbles, then `BPLCON3` LOCT (`$0200`) low nibbles, with
@@ -419,11 +429,15 @@ automatically.
 
 | Lineage | Ports | Differences |
 |---|---|---|
-| Template set | Rescue on Fractalus, Revs, Vette, Alone in the Dark | vasm asm bridges, copper NOP prefill, fixed OCS `setPlayfield` |
+| Template set | Rescue on Fractalus, Revs, Vette, Alone in the Dark | vasm asm bridges, copper NOP prefill, `setPlayfield` with Vette's interlace, window and hires fetch fixes |
 | DanceDiverse3 set | Slicks, Secret Weapons of Luftwaffe | C++ bodies for GCC (`ASSEMBLER` undefined), AGA `setPlayfield` and 24-bit palette, no NOP prefill |
 
 Pokeri and Downwell carry further-modified copies; check which lineage a fix came from before
 porting it.
+
+Every copy's `setPlayfield` writes FMODE 3 on AGA with the unmeasured fetch window from the
+donor project. Ports with their own display owner override it (Vette writes FMODE 0, Alone in
+the Dark and Pokeri write their own measured windows).
 
 - `--gc-sections` hides dormant link traps until the first caller; partial-link the framework
   (`ld -r`) to see them. Vette found a bridge with no asm body and a helper pulling `__mulsi3`;
