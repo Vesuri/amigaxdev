@@ -16,7 +16,10 @@
 #
 # Process API:
 #   fsuae_stop_previous     kill the emulator the previous run of this script left
-#   fsuae_claim_port        pick a free $DEBUG_PORT (implies stop_previous); prints it
+#   fsuae_claim_port        pick a free $DEBUG_PORT (implies stop_previous); prints it.  With
+#                           FSUAE_CLAIM_STRICT=1 it never takes or moves a port: any listener
+#                           on $DEBUG_PORT, even this directory's, makes it fail (return 1)
+#   fsuae_prepare           before a launch: claim the port for DEBUG=1, else stop_previous
 #   fsuae_track PID         remember an fs-uae we started (for the next run)
 #   fsuae_track_self        same, for the `exec fs-uae ...` case (pid = this shell)
 #   fsuae_stop              kill the tracked emulator now
@@ -102,6 +105,17 @@ fsuae_is_ours() {
 fsuae_claim_port() {
   fsuae_stop_previous
   local held pid tries=0 foreign
+  if [ "${FSUAE_CLAIM_STRICT:-0}" = 1 ]; then
+    # Only the recorded process can be reclaimed: an occupied port alone does not establish
+    # ownership, even when its listener is an fs-uae started from this directory.
+    held=$(lsof -nP -iTCP:"$DEBUG_PORT" -sTCP:LISTEN -t 2>/dev/null || true)
+    if [ -n "$held" ]; then
+      echo "debug port $DEBUG_PORT is busy (pid $held); no process stopped" >&2
+      return 1
+    fi
+    echo "gdb stub port: $DEBUG_PORT (override with \$DEBUG_PORT)"
+    return 0
+  fi
   while :; do
     held=$(lsof -nP -iTCP:"$DEBUG_PORT" -sTCP:LISTEN -t 2>/dev/null || true)
     [ -n "$held" ] || break
@@ -127,6 +141,12 @@ fsuae_claim_port() {
   export DEBUG_PORT
   echo "gdb stub port: $DEBUG_PORT (override with \$DEBUG_PORT)"
   return 0
+}
+
+# What a run script does before launching: a debug run needs the stub port, any run replaces
+# the previous run of this directory.
+fsuae_prepare() {
+  if [ "${DEBUG:-0}" = 1 ]; then fsuae_claim_port; else fsuae_stop_previous; fi
 }
 
 # Remember an emulator we started, so the next run of this script can clean it up.
