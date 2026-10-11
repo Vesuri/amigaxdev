@@ -6,7 +6,10 @@ the cross toolchain, emulators, WHDLoad, Kickstarts and everything else the proj
 `~/.local`, the same on every Mac. The repo also holds the documentation the projects share:
 the playbooks in `docs/playbooks/`, including the
 [hardware debugging guide](docs/playbooks/new-game-playbook-hardware.md) for WHDLoad dumps
-and CPU cache failures.
+and CPU cache failures and the [porting playbook](docs/playbooks/new-port-playbook.md) for
+bringing a game from another platform, and the reference docs in `docs/reference/` that
+merge what the projects learned about 68000 code, the hardware, measuring, validating,
+headless FS-UAE and the toolchain.
 
 ## Setting up a Mac
 

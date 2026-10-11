@@ -43,4 +43,11 @@ The projects follow the same layout. Edit `AGENTS.md`, never `CLAUDE.md`.
 | `docs/environment.md` | the shared variables and how a project uses them |
 | `docs/projects.md` | the projects, what each uses, and how far each is migrated |
 | `docs/native-port-validation.md` | hardware crash regressions, installer updates and final archive checks |
-| `docs/playbooks/` | profiling and improving a WHDLoad game: standalone repo, JOTD fork, StingRay fork |
+| `docs/playbooks/` | profiling and improving a WHDLoad game: standalone repo, JOTD fork, StingRay fork; hardware, MMU and fixed-time supplements |
+| `docs/playbooks/new-port-playbook.md` | porting a game from another platform to the Amiga |
+| `docs/reference/m68k-optimisation.md` | 68000/68020 cost model and code-generation rules |
+| `docs/reference/amiga-hardware.md` | chip bus, memory, OS takeover, copper, blitter, Paula, AGA |
+| `docs/reference/measurement-method.md` | profiling instruments, A/B discipline, pricing a change |
+| `docs/reference/validation-harness.md` | faithfulness to the original: references, differentials, sabotage |
+| `docs/reference/headless-fsuae.md` | the shared launcher, FS-UAE builds, gdb stub, diag runs |
+| `docs/reference/port-toolchain.md` | building a C/C++ port: flags, linking, audits, release images |
