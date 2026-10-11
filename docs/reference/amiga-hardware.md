@@ -46,7 +46,7 @@ AmigaXDev installs these ([environment](../environment.md)):
 | Ports | Rescue on Fractalus, Revs, Downwell, Stunt Car Racer | Slicks, Vette, Pokeri, Alone in the Dark, Secret Weapons of Luftwaffe |
 | Memory to design for | 512 KiB–1 MiB Chip, assume no real Fast RAM | 2 MiB Chip, no Fast RAM (WHDLoad adds none unless the slave asks) |
 | Compiler | `-m68000`; no 32-bit mul/div | `-m68020 -msoft-float` (Alone in the Dark adds `-mtune=68020`) |
-| Display | Up to 4 lores planes cost the CPU nothing ([Chip bus](#the-chip-bus)) | 8 planes, FMODE 3 wide fetches |
+| Display | Up to 4 lores planes cost the CPU nothing ([Chip bus](#the-chip-bus)) | 8 planes; FMODE 3 wide fetches whenever the alignment allows ([Chip bus](#the-chip-bus)) |
 
 - **Detect AGA with `GfxBase->ChipRevBits0 & GFXF_AA_LISA`.** On Kickstart 3.1 the AA bits are
   set only after `SetPatch`, so every boot path (Shell, Workbench, the slave) runs `SetPatch`
@@ -69,6 +69,32 @@ AmigaXDev installs these ([environment](../environment.md)):
   chapter 6, "Blitter Operations and System DMA"). Below five lores planes the question is Chip
   RAM, not cycles; Revs went from two to four planes for 16.6 KB and no cycles. Five or six lores
   planes, or hires, take CPU slots.
+- **On AGA, fetch bitplanes 64 bits wide (`FMODE` = 3) whenever the screen can meet the
+  alignment rules below.** FMODE sets the width of each bitplane fetch: 16 bits (0), 32 (1 or 2)
+  or 64 (3). The display needs the same data either way, so wider fetches take a quarter of the
+  Chip-bus slots and leave the rest to the CPU, blitter and copper. At FMODE 0 each lores plane
+  takes one slot in eight: eight lores planes take every slot of a fetched line, and four hires
+  planes do the same. It pays most with five or more lores planes (or three or more hires) and
+  Chip-bound code; with four or fewer lores planes the CPU already has its slots and only blitter-
+  and copper-heavy code gains. It does nothing for code that rarely touches Chip RAM, or outside
+  the fetch window. Alone in the Dark's eight-plane book screen went from 88.5 to 69.0 ms per step
+  (Chip-bus time 26.5 → 8.08 ms) on FMODE 3 alone; its gameplay, which is not Chip-bound, stayed
+  at about 100 ms per frame. Alone in the Dark, Slicks, Pokeri and Secret Weapons of Luftwaffe
+  run FMODE 3; Vette pins FMODE 0 on purpose so an A1200 fetches like an A500.
+- **What FMODE 3 requires:**
+  - every bitplane pointer on an 8-byte boundary, checked in code (Alone in the Dark
+    `static_assert`s the picture size and checks its buffers at run time);
+  - a fetched width that is a multiple of 64 pixels, and modulos that keep every row 8-byte aligned;
+  - its own `DDFSTRT`/`DDFSTOP`: the OCS formulas do not apply. Alone in the Dark's 320-pixel lores
+    window moved from `$38/$d0` to `$20/$98`. The framework's AGA branch is an unmeasured donor pair,
+    so derive the values for your width and validate the picture ([AGA display and
+    palette](#aga-display-and-palette));
+  - coarser hardware scrolling: at 64-bit fetch a smooth horizontal scroll needs the extra AGA
+    scroll bits in `BPLCON1` and a fetch window that starts earlier;
+  - an OCS/ECS path that writes FMODE 0 (detect AGA as in [Targets](#targets)).
+
+  FMODE bits 2–3 set the sprite fetch width separately; writing 3 leaves sprites at 16 bits.
+  Write FMODE with the rest of the mode, never inherit it: the OS leaves its own value behind.
 - CPU reads of blitter targets wait for pending blits ([Blitter](#blitter)).
 
 ## Memory

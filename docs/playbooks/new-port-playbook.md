@@ -347,6 +347,9 @@ Read [Amiga hardware](../reference/amiga-hardware.md) first. The rules every por
   and bitplane/sprite pointers **first** in the VBI, before input or audio, never mid-frame.
 - Present completed frames, not individual drawing calls; pace them globally (Alone in the Dark
   D3). Keep explicit dirty rectangles; no shadow-framebuffer or tile-diff machinery.
+- On AGA, design the screen for 64-bit bitplane fetch (`FMODE` = 3) from the start: 8-byte aligned
+  bitplanes, a width that is a multiple of 64 pixels, and an FMODE 0 path for OCS/ECS. It frees
+  three quarters of the display's Chip-bus slots; see [the Chip bus](../reference/amiga-hardware.md#the-chip-bus).
 - Translate the original sound chip to Paula (POKEY, AY-3-8912, Mac sound drivers, AdLib FM);
   Rescue on Fractalus `docs/sfx-events.md` and Pokeri `PaulaAy.cpp` are the prior art.
 - Load the user's original data through DOS before taking over the machine, validate it, and fail
