@@ -189,7 +189,7 @@ class Server:
         print('serving on', self.sock, flush=True)
         while True:
             c, _ = s.accept()
-            line = c.recv(65536).decode().strip()
+            line = self.read_request(c)
             try:
                 reply = self.handle(g, line)
             except Exception as e:  # report and keep serving
@@ -201,6 +201,25 @@ class Server:
             c.close()
             if line == 'quit':
                 break
+
+    @staticmethod
+    def read_request(c):
+        """One request: up to a newline or EOF. Clients that send neither (the projects' own
+        socket helpers) are read until the data stops for a moment, so a request larger than
+        one recv arrives whole."""
+        data = c.recv(65536)
+        try:
+            c.settimeout(0.05)
+            while data and not data.endswith(b'\n'):
+                chunk = c.recv(65536)
+                if not chunk:
+                    break
+                data += chunk
+        except socket.timeout:
+            pass
+        finally:
+            c.settimeout(None)
+        return data.decode().strip()
 
     def capture(self, g, fields, target):
         """`monitor profile` FIELDS fields into TARGET with the CPU halted; returns gdb's reply."""
@@ -270,7 +289,7 @@ class Server:
         """Send one command to the running server; returns its reply."""
         c = socket.socket(socket.AF_UNIX)
         c.connect(self.sock)
-        c.sendall(line.encode())
+        c.sendall(line.encode() + b'\n')
         out = b''
         while chunk := c.recv(65536):
             out += chunk
