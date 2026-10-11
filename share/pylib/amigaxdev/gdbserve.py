@@ -76,7 +76,13 @@ class Gdb(_Reader):
             raise RuntimeError('connect failed:\n' + out)
 
     def cmd(self, text, timeout=30):
-        self.p.stdin.write((text + f'\necho {self.sent}\\n\n').encode())
+        # The pipe is unbuffered: a large script can be written in parts.
+        payload = (text + f'\necho {self.sent}\\n\n').encode()
+        while payload:
+            written = self.p.stdin.write(payload)
+            if not written:
+                raise BrokenPipeError('gdb command pipe closed')
+            payload = payload[written:]
         out = self.read_until(self.sent, timeout)
         return out.replace('(gdb) ', '').strip()
 
