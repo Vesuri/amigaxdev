@@ -177,6 +177,10 @@ class Server:
         # This prevents a fast warp boot from passing the first race during host polling.
         if os.environ.get('BOOT_BREAK'):
             g.cmd(f"break *{os.environ['BOOT_BREAK']}")
+            if os.environ.get('BOOT_CONDITION'):
+                g.cmd('condition $bpnum ' + os.environ['BOOT_CONDITION'])
+            if os.environ.get('BOOT_IGNORE'):
+                g.cmd('ignore $bpnum ' + os.environ['BOOT_IGNORE'])
             print(g.cmd('continue', timeout=1800), flush=True)
             g.cmd('delete')
         else:
