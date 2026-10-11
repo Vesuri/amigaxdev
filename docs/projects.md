@@ -93,12 +93,14 @@ against a live emulator, and archives, smoke slaves and Ghidra exports are byte-
 | Legends of Valour | its boot, capture (both window modes, `.pc-base`), multi-address `until`, `gdb` handshake |
 | Stellar 7 | its lldb profiler-window fix; `run.sh` uses the launcher's `NTSC` and `SLOW_KB` |
 | Red Baron and Hard Drivin' harnesses | Red Baron's `until`; Hard Drivin's instances, `host`, `poke`, long `profile`, `barto_mmap.py` |
+| 4D Sports Driving harness | a `stop` that interrupts only a running target, the native profiler's window check, its own `hotspots.py` (address ranges, `--sum`, `--jt`) |
 | Pokeri, Slicks, Vette | their release file maps; Pokeri's save slots |
 | Alone in the Dark | `require_production`, scratch in `tmp/`; `tools/resource_fork.py` re-exports the shared module for its 124 importers; `FSUAE_CLAIM_STRICT=1` |
 | Secret Weapons of Luftwaffe, Revs | their CPU-specific Ghidra scripts; Secret Weapons of Luftwaffe's `run.sh` uses `fsuae_prepare` |
 
-Not switched yet, because they had uncommitted work: Test Drive 2, Rescue on Fractalus, Downwell, and the 4D Sports Driving harness. Red Baron's committed branch `tools/`
-stay standalone, because the branch is meant for JOTD's repository.
+Not switched yet, because they had uncommitted work: Test Drive 2, Rescue on Fractalus and
+Downwell. Red Baron's committed branch `tools/` stay standalone, because the branch is meant
+for JOTD's repository.
 
 Stays in each project, because it is the game's own: `frames.py`, `swap_fields`,
 `check_disabled`, `fixed_window.sh`, `compare_*`, `audit_hooks`, `state_*` (frame counters and
