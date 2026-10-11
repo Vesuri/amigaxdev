@@ -88,7 +88,7 @@ against a live emulator, and archives, smoke slaves and Ghidra exports are byte-
 
 | Switched | Kept on top of the shared code |
 |---|---|
-| Battlehawks 1942, Their Finest Hour, Indianapolis 500, Indianapolis 500 JOTD and StingRay harnesses | `i500.py` and `tfh.py` export `SOCK` for their state tools |
+| Test Drive 2, Battlehawks 1942, Their Finest Hour, Indianapolis 500, Indianapolis 500 JOTD and StingRay harnesses | `i500.py` and `tfh.py` export `SOCK` for their state tools |
 | Powerdrome | its gdb server's PD1 request framing, captures of up to 500 fields |
 | Legends of Valour | its boot, capture (both window modes, `.pc-base`), multi-address `until`, `gdb` handshake |
 | Stellar 7 | its lldb profiler-window fix; `run.sh` uses the launcher's `NTSC` and `SLOW_KB` |
@@ -98,7 +98,7 @@ against a live emulator, and archives, smoke slaves and Ghidra exports are byte-
 | Alone in the Dark | `require_production`, scratch in `tmp/`; `tools/resource_fork.py` re-exports the shared module for its 124 importers; `FSUAE_CLAIM_STRICT=1` |
 | Secret Weapons of Luftwaffe, Revs, Rescue on Fractalus | their CPU-specific Ghidra scripts; Secret Weapons of Luftwaffe's and Rescue on Fractalus' `run.sh` use `fsuae_prepare` |
 
-Not switched yet, because they had uncommitted work: Test Drive 2 and Downwell. Red Baron's committed branch `tools/` stay standalone, because the branch is meant
+Not switched yet, because it had uncommitted work: Downwell. Red Baron's committed branch `tools/` stay standalone, because the branch is meant
 for JOTD's repository.
 
 Stays in each project, because it is the game's own: `frames.py`, `swap_fields`,
