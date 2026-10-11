@@ -4,7 +4,8 @@ Use this after identifying the game's time sources and getting the user's decisi
 simulation cadence. These checks complement the [new-game playbook](new-game-playbook.md#9-understand-game-time-before-optimising-anything).
 Legends of Valour `docs/simulation-timing.md`, `docs/one-degree-turning.md` and
 `tools/turning_input_validate.sh` provide concrete implementations; Stunt Car Racer shows
-what changes when the physics rate itself is raised. Their constants and patch offsets are
+what changes when the physics rate itself is raised; Red Baron prices a fixed step before
+building it and Their Finest Hour smooths a per-frame step. Their constants and patch offsets are
 game-specific. Uncapping drawing and smaller timesteps are in
 [simulation and presentation](simulation-and-presentation.md).
 
@@ -68,6 +69,52 @@ editing routes; a synthetic state toggle does not prove the real boundary is han
 Measure logic-only catch-up ticks separately from ticks that also draw. A faster-looking
 renderer can still lose frame rate when a slow machine must do more world updates. Keep
 rendering caps and beam synchronization separate from the simulation decision.
+
+## Price the catch-up before choosing the quantum
+
+A fixed step that the slowest target cannot sustain turns into a growing backlog. Before
+implementing one, project its cost: measure one world tick's cycles (routine cost with
+callees) and the rest of a frame's work, then work out ticks per second, world-only
+utilization and the render rate that is left for every speed setting. Red Baron
+(`docs/game-time.md`) did this for 225-unit world ticks on the A500:
+
+| Time Scale | World ticks/s | World-only utilization | Render fps left |
+|---|---:|---:|---:|
+| 0 | 3.4 | 20% | 1.5 |
+| 40 (default) | 8.2 | 48% | 1.0 |
+| 60 | 26.9 | 159% | unsustainable |
+
+A 100-unit quantum alone came to about 109% at the default setting, which ruled it out.
+Make the projection an explicit acceptance gate rather than a claim: the plan names what
+it does not yet prove (convergence, sustained catch-up of code that does not exist yet)
+and what changes if the gate fails (a coarser quantum, or optimising first). Where a
+setting is beyond the machine, keep the debt, skip rendering while behind, service input and
+audio between bounded batches of ticks, and report the supported CPU and speed envelope.
+Do not claim that catch-up always holds nominal speed.
+
+## A variable step measured per frame: average it when intervals count frames
+
+Some games keep a variable step and set countdowns as multiples of it, counted down once per
+frame. Their Finest Hour's T (frames per second, from a boot benchmark) scales both the
+per-step motion and its countdowns: a gun's reload is T/3 frames, a bullet lives 2T frames.
+Its `docs/internals.md` "Real-time simulation" describes the replacement:
+
+- Measure T every frame, but from an **average** frame length that moves 1/8 of the way
+  to each frame's length. A countdown lasts its time only while T matches the frames that
+  follow it. With T from the last frame alone, frames alternating between 2 and 3 fields
+  gave T 25 and 17 by turns and gaps between shots of 12 or 20 fields; with the average,
+  14–18 (mean 16.1 against 16.7 nominal).
+- Carry the time owed (frame lengths less the steps taken) and add part of it (a quarter) to
+  the next step, so game speed stays exact over time. Clamp T to the range the game handles
+  and let a very long frame (a pause or a disk load) add no time.
+- Scale inputs that grow with the frame's length (mouse counts divided by T) so control
+  response does not depend on the frame rate; pick the scale that matches the original at
+  its usual rate.
+- Measure the field rate rather than assuming PAL, and leave the boot benchmark alone if its
+  value is used outside the replaced loop.
+- At large T, per-step increments become small, and the game's truncation of each one loses
+  speed and turn rate. Carry the fractions per object in 16.16 (Their Finest Hour: 4 649 →
+  4 712 units/s at 50 fps, against 4 715 nominal).
 
 ## Raising the update rate: decide per quantity what scales
 
