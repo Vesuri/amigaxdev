@@ -68,7 +68,7 @@ variables can be left out once those files are installed.
 | Native arm64 FS-UAE with the gdb stub | `fsuae-arm` | GitHub `grahambates/fs-uae`, built | `fs-uae-arm/` |
 | The same with the cycle profiler patch | `fsuae-aprof` | that + `patches/fsuae-aprof.patch` | `fs-uae-aprof/` |
 | Unicorn 2.1.4 with the arm64 constant-subtract fix (Homebrew's dies with SIGILL there) | `unicorn` | GitHub release tarball + `patches/unicorn-aarch64-addsub2.patch`, built | `unicorn/` |
-| Ghidra, MAME, DOSBox-X, DOSBox Staging, unicorn, volta, ffmpeg, 7-Zip | `brew-extras` | Homebrew | Homebrew; Ghidra linked under `~/.local/share/ghidra/` |
+| Ghidra, MAME, DOSBox-X, DOSBox Staging, atari800, unicorn, volta, ffmpeg, 7-Zip | `brew-extras` | Homebrew | Homebrew; Ghidra linked under `~/.local/share/ghidra/` |
 
 Paths without a directory are under `~/.local/share/amiga`. Every download, git commit and
 licensed file is pinned in `manifest/`. `docs/environment.md` lists the shared variables and

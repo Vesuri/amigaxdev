@@ -10,6 +10,8 @@ brew "mame"
 brew "dosbox-x"
 brew "dosbox-staging"
 brew "unicorn"
+# Atari 8-bit reference emulator (Rescue on Fractalus).
+brew "atari800"
 brew "capstone"
 
 # Builds the patched Unicorn in $AMIGA_SHARE/unicorn (make unicorn).
