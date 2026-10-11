@@ -96,10 +96,9 @@ against a live emulator, and archives, smoke slaves and Ghidra exports are byte-
 | 4D Sports Driving harness | a `stop` that interrupts only a running target, the native profiler's window check, its own `hotspots.py` (address ranges, `--sum`, `--jt`) |
 | Pokeri, Slicks, Vette | their release file maps; Pokeri's save slots |
 | Alone in the Dark | `require_production`, scratch in `tmp/`; `tools/resource_fork.py` re-exports the shared module for its 124 importers; `FSUAE_CLAIM_STRICT=1` |
-| Secret Weapons of Luftwaffe, Revs | their CPU-specific Ghidra scripts; Secret Weapons of Luftwaffe's `run.sh` uses `fsuae_prepare` |
+| Secret Weapons of Luftwaffe, Revs, Rescue on Fractalus | their CPU-specific Ghidra scripts; Secret Weapons of Luftwaffe's and Rescue on Fractalus' `run.sh` use `fsuae_prepare` |
 
-Not switched yet, because they had uncommitted work: Test Drive 2, Rescue on Fractalus and
-Downwell. Red Baron's committed branch `tools/` stay standalone, because the branch is meant
+Not switched yet, because they had uncommitted work: Test Drive 2 and Downwell. Red Baron's committed branch `tools/` stay standalone, because the branch is meant
 for JOTD's repository.
 
 Stays in each project, because it is the game's own: `frames.py`, `swap_fields`,
@@ -115,7 +114,7 @@ port's binary except Slicks' and Secret Weapons of Luftwaffe's (which share thei
 `$AMIGA_FRAMEWORK` is the canonical tree to compare with and take fixes from
 (`python3 -m amigaxdev.framework diff PROJECT`); each port's `UPSTREAM.md` (Secret Weapons of
 Luftwaffe: `framework/README.md`) records the AmigaXDev commit its copy is based on. Downwell
-and Rescue on Fractalus don't have that line yet.
+doesn't have that line yet.
 
 Python tools that start FS-UAE themselves, so they are not silent and come to the front: Rescue
 on Fractalus `tools/test_whdload.py`, `tools/test_rom_failures.py`; Alone in the Dark
