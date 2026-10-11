@@ -277,6 +277,10 @@ the target finds them:
 - **`MOVE` sets N/Z; `EXG` sets no flags**: `tst / exg / bmi` works, `tst / move / bmi` does not.
 - A patched or replaced routine preserves every live register and **all five CCR bits including
   X** (Vette: the copy-row kernel's final N/Z and X).
+- **Audit every address's width, then its value range.** A `.w` address sign-extends above
+  `$7FFF` and writes somewhere else. A wild-write hunt in Rescue on Fractalus ended at one; what
+  found it was a hardware watchpoint (prove it fires on a known write first), a checksum canary
+  over the damaged area, and a lookup from runtime address to symbol.
 
 ## 9. Code generators and translators
 

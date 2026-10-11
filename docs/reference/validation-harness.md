@@ -83,6 +83,11 @@ Revs).
 
 ## 3. Routine differentials
 
+- **Rewrite in small byte-identical steps.** Turning a transliterated routine into clean C is a
+  loop: verify the disassembly, splice the new body in by line, run the routine's differential,
+  commit. One routine per commit, each independently green (Revs). The ways a green step still
+  breaks at runtime are the fixture rules below: an argument in a register the fixture never
+  varied, a gating byte that left a branch unexercised, a live exit register filed as incidental.
 - **Fixture or fail.** A validated name with no fixture fails the run. A run with zero
   comparisons is a failure (Rescue on Fractalus printed PASS with none).
 - **Compare the complete live-out**, not just memory:
@@ -104,6 +109,9 @@ Revs).
   makes the path untestable.
 - **Run the differential big-endian, or lint wide aliases of little-endian guest RAM.** A
   green host run with garbage on the target happened (Rescue on Fractalus, Revs).
+- **Two adjacent asm twins may pass values in registers instead of through guest memory,** but
+  keep the shim seam so the C oracle stays reachable through the memory path, and write down the
+  precondition the callee inherits, such as which registers arrive zero-extended (Revs).
 - **A shim or seam reproduces every register and flag its callers read,** transitively, even
   when the native core no longer needs it.
   - A hook seam hands over every register live at that address, not only what the default
@@ -256,6 +264,9 @@ runs captured with different amounts of output.
   it and fail on any difference.
 - **Never compare memory or pictures between builds of different speed** at a fixed field
   count. The simulation has advanced to a different place. Use an in-process oracle.
+- **A guard that works may be the bug.** When a check behaves as designed but the behaviour is
+  still wrong, test whether the check itself suppresses the corrective action. It is the same
+  family as caching a write-only register ([Amiga hardware](amiga-hardware.md#write-only-registers)).
 
 ## 8. Whole-program determinism
 

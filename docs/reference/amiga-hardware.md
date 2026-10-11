@@ -380,6 +380,10 @@ re-inserts the system copper list after every `WaitTOF`.
   banks: square waves at computed periods; noise from a rendered LFSR (Revs) or evolving buffers
   refreshed in slices (Pokeri). Envelopes clocked at 50 Hz quantise 100 Hz steps in pairs; a CIA
   timer fixes that. No port has re-hosted FM/OPL.
+- Keep the refresh in the VBI and bounded in time, with no per-sample interrupt mixer (Pokeri).
+  When the original drives more voices than it has channels, port its priority mixer and map
+  its channels to Paula's, rather than mixing voices together (Rescue on Fractalus: 16 voice
+  slots onto four POKEY channels).
 
 ## Input
 
