@@ -23,7 +23,9 @@
 #   fsuae_kill_recorded F C kill the pid in pidfile F if it is still a C process
 #   fsuae_gdb_script FILE   echo a copy of FILE with the stub port patched in
 # Launch API:
-#   fsuae_options           fill the FSUAE_ARGS array from the variables below
+#   fsuae_options           fill the FSUAE_ARGS array from the variables below.  fsuae_launch
+#                           and fsuae_exec call it only if FSUAE_ARGS is unset: a script that
+#                           calls it itself must set every variable first
 #   fsuae_launch ARGS...    start "$FSUAE" in the background with $EXTRA_ARGS, ARGS and
 #                           FSUAE_ARGS, log to $FSUAE_RUN/fsuae.log, track it, print its pid.
 #                           FS-UAE keeps the first value of a repeated option, so EXTRA_ARGS
@@ -38,6 +40,8 @@
 #   SOUND=1|0 (default 1, 0 for debug runs; SILENT=1 means SOUND=0)
 #   WINDOW=front|back|none (default front, back for debug runs).  back keeps the window
 #     behind the active one (SDL_MAC_BACKGROUND_APP); none runs with no window at all
+#   WINDOW_WIDTH, WINDOW_HEIGHT (default 720x568: without a size a launch with no window
+#     stalls with "Not a valid drawable size")
 #   EXTRA_ARGS (word-split, passed first, so it overrides everything; --warp_mode=1 in it
 #     makes a debug run like WARP=1)
 
@@ -175,6 +179,7 @@ fsuae_options() {
 
   mkdir -p "$FSUAE_RUN"
   FSUAE_ARGS=(--base_dir="$PWD/$FSUAE_RUN/fsuae" --fullscreen=0 --automatic_input_grab=0
+              --window_width="${WINDOW_WIDTH:-720}" --window_height="${WINDOW_HEIGHT:-568}"
               --ntsc_mode="${NTSC:-0}" --warp_mode="${WARP:-0}")
   [ -n "${AMIGA_MODEL:-}" ] && FSUAE_ARGS+=(--amiga_model="$AMIGA_MODEL")
   [ -n "${CPU:-}" ]         && FSUAE_ARGS+=(--cpu="$CPU")
