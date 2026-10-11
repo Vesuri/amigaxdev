@@ -33,7 +33,8 @@
 #   fsuae_exec ARGS...      the same in the foreground (exec), for interactive scripts
 # Variables (all optional; a script sets its own defaults before calling fsuae_options):
 #   FSUAE (fs-uae on PATH), FSUAE_RUN (work dir, .run), DEBUG_PORT (pins the stub port)
-#   AMIGA_MODEL, CPU, CHIP_KB, FAST_KB, SLOW_KB, KICKSTART, NTSC=1, WARP=1
+#   AMIGA_MODEL, CPU, CHIP_KB, FAST_KB, SLOW_KB, KICKSTART, WARP=1
+#   NTSC=1 (NTSC timing: --ntsc_mode=1 and --uae_ntsc=true)
 #   DEBUG=1 (gdb stub, waits $DEBUG_WAIT s, default 20), DETERMINISTIC=1, RECORD=FILE
 #   JOY0, JOY1 (an FS-UAE device name; "none" also sets the port's mode to nothing, which is
 #     what keeps the host mouse out of a capture)
@@ -181,6 +182,8 @@ fsuae_options() {
   FSUAE_ARGS=(--base_dir="$PWD/$FSUAE_RUN/fsuae" --fullscreen=0 --automatic_input_grab=0
               --window_width="${WINDOW_WIDTH:-720}" --window_height="${WINDOW_HEIGHT:-568}"
               --ntsc_mode="${NTSC:-0}" --warp_mode="${WARP:-0}")
+  # ntsc_mode alone leaves this FS-UAE in PAL timing; the core option switches it.
+  [ "${NTSC:-0}" = 1 ]      && FSUAE_ARGS+=(--uae_ntsc=true)
   [ -n "${AMIGA_MODEL:-}" ] && FSUAE_ARGS+=(--amiga_model="$AMIGA_MODEL")
   [ -n "${CPU:-}" ]         && FSUAE_ARGS+=(--cpu="$CPU")
   [ -n "${CHIP_KB:-}" ]     && FSUAE_ARGS+=(--chip_memory="$CHIP_KB")
