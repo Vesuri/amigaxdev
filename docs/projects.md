@@ -29,23 +29,24 @@ StingRay's slave repository (harness in the ignored `tmp/dev/`).
 | Project | Group | State | Needs |
 |---|---|---|---|
 | Test Drive 2 | W | migrated | — |
-| Their Finest Hour | W | migrated (uncommitted paused work left alone) | — |
+| Their Finest Hour | W | migrated | — |
 | Battlehawks 1942 | W | migrated | — |
 | Indianapolis 500 | W | migrated | — |
 | Legends of Valour | W | migrated; keeps WHDLoad 19.2 and its native vasm build deliberately | — |
 | Powerdrome | W | migrated | — |
-| Stellar 7 | W | partly: env, tools, build | `amiga/run.sh` onto the shared launcher once its uncommitted work is committed (it needs `NTSC=1` as default: its new `--uae_ntsc` defaults to NTSC); `docs/development.md`; `tools/stellar7_report.py` defaults |
+| Stellar 7 | W | migrated; NTSC is its default | — |
 | Pokeri | P | migrated; keeps WHDLoad 19.2 for its slave and tests | — |
 | Revs | P | migrated; keeps WHDLoad 19.2; tests use their own `WHDLOAD_BIN` | — |
 | Slicks | P | migrated; keeps WHDLoad 19.2; unstripped `SlicksDiag.exe` differs on every build (stripped release identical) | — |
 | Vette | P | migrated; keeps WHDLoad 19.2 | — |
 | Alone in the Dark | P | migrated; keeps WHDLoad 19.2, its fixed port 24377 and its own machine arguments; uses the shared `fs-uae-aprof` | — |
 | Rescue on Fractalus | P | migrated; keeps WHDLoad 19.2 | — |
-| Secret Weapons of Luftwaffe | P | migrated (uncommitted paused work left alone; not rebuilt, its build runs that work: `make -n` identical); its tests take Unicorn from `AMIGA_UNICORN` | — |
+| Secret Weapons of Luftwaffe | P | migrated; its tests take Unicorn from `AMIGA_UNICORN` | — |
 | Downwell | P | migrated; its HEAD did not build before the change (`MotionBinary64`), generated files identical | — |
 | Stunt Car Racer | P | migrated (no run script); `tools/test_whdload.py` keeps WHDLoad 19.2 as the binary releases were validated with | — |
 | Red Baron | F | migrated (harness in `tmp/dev`, playbook reference on the branch) | harness probes `w1_build_modes.py`, `probe_menu.py` hardcode `~/.local` paths |
 | 4D Sports Driving | F | migrated (harness in `tmp/dev`) | — |
+| Hard Drivin' | F | on the shared environment from the start (harness in `tmp/dev`; slave changes, VERIFY variants and performance docs on the branch) | — |
 | Indianapolis 500 JOTD | F | harness in `tmp/dev` migrated; uncommitted slave work untouched | — |
 | Indianapolis 500 StingRay | F | migrated (harness in `tmp/dev`) | — |
 
