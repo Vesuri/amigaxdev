@@ -224,6 +224,14 @@ Several projects run emulators at once.
   launcher kills only what this directory started: the pid recorded in `.run/fsuae.pid` (a
   leftover only if it is still an `fs-uae`), or, in `fsuae_claim_port`, an `fs-uae` whose working
   directory is this one. Kill your own gdb by its pid.
+- **Do not trust copied startup headers as runtime configuration evidence.** This FS-UAE
+  logger opens a shared `fs-uae.log` under its user-data directory, then copies it when
+  switching to the project-private log (`libfsemu/src/log.c`). Simultaneous project boots
+  can therefore mix or omit the early `cpu =` / `ntsc_mode =` text without changing either
+  emulator's configuration. Stellar 7 observed a 68060/PAL header followed by the correct
+  private 68030/NTSC UAE options. Retain the private effective `debug.uae`, inspect the
+  final `Set option` values and corroborate the running game's clock. Do not kill other
+  projects or reinterpret a mismatched header as a measured machine change.
 - `Remote connection closed` mid-run usually means another session killed your emulator, not
   that your build crashed. Revs read three such runs as "the PROBES build dies past vbi 262"
   before finding a sibling project's `pkill`. Check `pgrep -fl "diag_run.sh|fs-uae"` first. A
