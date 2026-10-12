@@ -38,6 +38,7 @@
 #   FSUAE (fs-uae on PATH), FSUAE_RUN (work dir, .run), DEBUG_PORT (pins the stub port)
 #   AMIGA_MODEL, CPU, CHIP_KB, FAST_KB, SLOW_KB, KICKSTART, WARP=1
 #   AMIGA_SETUP (named machine; overrides individual machine variables and script arguments)
+#   AMIGA_MONITOR=left|right|primary (macOS; unset: left on multiple displays; empty: off)
 #   NTSC=1 (NTSC timing: --ntsc_mode=1 and --uae_ntsc=true)
 #   DEBUG=1 (gdb stub, waits $DEBUG_WAIT s, default 20), DETERMINISTIC=1, RECORD=FILE
 #   JOY0, JOY1 (an FS-UAE device name; "none" also sets the port's mode to nothing, which is
@@ -52,6 +53,7 @@
 
 FSUAE_RUN="${FSUAE_RUN:-.run}"
 FSUAE_PIDFILE="$FSUAE_RUN/fsuae.pid"
+_FSUAE_COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Default gdb-stub port: derived from the script's own directory, so each project
 # (and each checkout) gets a different one and two debug sessions can run at the
@@ -274,6 +276,37 @@ fsuae_options() {
   return 0
 }
 
+fsuae_monitor_coordinates() {
+  python3 "$_FSUAE_COMMON_DIR/pylib/amigaxdev/monitor.py" "${AMIGA_MONITOR-auto}"
+}
+
+# Resolve displays immediately before launch, so reconnecting/rearranging them needs no
+# configuration update. Explicit EXTRA_ARGS positions retain priority. No GUI access for
+# headless runs, including those requested directly through video_driver.
+fsuae_monitor() {
+  FSUAE_MONITOR_ARGS=()
+  [ "${AMIGA_MONITOR-unset}" != "" ] || return 0
+  case "${AMIGA_MONITOR-auto}" in
+    auto|left|right|primary) ;;
+    *) echo "Unknown AMIGA_MONITOR '$AMIGA_MONITOR'; use left, right or primary" >&2; return 1 ;;
+  esac
+  local arg coordinates x y
+  for arg in "$@"; do
+    case "$arg" in
+      --video_driver=null) return 0 ;;
+      --video_driver=*) break ;;
+    esac
+  done
+  if ! coordinates=$(fsuae_monitor_coordinates); then
+    # An unavailable desktop must not prevent an otherwise ordinary default launch.
+    [ "${AMIGA_MONITOR-auto}" = auto ] && return 0
+    return 1
+  fi
+  [ -n "$coordinates" ] || return 0
+  read -r x y <<< "$coordinates"
+  FSUAE_MONITOR_ARGS=(--window_x="$x" --window_y="$y")
+}
+
 # Exported for one launch: a background app never comes to the front.
 fsuae_env() {
   [ "${FSUAE_WINDOW:-front}" = front ] || export SDL_MAC_BACKGROUND_APP=1
@@ -282,10 +315,12 @@ fsuae_env() {
 fsuae_launch() {
   [ -n "${FSUAE_ARGS+set}" ] || fsuae_options || return 1
   fsuae_setup || return 1
+  # shellcheck disable=SC2086
+  fsuae_monitor ${EXTRA_ARGS:-} "$@" "${FSUAE_ARGS[@]}" || return 1
   local log="${FSUAE_LOG:-$FSUAE_RUN/fsuae.log}"
   # The subshell execs, so $! is the emulator itself (what fsuae_stop_previous checks).
   # shellcheck disable=SC2086  # EXTRA_ARGS is word-split on purpose
-  ( fsuae_env; exec "${FSUAE:-fs-uae}" ${EXTRA_ARGS:-} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}" ) > "$log" 2>&1 &
+  ( fsuae_env; exec "${FSUAE:-fs-uae}" ${EXTRA_ARGS:-} ${FSUAE_MONITOR_ARGS[@]+"${FSUAE_MONITOR_ARGS[@]}"} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}" ) > "$log" 2>&1 &
   fsuae_track $!
   echo "fs-uae pid $FSUAE_PID (log $log, port $DEBUG_PORT)"
 }
@@ -293,8 +328,10 @@ fsuae_launch() {
 fsuae_exec() {
   [ -n "${FSUAE_ARGS+set}" ] || fsuae_options || return 1
   fsuae_setup || return 1
+  # shellcheck disable=SC2086
+  fsuae_monitor ${EXTRA_ARGS:-} "$@" "${FSUAE_ARGS[@]}" || return 1
   fsuae_track_self
   fsuae_env
   # shellcheck disable=SC2086
-  exec "${FSUAE:-fs-uae}" ${EXTRA_ARGS:-} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}"
+  exec "${FSUAE:-fs-uae}" ${EXTRA_ARGS:-} ${FSUAE_MONITOR_ARGS[@]+"${FSUAE_MONITOR_ARGS[@]}"} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}"
 }

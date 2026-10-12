@@ -233,6 +233,34 @@ gdb's status, with `trap fsuae_stop EXIT`.
 
 ## Sound, window, screenshots
 
+On macOS, shared launches automatically place new windows on the **leftmost display when
+multiple displays are active**. With one display, placement stays unchanged. The display
+arrangement is read at each launch using CoreGraphics (no Accessibility or Screen Recording
+permission required). Coordinates use logical desktop points, including negative coordinates
+for displays to the left of or above the primary display.
+
+Override the choice independently of the emulated machine:
+
+```sh
+AMIGA_MONITOR=right AMIGA_SETUP=a1200-fast amiga/run.sh
+AMIGA_MONITOR=primary amiga/run.sh
+AMIGA_MONITOR= amiga/run.sh  # disable automatic positioning
+```
+
+`left` and `right` select the displays with the smallest and largest desktop x origins;
+ties prefer the topmost display, then the primary display. `primary` selects the macOS
+main display. The window's top-left corner is placed 40 points inside the selected display;
+its size is unchanged. This controls windowed launches, not initial fullscreen placement.
+`EXTRA_ARGS='--window_x=... --window_y=...'` overrides the chosen coordinates.
+
+Headless launches (`WINDOW=none` or an effective `--video_driver=null`) skip display discovery.
+An explicit invalid selection or failed explicit display lookup stops the launch. Automatic
+lookup failure reports the problem and keeps ordinary placement. Existing windows are not
+moved. After `make share`, every project using `fsuae_launch`/`fsuae_exec` gets this behaviour
+without project changes. Private launchers are unaffected.
+
+Monitor checks: `python3 scripts/test_monitor.py` and `python3 scripts/test_fsuae_setup.py`.
+
 Debug runs (`DEBUG=1`, `WARP=1`, `FSUAE_QUIET=1`, or `--warp_mode=1` in `EXTRA_ARGS`) get
 `--audio_driver=dummy` and a window behind the others (`SDL_MAC_BACKGROUND_APP=1`); plain runs
 are audible and in front. `SOUND=1|0` (`SILENT=1`) and `WINDOW=front|back|none` override;

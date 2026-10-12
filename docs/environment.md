@@ -90,6 +90,11 @@ project machine defaults at launch; `EXTRA_ARGS` remains the explicit override. 
 [named machine setups](reference/headless-fsuae.md#named-machine-setups) for RAM, ROMs,
 clocks, MMU settings and project compatibility limits. Install updates with `make share`.
 
+On macOS the shared launcher also defaults to the leftmost display when multiple monitors
+are connected. `AMIGA_MONITOR=left|right|primary` selects a display explicitly;
+`AMIGA_MONITOR=` disables automatic positioning. See
+[window placement](reference/headless-fsuae.md#sound-window-screenshots).
+
 | What | Use | Replaces the per-project |
 |---|---|---|
 | `amigaxdev.env` | `path(NAME)`, `tool('objdump')`: the shared defaults with environment overrides | `local_env.py`, inline `AMIGA_TOOLCHAIN` lookups |

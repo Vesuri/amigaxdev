@@ -20,10 +20,12 @@ class Setups(unittest.TestCase):
         self.stub.write_text('#!/bin/bash\nprintf "%s\\n" "$@"\n')
         self.stub.chmod(0o755)
 
-    def run_launcher(self, setup="", mode="exec", extra="", common=COMMON, before=""):
+    def run_launcher(self, setup="", mode="exec", extra="", common=COMMON, before="", monitor=""):
         env = {key: os.environ[key] for key in ("HOME", "PATH")}
         env.update(COMMON=str(common), FSUAE=str(self.stub), AMIGA_SETUP=setup,
                    AMIGA_SHARE=str(self.work / "shared files"), EXTRA_ARGS=extra)
+        if monitor is not None:
+            env["AMIGA_MONITOR"] = monitor
         script = '''set -eu
 . "$COMMON"
 AMIGA_MODEL=A4000 CPU=68040-NOMMU CHIP_KB=8192 FAST_KB=2048 SLOW_KB=1024
@@ -107,6 +109,40 @@ AMIGA_SETUP=typo
         self.assertEqual(values["amiga_model"], "A4000")
         self.assertEqual(values["uae_mmu_model"], "0")
         self.assertEqual(values["kickstart_file"], "wrong")
+
+    def test_monitor_both_launch_paths_and_default(self):
+        for mode in ("exec", "launch"):
+            for monitor in (None, "left", "right", "primary"):
+                with self.subTest(mode=mode, monitor=monitor):
+                    values = self.effective(self.run_launcher(
+                        mode=mode, monitor=monitor,
+                        before='fsuae_monitor_coordinates() { echo "-1880 40"; }'))
+                    self.assertEqual(values["window_x"], "-1880")
+                    self.assertEqual(values["window_y"], "40")
+
+    def test_monitor_overrides_and_headless(self):
+        stub = 'fsuae_monitor_coordinates() { echo "-1880 40"; }'
+        values = self.effective(self.run_launcher(monitor="left", before=stub,
+                                extra="--window_x=123 --window_y=456"))
+        self.assertEqual(values["window_x"], "123")
+        self.assertEqual(values["window_y"], "456")
+        for monitor in (None, "left", ""):
+            values = self.effective(self.run_launcher(monitor=monitor,
+                extra="--video_driver=null",
+                before='fsuae_monitor_coordinates() { echo unexpected >&2; return 1; }'))
+            self.assertNotIn("window_x", values)
+
+    def test_monitor_failure_and_single_display(self):
+        failure = 'fsuae_monitor_coordinates() { return 1; }'
+        self.assertEqual(self.run_launcher(monitor="left", before=failure).returncode, 1)
+        values = self.effective(self.run_launcher(monitor=None, before=failure))
+        self.assertNotIn("window_x", values)
+        values = self.effective(self.run_launcher(monitor=None,
+                                before='fsuae_monitor_coordinates() { return 0; }'))
+        self.assertNotIn("window_x", values)
+        result = self.run_launcher(monitor="typo")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Unknown AMIGA_MONITOR", result.stderr)
 
 
 if __name__ == "__main__":
