@@ -38,7 +38,8 @@
 #   FSUAE (fs-uae on PATH), FSUAE_RUN (work dir, .run), DEBUG_PORT (pins the stub port)
 #   AMIGA_MODEL, CPU, CHIP_KB, FAST_KB, SLOW_KB, KICKSTART, WARP=1
 #   AMIGA_SETUP (named machine; overrides individual machine variables and script arguments)
-#   AMIGA_MONITOR=left|right|primary (macOS; unset: left on multiple displays; empty: off)
+#   AMIGA_MONITOR=left|right|primary (macOS; unset: debug runs left on multiple displays;
+#     ordinary runs unchanged; empty: off)
 #   NTSC=1 (NTSC timing: --ntsc_mode=1 and --uae_ntsc=true)
 #   DEBUG=1 (gdb stub, waits $DEBUG_WAIT s, default 20), DETERMINISTIC=1, RECORD=FILE
 #   JOY0, JOY1 (an FS-UAE device name; "none" also sets the port's mode to nothing, which is
@@ -285,6 +286,11 @@ fsuae_monitor_coordinates() {
 # headless runs, including those requested directly through video_driver.
 fsuae_monitor() {
   FSUAE_MONITOR_ARGS=()
+  # Use the same debug/diagnostic classification as sound and background windows.
+  # Explicit monitor choices still apply to interactive runs.
+  if [ -z "${AMIGA_MONITOR+set}" ]; then
+    fsuae_quiet || return 0
+  fi
   [ "${AMIGA_MONITOR-unset}" != "" ] || return 0
   case "${AMIGA_MONITOR-auto}" in
     auto|left|right|primary) ;;

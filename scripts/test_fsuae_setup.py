@@ -116,7 +116,7 @@ AMIGA_SETUP=typo
                 with self.subTest(mode=mode, monitor=monitor):
                     values = self.effective(self.run_launcher(
                         mode=mode, monitor=monitor,
-                        before='fsuae_monitor_coordinates() { echo "-1880 40"; }'))
+                        before='DEBUG=1\nfsuae_monitor_coordinates() { echo "-1880 40"; }'))
                     self.assertEqual(values["window_x"], "-1880")
                     self.assertEqual(values["window_y"], "40")
 
@@ -129,20 +129,39 @@ AMIGA_SETUP=typo
         for monitor in (None, "left", ""):
             values = self.effective(self.run_launcher(monitor=monitor,
                 extra="--video_driver=null",
-                before='fsuae_monitor_coordinates() { echo unexpected >&2; return 1; }'))
+                before='DEBUG=1\nfsuae_monitor_coordinates() { echo unexpected >&2; return 1; }'))
             self.assertNotIn("window_x", values)
 
     def test_monitor_failure_and_single_display(self):
-        failure = 'fsuae_monitor_coordinates() { return 1; }'
+        failure = 'DEBUG=1\nfsuae_monitor_coordinates() { return 1; }'
         self.assertEqual(self.run_launcher(monitor="left", before=failure).returncode, 1)
         values = self.effective(self.run_launcher(monitor=None, before=failure))
         self.assertNotIn("window_x", values)
         values = self.effective(self.run_launcher(monitor=None,
-                                before='fsuae_monitor_coordinates() { return 0; }'))
+                                before='DEBUG=1\nfsuae_monitor_coordinates() { return 0; }'))
         self.assertNotIn("window_x", values)
         result = self.run_launcher(monitor="typo")
         self.assertEqual(result.returncode, 1)
         self.assertIn("Unknown AMIGA_MONITOR", result.stderr)
+
+    def test_monitor_default_only_for_debug_runs(self):
+        stub = 'fsuae_monitor_coordinates() { echo "-1880 40"; }'
+        for mode in ("exec", "launch"):
+            for flags, extra, placed in (
+                ("", "", False),
+                ("DEBUG=0 WARP=0 FSUAE_QUIET=0", "", False),
+                ("DEBUG=1", "", True),
+                ("WARP=1", "", True),
+                ("FSUAE_QUIET=1", "", True),
+                ("", "--warp_mode=1", True),
+            ):
+                with self.subTest(mode=mode, flags=flags, extra=extra):
+                    values = self.effective(self.run_launcher(
+                        mode=mode, monitor=None, extra=extra, before=flags + '\n' + stub))
+                    self.assertEqual("window_x" in values, placed)
+            values = self.effective(self.run_launcher(
+                mode=mode, monitor="", before="DEBUG=1\n" + stub))
+            self.assertNotIn("window_x", values)
 
 
 if __name__ == "__main__":

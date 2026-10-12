@@ -233,8 +233,12 @@ gdb's status, with `trap fsuae_stop EXIT`.
 
 ## Sound, window, screenshots
 
-On macOS, shared launches automatically place new windows on the **leftmost display when
-multiple displays are active**. With one display, placement stays unchanged. The display
+On macOS, shared **debug/diagnostic launches** automatically place new windows on the
+**leftmost display when multiple displays are active**. This uses the same classification
+as quiet runs: `DEBUG=1`, `WARP=1`, `FSUAE_QUIET=1`, or `--warp_mode=1` in `EXTRA_ARGS`.
+Ordinary interactive launches (including plain `run.sh`) keep their usual placement;
+`DEBUG=1 amiga/run.sh` gets debug placement. With one display, automatic placement stays
+unchanged. Explicit `AMIGA_MONITOR` choices apply to both interactive and debug runs. The display
 arrangement is read at each launch using CoreGraphics (no Accessibility or Screen Recording
 permission required). Coordinates use logical desktop points, including negative coordinates
 for displays to the left of or above the primary display.

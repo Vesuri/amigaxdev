@@ -90,8 +90,9 @@ project machine defaults at launch; `EXTRA_ARGS` remains the explicit override. 
 [named machine setups](reference/headless-fsuae.md#named-machine-setups) for RAM, ROMs,
 clocks, MMU settings and project compatibility limits. Install updates with `make share`.
 
-On macOS the shared launcher also defaults to the leftmost display when multiple monitors
-are connected. `AMIGA_MONITOR=left|right|primary` selects a display explicitly;
+On macOS the shared launcher defaults debug/diagnostic runs to the leftmost display when
+multiple monitors are connected; ordinary interactive runs keep their usual placement.
+`AMIGA_MONITOR=left|right|primary` selects a display explicitly for either kind of run;
 `AMIGA_MONITOR=` disables automatic positioning. See
 [window placement](reference/headless-fsuae.md#sound-window-screenshots).
 
