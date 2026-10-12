@@ -126,3 +126,11 @@ the x86_64 `fs-uae` on `PATH`, because host lldb can attach to it (playbook §5)
 | `kick40068.A1200` | Kickstart v3.1 r40.068 (1993-12)(Commodore)(A1200)[!] |
 
 All are the verified (`[!]`) dumps, the ones skick346's relocation tables are made for.
+
+## Shared Macintosh runtime sources
+
+`$AMIGA_SHARE/mac-runtime` holds the canonical C++ rectangle helpers used by
+Alone in the Dark and Prince of Persia 2. Consumers vendor identical source files
+and verify `manifest/shared-runtime.sha256` before compilation and host checks.
+See `share/mac-runtime/README.md` for the update workflow. Game-specific trap ABI
+and memory ownership checks remain in each port.
