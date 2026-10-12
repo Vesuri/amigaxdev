@@ -110,3 +110,42 @@ when input is sampled, how pending time is represented, and which consumers need
 intermediate state. Finally, simulation and display clocks can differ: roughly 60 Hz updates
 shown at 50 Hz alternate step counts unless presentation compensates. Choose cadence and
 presentation together, then define handling and timing acceptance before implementation.
+
+## Interrupt-driven simulation needs a short protected snapshot
+
+Do not assume simulation advances in the drawing loop. Grand Prix Circuit updates physics
+from the VBL interrupt while foreground code draws. Removing a drawing wait therefore does
+not itself change its simulation rate. Inventory the interrupt counters, input sampling,
+physics period and independent game clocks before changing cadence.
+
+If a foreground renderer copies several related fields, an interrupt can split that copy
+between two physics ticks. Use a balanced OS Disable/Enable pair around the smallest complete
+snapshot, preserving registers and native call/return semantics. Perform projection-table
+rebuilds and other long work after Enable. Save all view inputs that must agree: road,
+horizon, scenery and opponents can read different copies of the same pose. A consistent road
+alone does not prove a consistent frame.
+
+Validate both the copied values and the interrupt exclusion. Inspect executed PCs between
+Disable and Enable, not just the VBR or a sampled counter, and retain a negative control.
+Keep rate conversion separate from clock policy: finer physics need fractional remainders,
+while lap clocks, decisions, damage and event gates may retain their original periods.
+
+## LoadView is a publication request, not buffer retirement
+
+A LoadView call can schedule a copper-list change without immediately stopping DMA from the
+old screen. A call counter is therefore a publication marker, not proof that a bitmap is safe
+to overwrite. Trace DMA bitplane pointers and CPU/blitter destinations through the handoff.
+Grand Prix Circuit initially overwrote the displayed bitmap despite apparently alternating
+its two software buffers; horizon flicker was a visible symptom.
+
+Where the native main loop permits it, publish the new view and do CPU-only geometry work
+while waiting for the next field. Before the first screen write, confirm the field has
+advanced and drain the pending handoff. Other swap callers, pause and race-exit paths need
+their own completion policy. Compare publication counts with completed displayed-buffer
+changes and audit every pixel writer; do not report the former as visible FPS.
+
+Derived projection tables also need lifecycle handling. Preserve canonical tables, derive
+fractional tables from that copy, and restore the canonical values before the native next-race
+initializer rebuilds dependent maps. Test a second race after a nonzero fraction. A first-race
+pass can conceal cumulative table drift. Keep native duplicate-row selection rules intact
+and require exact fetched-plane equality when the added fractions are zero.
