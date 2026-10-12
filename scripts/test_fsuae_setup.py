@@ -163,6 +163,20 @@ AMIGA_SETUP=typo
                 mode=mode, monitor="", before="DEBUG=1\n" + stub))
             self.assertNotIn("window_x", values)
 
+    def test_fsemu_window_environment(self):
+        self.stub.write_text('#!/bin/bash\nprintf "%s\\n" "$@"\n'
+            'printf "env_x=%s\\nenv_y=%s\\nenv_w=%s\\nenv_h=%s\\n" '
+            '"${FSEMU_WINDOW_X-}" "${FSEMU_WINDOW_Y-}" '
+            '"${FSEMU_WINDOW_W-}" "${FSEMU_WINDOW_H-}"\n')
+        for mode in ("exec", "launch"):
+            values = self.effective(self.run_launcher(mode=mode, monitor="left",
+                before='fsuae_monitor_coordinates() { echo "-1880 40"; }',
+                extra='--window_x=-1700 --window_width=760 --window_height=600'))
+            self.assertEqual([values[k] for k in ('env_x', 'env_y', 'env_w', 'env_h')],
+                             ['-1700', '40', '760', '600'])
+            values = self.effective(self.run_launcher(mode=mode, monitor=None))
+            self.assertEqual(values['env_x'], '')
+
 
 if __name__ == "__main__":
     unittest.main()

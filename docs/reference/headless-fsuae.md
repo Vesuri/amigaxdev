@@ -256,6 +256,10 @@ ties prefer the topmost display, then the primary display. `primary` selects the
 main display. The window's top-left corner is placed 40 points inside the selected display;
 its size is unchanged. This controls windowed launches, not initial fullscreen placement.
 `EXTRA_ARGS='--window_x=... --window_y=...'` overrides the chosen coordinates.
+The launcher also passes the effective coordinates and window dimensions through
+`FSEMU_WINDOW_X/Y/W/H`. The bundled x86_64 window code ignores command-line positioning
+and recentres the window unless these internal dimensions are set. Both launch paths
+derive them from the final arguments, retaining explicit coordinate and size overrides.
 
 Headless launches (`WINDOW=none` or an effective `--video_driver=null`) skip display discovery.
 An explicit invalid selection or failed explicit display lookup stops the launch. Automatic

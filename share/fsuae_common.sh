@@ -316,6 +316,29 @@ fsuae_monitor() {
 # Exported for one launch: a background app never comes to the front.
 fsuae_env() {
   [ "${FSUAE_WINDOW:-front}" = front ] || export SDL_MAC_BACKGROUND_APP=1
+  if [ -n "${FSUAE_MONITOR_ARGS+set}" ] && [ "${#FSUAE_MONITOR_ARGS[@]}" -gt 0 ]; then
+    # The bundled x86_64 fsemu ignores CLI window coordinates, and resets even
+    # environment coordinates to centred unless window_w/h are supplied too.
+    # Read the final argv in first-value-wins order, preserving EXTRA_ARGS overrides.
+    local arg x= y= w= h=
+    for arg in "$@"; do
+      case "$arg" in
+        --window_x=*) [ -n "$x" ] || x="${arg#*=}" ;;
+        --window_y=*) [ -n "$y" ] || y="${arg#*=}" ;;
+        --window_width=*|--window_w=*) [ -n "$w" ] || w="${arg#*=}" ;;
+        --window_height=*|--window_h=*) [ -n "$h" ] || h="${arg#*=}" ;;
+      esac
+    done
+    export FSEMU_WINDOW_X="$x" FSEMU_WINDOW_Y="$y"
+    export FSEMU_WINDOW_W="${w:-720}" FSEMU_WINDOW_H="${h:-568}"
+    export FSEMU_WINDOW_CENTER_X=0 FSEMU_WINDOW_CENTER_Y=0
+  fi
+  return 0
+}
+
+fsuae_start() {
+  fsuae_env "$@"
+  exec "${FSUAE:-fs-uae}" "$@"
 }
 
 fsuae_launch() {
@@ -326,7 +349,7 @@ fsuae_launch() {
   local log="${FSUAE_LOG:-$FSUAE_RUN/fsuae.log}"
   # The subshell execs, so $! is the emulator itself (what fsuae_stop_previous checks).
   # shellcheck disable=SC2086  # EXTRA_ARGS is word-split on purpose
-  ( fsuae_env; exec "${FSUAE:-fs-uae}" ${EXTRA_ARGS:-} ${FSUAE_MONITOR_ARGS[@]+"${FSUAE_MONITOR_ARGS[@]}"} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}" ) > "$log" 2>&1 &
+  ( fsuae_start ${EXTRA_ARGS:-} ${FSUAE_MONITOR_ARGS[@]+"${FSUAE_MONITOR_ARGS[@]}"} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}" ) > "$log" 2>&1 &
   fsuae_track $!
   echo "fs-uae pid $FSUAE_PID (log $log, port $DEBUG_PORT)"
 }
@@ -337,7 +360,6 @@ fsuae_exec() {
   # shellcheck disable=SC2086
   fsuae_monitor ${EXTRA_ARGS:-} "$@" "${FSUAE_ARGS[@]}" || return 1
   fsuae_track_self
-  fsuae_env
   # shellcheck disable=SC2086
-  exec "${FSUAE:-fs-uae}" ${EXTRA_ARGS:-} ${FSUAE_MONITOR_ARGS[@]+"${FSUAE_MONITOR_ARGS[@]}"} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}"
+  fsuae_start ${EXTRA_ARGS:-} ${FSUAE_MONITOR_ARGS[@]+"${FSUAE_MONITOR_ARGS[@]}"} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}"
 }
