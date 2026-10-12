@@ -369,6 +369,17 @@ re-inserts the system copper list after every `WaitTOF`.
   during display coincided with one-refresh horizontal strips in static scenery (Slicks; 20–40
   ms latency). If a restart must wait inline, wait at least two sample periods of the largest
   period since the stop (Vette, from the Hardware Reference Manual's audio state machine).
+- **Protect note setup from the audio interrupt, not just DMA timing.** A pending request
+  can consume a partially prepared attack/loop state before the new sample starts. Mask that
+  channel during preparation and restore it only after the state and DMA startup are ready.
+  The shared handler must intersect `INTREQR` with `INTENAR`: another channel can interrupt
+  while the protected channel still has a pending request (Grand Prix Circuit).
+- **Check actual sample starts as well as acknowledgements.** In GPC's 68030 capture, an
+  interrupt race replaced 19 initial 2,250-word sample lengths with 550-word loop lengths;
+  the A500 reference did not. Compare note commands, driver state and DMA fetches. Account
+  for the startup fetch discarded by Agnus, and verify actual capture lengths: a requested
+  600-field Barto capture returned only 100 fields in this backend. Use bounded chunks and
+  do not assume register continuity across their boundaries.
 - **Or leave all DMA on and silence with volume 0**: period and volume changes are then plain
   pokes and only a waveform change restarts (Revs).
 - `AUDxLEN` counts words; pointer and length latch only at a loop wrap. Odd loops need an aligned
