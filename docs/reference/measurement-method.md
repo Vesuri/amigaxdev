@@ -91,6 +91,20 @@ Instrument rules:
 - **Accumulate beam brackets through a monotonic epoch**, not `beam − beam`. The raw
   difference drops brackets that straddle the frame wrap, and it drops the longest phases
   hardest (Revs).
+- **A VBL handler timestamp is not necessarily the field boundary.** Interrupt masking can
+  delay entry by several lines. Unwrap the physical beam independently, then reconcile it
+  with the interrupt epoch. For NTSC, account for alternating long lines and the observed
+  LOF/LOL bits rather than assuming every line or field has one fixed length (Stellar 7).
+  In UAE's `vhpos_adj` convention, VHPOSR HP=0 denotes the final clock of the reported line;
+  HP=1 denotes clock zero with the previous line's VP. Test these rollover cases and reject
+  non-monotonic or inconsistent timestamps instead of clipping negative durations.
+- **Calibrate debugger beam observations before using them without instruction traces.** Use
+  the exact same binary and deterministic scene with an independent instruction trace on a
+  supported CPU; compare presentation-field patterns, complete-call durations and matched
+  state. Retain raw observations and quantify disagreement. Such scopes include interrupt
+  execution and wrapper overhead; blitter-wait elapsed time is not pure DMA cost. Missing
+  blitter DMA records in a non-cycle-exact recorder do not mean no blitter work. Keep the
+  ordinary field/counter interval as the throughput measurement (Stellar 7).
 - **Keep inclusive and exclusive measurements apart.** Never add a parent's inclusive time to
   its children's, or add independently selected probes together (Downwell, Slicks).
 - **Label a capture that covers only part of a stall** as slice time, not frame time

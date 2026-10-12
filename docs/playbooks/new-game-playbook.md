@@ -543,8 +543,11 @@ is not comparable (Powerdrome, Hard Drivin'). Real-hardware cache failures are i
 WHDLoad keeps the caches off, and many old slaves switch them off themselves. Know which state a
 68020/68030 figure was taken in before comparing it (TFH's slave now defines KickEmu's `CACHE`).
 A slave that marks BaseMem non-cacheable (`WCPUF_Base_NC`, as StingRay's I500 slave does)
-makes WHDLoad turn **every** cache off without the MMU: all of I500's early 68020/68030 numbers
-were uncached. Measure with WHDLoad's `DCACHE` (or `CACHE`) when the slave leaves caches alone.
+can make WHDLoad turn every cache off without the MMU: all of I500's early 68020/68030 numbers
+were uncached. Do not infer the live state of another CPU or loader from this policy request.
+Stellar 7's separate CACR audit observed instruction caching enabled on its 68040/060 NOMMU
+configurations, with data caching disabled, despite a non-cacheable BaseMem request.
+Measure with WHDLoad's `DCACHE` (or `CACHE`) when the slave leaves caches alone.
 Whether the slave manages caches is a per-game decision for the user: I500 leaves them to
 WHDLoad's options (and its ReadMe recommends `DCache`), TFH enables KickEmu's `CACHE`.
 
