@@ -76,6 +76,9 @@ with a row in AGENTS.md's doc table saying when to read it.
   `Vesa Halttunen <vesuri@jormas.com>`, unsigned, `core.hooksPath=/dev/null`, no Co-Authored-By
   or other trailers, commit directly to `main`, one verified coherent change per commit. Keep
   remote and authentication overrides repository-local; never change global git settings.
+  On creation or a fresh clone, set `git config --local commit.gpgsign false` and
+  `git config --local tag.gpgsign false`, then verify both effective values. Tag signing
+  is independent of commit signing and may otherwise inherit work defaults.
 - Do not edit a shell launcher while it runs (bash resumes reading at a stale offset).
 
 ## 1. Host prerequisites (installed by AmigaXDev)

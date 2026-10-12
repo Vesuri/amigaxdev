@@ -20,6 +20,10 @@ The playbook's §0 rules apply here (`docs/playbooks/new-game-playbook.md`), in 
 - **Never `pkill fs-uae` or `pkill gdb`**: other projects run emulators at the same time.
 - Commits: author and committer `Vesa Halttunen <vesuri@jormas.com>`, unsigned,
   `core.hooksPath=/dev/null`, no Co-Authored-By or other trailers, one commit per coherent change.
+- When creating or cloning a personal repository, explicitly set repository-local
+  `commit.gpgsign=false` and `tag.gpgsign=false`. They are independent settings;
+  disabling commit signing does not disable inherited tag signing. Verify both effective
+  values, and never change global settings for this purpose.
 - **History belongs in git.** Docs describe the current state; update them in place.
 - The scripts run under macOS's `/bin/bash` 3.2 (a fresh Mac has nothing newer).
 

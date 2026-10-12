@@ -167,10 +167,17 @@ existing slave patch with its offset.
 
 ## 3. Scaffold the repo from Test Drive II's
 
+For a new or freshly cloned personal repository, disable both commit and tag signing
+in its local config. `commit.gpgsign=false` does not override `tag.gpgsign=true`
+inherited from a work configuration. Check both effective values with
+`git config --show-origin --get commit.gpgsign` and
+`git config --show-origin --get tag.gpgsign`; both must be `false`.
+
 ```sh
 TD2="$PROJECTS/Test Drive 2"
 git init && git config user.name ... && git config user.email ... \
-  && git config commit.gpgsign false && git config core.hooksPath /dev/null
+  && git config --local commit.gpgsign false \
+  && git config --local tag.gpgsign false && git config core.hooksPath /dev/null
 cp "$TD2"/.gitignore . ; mkdir -p amiga tools docs whdload
 cp "$TD2"/amiga/{env.sh,run.sh} amiga/
 cp "$TD2"/tools/{td2_report.py,frames.py,profile_demo.sh,ingame.py,fixed_window.sh,\
