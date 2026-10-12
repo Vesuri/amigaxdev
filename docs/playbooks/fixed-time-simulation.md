@@ -165,3 +165,53 @@ an independent model, and test full-angle rendering and all view sizes. Publish 
 pointer, stride and angle units together only after allocation/generation succeeds. On
 failure keep the original pointer and units together; never index a coarse table using a
 finer angle unit. The game's original table and the patch's allocation need distinct owners.
+
+
+## Audit clocks beyond movement
+
+A smoothed frame divisor can improve pacing, but it does not repair a countdown
+initialized as `seconds × T` when T later changes. Give each timer an explicit
+clock: simulation time, unaccelerated control time, display time or hardware
+protocol timing. Preserve eligibility gates and whether an initial opportunity
+is immediate. Carry elapsed-time overshoot when servicing repeated deadlines;
+checking only once per rendered frame can lose events during slow frames.
+
+Follow the world-call graph and every movement, impact and AI dispatch entry.
+Trace writers of quantities before deciding they are rates: event damage,
+resource deductions per successful shot and derived engine power do not get a
+second timestep multiplier. A native fraction accumulator may already solve a
+division; test it before replacing it. Conversely, a resource stored in fixed
+point can still discard the remainder below its least significant bit. State
+the size of that error instead of implying a large gameplay effect.
+
+Separate tasks within the same interrupt. Audio sample queueing can require
+every physical field while its volume envelope needs a fixed elapsed cadence.
+Mouse counter deltas measure distance and must all be retained; joystick ramp
+steps and keyboard repeat count time. Releasing or reversing a controller must
+not erase movement that a slower consumer has yet to read. Test PAL/NTSC and
+independent producer/consumer rates. Hardware handshakes and beam/blitter waits
+are a different class from user-visible delays.
+
+## Recording with a changing timestep
+
+Recording one input tuple per update does not establish a fixed-duration movie.
+Choose capacity in elapsed time, store each update's actual timestep (including
+acceleration), and preserve RNG history where outside-world calls can advance it.
+Playback rendering can consume zero or several complete recorded updates;
+viewer camera commands and message visibility still need the current display
+clock, rather than the most recently recorded divisor. Test the final tuple,
+pause/resume, single-step and elapsed-time fast-forward separately.
+
+Filter and normalize physical input before recording it. Replaying processed
+input must not apply a dead zone again using the viewer's current mouse/joystick
+state, nor substitute a live UI key for the recorded command. Native save tables
+often omit state that became significant after patching. Maintain an explicit
+manifest of private fractions, timers and generations; automatically reject new
+mutable fields missing from it. Keep movie-start and suspended-live snapshots
+separate, and keep host calibration/preferences out of restored simulation state.
+
+Version the extended movie layout, bound every count and validate truncation.
+An old movie without timestep history cannot provide exact enhanced replay;
+document the compatibility limit. Rewind correctness in a CPU fixture, native
+file I/O, rendered UI behavior and a live-emulator mission are separate evidence.
+Their Finest Hour's timing audit and recording checks demonstrate this split.
