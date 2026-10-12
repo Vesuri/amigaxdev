@@ -42,11 +42,12 @@ drives and program options:
 | `fsuae_gdb_script F` | a copy of a checked-in `.gdb` with `127.0.0.1:NNNN` patched to `$DEBUG_PORT` |
 
 - **FS-UAE keeps the first value of a repeated option.** The launcher passes `$EXTRA_ARGS`
-  first, then the script's arguments, then `FSUAE_ARGS`, so `EXTRA_ARGS` overrides everything.
+  first, then `AMIGA_SETUP` machine arguments (if selected), then the script's arguments,
+  then `FSUAE_ARGS`, so `EXTRA_ARGS` overrides everything.
   Prefer the variables (`CHIP_KB=2048`) to `EXTRA_ARGS=--chip_memory=2048`; a script that
   appended `EXTRA_ARGS` last once measured the dev machine instead of the target (Revs).
 - `fsuae_options` runs once: `fsuae_launch` reuses an existing `FSUAE_ARGS`. Set every variable
-  before calling it.
+  before calling it. Named machine settings are reapplied at launch.
 - The port defaults to `2345 + cksum($PWD) % 400`, so a checkout always gets the same one.
   `DEBUG_PORT=N` pins it; a pinned port held by another project stops the script instead of
   taking the port.
@@ -54,6 +55,57 @@ drives and program options:
   directory, instead of the default FS-UAE directory's log that every project shares.
 - Parallel runs from one checkout need distinct `FSUAE_RUN` and `DEBUG_PORT`
   (Slicks `pc_profile.sh`: `FSUAE_RUN=.run/pcprof-$LABEL`).
+
+## Named machine setups
+
+Select a machine with one variable when invoking a project's normal launcher:
+
+```sh
+AMIGA_SETUP=a1200-fast amiga/run.sh
+AMIGA_SETUP=a1200-040 DEBUG=1 amiga/run.sh
+```
+
+| `AMIGA_SETUP` | Model / chipset | CPU / nominal clock | Chip KB | Slow KB | Fast KB | MMU | FPU |
+|---|---|---|---:|---:|---:|---|---|
+| `a500` | A500 / OCS | 68000 / 7 MHz | 512 | 512 | 0 | none | none |
+| `a500+` | A500+ / ECS | 68000 / 7 MHz | 1024 | 0 | 0 | none | none |
+| `a1200` | A1200 / AGA | 68EC020 / 14 MHz | 2048 | 0 | 0 | none | none |
+| `a1200-fast` | A1200 / AGA | 68EC020 / 14 MHz | 2048 | 0 | 8192 | none | none |
+| `a1200-030` | A1200 / AGA | 68030 / 50 MHz | 2048 | 0 | 8192 | 68030 | none |
+| `a1200-040` | A1200 / AGA | 68040 / 25 MHz | 2048 | 0 | 8192 | 68040 | 68040 |
+| `a1200-060` | A1200 / AGA | 68060 / 50 MHz | 2048 | 0 | 8192 | 68060 | 68060 |
+
+All presets disable JIT and extra Zorro III/motherboard RAM. They select Kickstart 3.1:
+`kick40063.A600` for the 68000 models and `KICKSTART_A1200` (`kick40068.A1200`) for A1200.
+This preserves directory hard-drive boot support; these are not original factory ROM setups.
+`NTSC` remains a separate setting, retaining the project's default. Stock clocks follow it
+(PAL: 7,093,790 / 14,187,580 Hz; NTSC: 7,159,090 / 14,318,180 Hz).
+
+The full 030 has its MMU; the 040 and 060 have their integrated MMU and FPU. The 040/060
+presets use the non-cycle-exact MMU core: their nominal clock is configured, but that core
+does not honour hardware timing. Use these for functional/MMU checks, not performance
+comparisons (playbook §8). These settings do not add WHDLoad's `MMU` option to a game's
+command line.
+
+`fsuae_options` sets and exports `AMIGA_MODEL`, `CPU`, `CHIP_KB`, `FAST_KB`, `SLOW_KB`
+and `KICKSTART`. `fsuae_launch` and `fsuae_exec` reapply the selection and put its arguments
+ahead of project machine arguments, including hardcoded models, RAM and MMU settings.
+An unknown nonempty name fails before launch. With `AMIGA_SETUP` unset or empty, existing
+behaviour is unchanged. A preset wins over individual machine variables; use `EXTRA_ARGS`
+for a deliberate exception, for example `EXTRA_ARGS='--fast_memory=4096'`.
+
+Install with `make share`; projects sourcing the installed shared launcher pick it up on
+their next run without repository edits. This does not change scripts that launch FS-UAE
+directly or source a private copy. It also cannot rewrite staging, validation or diagnostic
+labels that a project computes before calling the shared launcher. In particular, Alone
+in the Dark's `AMIGA_CONFIG` label still describes its own configuration, and its validation
+can reject inputs before launch. A machine preset does not imply that a game's CPU/chipset
+or memory requirements are met; many WHDLoad games cannot run in the stock A500 RAM sizes.
+Specialised wrappers that set machine options in `EXTRA_ARGS` still override the preset.
+
+Launcher regression checks (argument capture only, no emulator or game data):
+`python3 scripts/test_fsuae_setup.py` from AmigaXDev. They exercise `/bin/bash` 3.2,
+both launch paths, every preset, conflicting project arguments and the override order.
 
 ## Which FS-UAE
 

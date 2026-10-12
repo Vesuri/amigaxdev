@@ -32,11 +32,12 @@
 #   fsuae_launch ARGS...    start "$FSUAE" in the background with $EXTRA_ARGS, ARGS and
 #                           FSUAE_ARGS, log to $FSUAE_RUN/fsuae.log, track it, print its pid.
 #                           FS-UAE keeps the first value of a repeated option, so EXTRA_ARGS
-#                           beats the script's ARGS, which beat fsuae_options
+#                           beats AMIGA_SETUP, then the script's ARGS, then fsuae_options
 #   fsuae_exec ARGS...      the same in the foreground (exec), for interactive scripts
 # Variables (all optional; a script sets its own defaults before calling fsuae_options):
 #   FSUAE (fs-uae on PATH), FSUAE_RUN (work dir, .run), DEBUG_PORT (pins the stub port)
 #   AMIGA_MODEL, CPU, CHIP_KB, FAST_KB, SLOW_KB, KICKSTART, WARP=1
+#   AMIGA_SETUP (named machine; overrides individual machine variables and script arguments)
 #   NTSC=1 (NTSC timing: --ntsc_mode=1 and --uae_ntsc=true)
 #   DEBUG=1 (gdb stub, waits $DEBUG_WAIT s, default 20), DETERMINISTIC=1, RECORD=FILE
 #   JOY0, JOY1 (an FS-UAE device name; "none" also sets the port's mode to nothing, which is
@@ -187,7 +188,55 @@ fsuae_quiet() {
     case " ${EXTRA_ARGS:-} " in *" --warp_mode=1 "*) true ;; *) false ;; esac
 }
 
+# Applied late so project defaults cannot replace an explicitly selected machine. Keep a
+# separate argument array ahead of project arguments (FS-UAE keeps the first occurrence).
+# Kickstart 3.1 is intentional even on A500: these projects boot directory hard drives.
+fsuae_setup() {
+  FSUAE_SETUP_ARGS=()
+  [ -n "${AMIGA_SETUP:-}" ] || return 0
+  local chipset mmu=0 fpu=0 frequency exact=true
+  local share="${AMIGA_SHARE:-${AMIGA_PREFIX:-$HOME/.local}/share/amiga}"
+  case "$AMIGA_SETUP" in
+    a500|a500+)
+      AMIGA_MODEL=A500 CPU=68000 CHIP_KB=512 FAST_KB=0 SLOW_KB=512
+      chipset=ocs frequency=7093790
+      [ "${NTSC:-0}" = 1 ] && frequency=7159090
+      if [ "$AMIGA_SETUP" = a500+ ]; then
+        AMIGA_MODEL=A500+ CHIP_KB=1024 SLOW_KB=0 chipset=ecs
+      fi
+      KICKSTART="$share/Kickstarts/kick40063.A600"
+      ;;
+    a1200|a1200-fast|a1200-030|a1200-040|a1200-060)
+      AMIGA_MODEL=A1200 CPU=68EC020 CHIP_KB=2048 FAST_KB=8192 SLOW_KB=0
+      chipset=aga frequency=14187580
+      [ "${NTSC:-0}" = 1 ] && frequency=14318180
+      KICKSTART="${KICKSTART_A1200:-$share/Kickstarts/kick40068.A1200}"
+      case "$AMIGA_SETUP" in
+        a1200) FAST_KB=0 ;;
+        a1200-030) CPU=68030 mmu=68030 frequency=50000000 ;;
+        a1200-040) CPU=68040 mmu=68040 fpu=68040 frequency=25000000 exact=false ;;
+        a1200-060) CPU=68060 mmu=68060 fpu=68060 frequency=50000000 exact=false ;;
+      esac
+      ;;
+    *)
+      echo "Unknown AMIGA_SETUP '$AMIGA_SETUP'; use a500, a500+, a1200, a1200-fast, a1200-030, a1200-040 or a1200-060" >&2
+      return 1 ;;
+  esac
+  export AMIGA_MODEL CPU CHIP_KB FAST_KB SLOW_KB KICKSTART
+  FSUAE_SETUP_ARGS=(
+    --amiga_model="$AMIGA_MODEL" --cpu="$CPU" --kickstart_file="$KICKSTART"
+    --chip_memory="$CHIP_KB" --fast_memory="$FAST_KB" --slow_memory="$SLOW_KB"
+    --zorro_iii_memory=0 --uae_mbresmem_size=0 --uae_a3000mem_size=0
+    --uae_chipset="$chipset" --uae_mmu_model="$mmu" --uae_fpu_model="$fpu"
+    --jit_compiler=0 --uae_cachesize=0 --uae_cpu_speed=real
+    --uae_cpu_multiplier=0 --uae_cpu_frequency="$frequency"
+    --uae_cpu_compatible=true --uae_cpu_cycle_exact="$exact"
+    --uae_cpu_memory_cycle_exact="$exact" --uae_blitter_cycle_exact="$exact"
+  )
+}
+
 fsuae_options() {
+  fsuae_setup || return 1
   local sound window quiet=0
   fsuae_quiet && quiet=1
   sound="${SOUND:-}"
@@ -231,19 +280,21 @@ fsuae_env() {
 }
 
 fsuae_launch() {
-  [ -n "${FSUAE_ARGS+set}" ] || fsuae_options
+  [ -n "${FSUAE_ARGS+set}" ] || fsuae_options || return 1
+  fsuae_setup || return 1
   local log="${FSUAE_LOG:-$FSUAE_RUN/fsuae.log}"
   # The subshell execs, so $! is the emulator itself (what fsuae_stop_previous checks).
   # shellcheck disable=SC2086  # EXTRA_ARGS is word-split on purpose
-  ( fsuae_env; exec "${FSUAE:-fs-uae}" ${EXTRA_ARGS:-} "$@" "${FSUAE_ARGS[@]}" ) > "$log" 2>&1 &
+  ( fsuae_env; exec "${FSUAE:-fs-uae}" ${EXTRA_ARGS:-} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}" ) > "$log" 2>&1 &
   fsuae_track $!
   echo "fs-uae pid $FSUAE_PID (log $log, port $DEBUG_PORT)"
 }
 
 fsuae_exec() {
-  [ -n "${FSUAE_ARGS+set}" ] || fsuae_options
+  [ -n "${FSUAE_ARGS+set}" ] || fsuae_options || return 1
+  fsuae_setup || return 1
   fsuae_track_self
   fsuae_env
   # shellcheck disable=SC2086
-  exec "${FSUAE:-fs-uae}" ${EXTRA_ARGS:-} "$@" "${FSUAE_ARGS[@]}"
+  exec "${FSUAE:-fs-uae}" ${EXTRA_ARGS:-} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}"
 }
