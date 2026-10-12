@@ -110,7 +110,16 @@ VASMFLAGS = -m68020 -Felf -quiet -x -no-opt -nowarn=62     # 68020 targets
   Luftwaffe) use `-m68020`.
 - Generated assembly is different: Secret Weapons of Luftwaffe assembles its translator output
   with vasm's default optimisations (branch sizing) and `-m68020`. vasm then drops a `bra` to
-  the next instruction, so labels can share an address.
+  the next instruction, so labels can share an address. Limits of vasm 1.9 on a large
+  generated program:
+  - Branch sizing may never converge ("maximum number of passes reached"). Triggers seen:
+    a `bra` to the next line; any `cnop` after the start of the program; thousands of
+    unsized branches into code-sized stubs. The generator emits no branch to the next line,
+    sizes hot branches itself (`.s` within a safe estimate, else `.w`) and sizes alignment
+    pads by assembling and reading back label addresses (fixed `ds.b`).
+  - An out-of-range `(d16,An)` becomes `(bd.l,An)` for `move`, `add`, `cmp`, `and`, `tst`
+    and `chk`, but `mulu`/`muls`/`divu` fail with error 2030 ("displacement out of range").
+    Keep their displacements within 16 bits, including under test plants that shift them.
 - `-x` makes undefined symbols errors rather than externals.
 
 ## Linking and elf2hunk
