@@ -97,9 +97,10 @@ against a live emulator, and archives, smoke slaves and Ghidra exports are byte-
 | Pokeri, Slicks, Vette | their release file maps; Pokeri's save slots |
 | Alone in the Dark | `require_production`, scratch in `tmp/`; `tools/resource_fork.py` re-exports the shared module for its 124 importers; `FSUAE_CLAIM_STRICT=1` |
 | Secret Weapons of Luftwaffe, Revs, Rescue on Fractalus | their CPU-specific Ghidra scripts; Secret Weapons of Luftwaffe's and Rescue on Fractalus' `run.sh` use `fsuae_prepare` |
+| Downwell | its own tools (none of the copied ones); `run.sh` uses `fsuae_prepare` |
 
-Not switched yet, because it had uncommitted work: Downwell. Red Baron's committed branch `tools/` stay standalone, because the branch is meant
-for JOTD's repository.
+Red Baron's committed branch `tools/` stay standalone, because the branch is meant for JOTD's
+repository.
 
 Stays in each project, because it is the game's own: `frames.py`, `swap_fields`,
 `check_disabled`, `fixed_window.sh`, `compare_*`, `audit_hooks`, `state_*` (frame counters and
@@ -113,8 +114,7 @@ The dA JoRMaS framework stays vendored in each port: converging the copies would
 port's binary except Slicks' and Secret Weapons of Luftwaffe's (which share theirs byte for byte).
 `$AMIGA_FRAMEWORK` is the canonical tree to compare with and take fixes from
 (`python3 -m amigaxdev.framework diff PROJECT`); each port's `UPSTREAM.md` (Secret Weapons of
-Luftwaffe: `framework/README.md`) records the AmigaXDev commit its copy is based on. Downwell
-doesn't have that line yet.
+Luftwaffe: `framework/README.md`) records the AmigaXDev commit its copy is based on.
 
 Python tools that start FS-UAE themselves, so they are not silent and come to the front: Rescue
 on Fractalus `tools/test_whdload.py`, `tools/test_rom_failures.py`; Alone in the Dark
