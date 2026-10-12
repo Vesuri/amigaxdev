@@ -49,3 +49,5 @@ test-mac-runtime:
 	@mkdir -p tmp/tests
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_runtime.cpp -o tmp/tests/mac-runtime
 	@tmp/tests/mac-runtime
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_fonts.cpp -o tmp/tests/mac-fonts
+	@tmp/tests/mac-fonts

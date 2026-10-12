@@ -3,6 +3,10 @@
 These sources are canonical, platform-independent services for the Macintosh ports.
 `RectBounds.h` is used by Alone in the Dark and Prince of Persia 2. It combines the
 rectangle helper and OffsetRect/InsetRect operations from Alone in the Dark.
+`BitmapFont.h` shares the existing compatibility-font parser and a bounded reader
+for original one-bit FOND/NFNT resources. `BitmapText8.h` adapts the clipping and
+pixel addressing of Alone in the Dark’s Text8 renderer to NFNT glyphs with integer
+advances and bearings; it contains no game-specific font tables.
 
 `make share` installs this directory under `$AMIGA_SHARE/mac-runtime`. Consumers
 vendor byte-identical files under `src/mac/` and pin them in
