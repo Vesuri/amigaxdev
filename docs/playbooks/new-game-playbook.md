@@ -811,6 +811,43 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
   the pixel twin perturb the bits the game leaves undefined (LoV's low nibble), so a wrong merge
   can't hide.
 
+### Allocate runtime buffers instead of embedding zeroes in the slave
+
+Keep large recording arrays, snapshots and scratch buffers out of the slave file.
+A zero-filled `dcb` in the code section is still file-backed storage; compression
+in the release archive does not fix the installed file. Keep small control fields
+and pointers in the slave, and allocate bulk storage for its actual lifetime.
+WHDLoad's `SlaveOverview` in `$WHDLOAD/Docs/autodoc.html` requires a single hunk
+and entirely PC-relative code without relocations: a separate BSS hunk is not an
+alternative for the slave. This restriction does not apply to the game's executable.
+
+For a KickEmu slave, use the emulated Exec `AllocMem` while that environment is
+available, before installing hooks that use the buffers. CPU-only data can use
+`MEMF_PUBLIC|MEMF_CLEAR`; DMA buffers need the appropriate Chip RAM allocation.
+Allocate only for the supported game/option, check failure before publishing
+pointers, and report a clear error rather than continuing with a null pointer.
+Make repeated initialization reuse or explicitly release the allocation. For a
+whole-session allocation inside KickEmu's reserved pool, WHDLoad reclaims the pool
+on exit; shorter-lived allocations need matching `FreeMem` calls. A direct slave
+without Exec must instead partition memory reserved through its WHDLoad header;
+do not assume the host's Exec allocator remains available after takeover.
+
+**Budget the destination pool.** Moving storage out of the slave does not remove
+its runtime RAM requirement. Increase the relevant reserved pool if needed so the
+buffers do not steal the game's previous headroom; account for alignment, allocator
+overhead, ROM storage and peak game allocations. Update the documented requirements.
+Their Finest Hour uses one 129,556-byte cleared block for its recording arrays and
+two snapshots, with an extra 128 KiB in `FASTMEMSIZE`. Its normal slave is 23,888
+bytes instead of 153,300; these are file sizes, not a performance measurement.
+
+Check the allocator request, pointer layout, disabled-option path, repeated calls
+and failure handling. Update fixtures to dereference buffer pointers rather than
+assuming that a symbol is the buffer. Run the affected recording/snapshot/file-I/O
+checks, then boot a real KickEmu session and exercise the feature: a CPU harness
+with a stubbed allocator cannot establish that the real memory pool is sufficient.
+TFH passed 68000/68040 replay checks and a live emulator mission that restored the
+recorded poses and returned to flight; physical-machine validation remains separate.
+
 ## 11. Measuring an improvement
 
 - A/B **only** with `fixed_window.sh`, same build, the option on vs off. The fps figures come
