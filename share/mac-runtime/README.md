@@ -16,3 +16,9 @@ validate their callers. Do not maintain independent per-game implementations.
 Installed edits must return through `make pull-shared` before installation.
 
 Run `make test-mac-runtime` for the portable synthetic edge and alias checks.
+
+`GWorld8.h`, `CopyBits8.h`, `FillRect8.h`, `WindowGeometry.h`, `RegionRows.h`
+and `RegionOps.h` consolidate the existing Alone in the Dark helpers used by
+Prince of Persia 2. Region union extends the existing parity-region operations;
+existing operation values and callers retain their behavior. Trap ownership and
+current-port selection remain consumer responsibilities.
