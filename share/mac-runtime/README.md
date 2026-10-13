@@ -49,3 +49,9 @@ closes, additions, replacements and removals invalidate that index. The default
 configuration retains the existing linear implementation. Define
 `AMIGAXDEV_RESOURCE_DIRECTORY_MAP_LIMIT` to enforce the parser's per-map resource
 limit before mutation, as Prince of Persia 2 does.
+
+`VBLPasses.h` factors queued virtual-retrace bookkeeping from Vette! and Alone
+in the Dark. Each elapsed Macintosh tick starts a separate queue pass; callbacks
+resume the same pass after returning. Consumers retain task records, countdown
+semantics, ownership checks and user-mode trampolines. Synthetic tests exercise
+tick conservation, task removal, in-flight arrivals and wraparound.

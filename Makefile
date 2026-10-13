@@ -61,3 +61,5 @@ test-mac-runtime:
 	@tmp/tests/mac-code-ranges
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_pcm.cpp -o tmp/tests/mac-pcm
 	@tmp/tests/mac-pcm
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_vbl_passes.cpp -o tmp/tests/mac-vbl-passes
+	@tmp/tests/mac-vbl-passes
