@@ -49,6 +49,23 @@ scope of each and close the hardware retest only when it has happened. Pokeri
 0.91 was confirmed to fix coin-in on the user's A1200 with 68040/40 MHz, MMU and
 32 MB RAM; that does not requalify every game path or memory configuration.
 
+## Cache publication at dynamically installed entries
+
+A registered code pointer need not be ready to execute when it is registered.
+Alone in the Dark's original Macintosh loader calls SetTrapAddress **before**
+writing its LoadSeg/UnloadSeg/ExitToShell trampolines. With copyback Fast RAM,
+flushing at registration is too early. Publish the newly installed entry at its
+first dispatch, after the writes, and avoid flushing on every later invocation.
+Keep the original instructions and existing segment-relocation flushes intact.
+
+Validate with both guest cache bits and the emulator's data-cache model enabled;
+CACR alone does not prove the model is active. Use the corrected MMU build from
+[headless FS-UAE](reference/headless-fsuae.md#cached-040060-mmu-write-attributes)
+and an otherwise identical guest-cache-off control. An uninterrupted cached
+startup reproduced the missing-publication crash while that control passed;
+debugger stops can flush caches and mask this class of failure. Chip DMA buffer
+policy and real-hardware speed/visual checks remain separate obligations.
+
 ## Updating installed ROMs and saves
 
 Before changing an installer because it missed existing files, establish its
