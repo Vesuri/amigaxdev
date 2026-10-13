@@ -1,6 +1,8 @@
 #ifndef AMIGAXDEV_VBL_PASSES_H
 #define AMIGAXDEV_VBL_PASSES_H
+#ifndef __mc68000__
 #include <stdint.h>
+#endif
 // Queued virtual retrace passes from Vette! and Alone in the Dark.
 // Safe-point callers own task records, countdown semantics and callbacks.
 // Age all entries on begin(), then drain that fixed pass in queue order.
