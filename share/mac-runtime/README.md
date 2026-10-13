@@ -95,3 +95,9 @@ adapter must also invalidate on port disposal and any same-seed table rebuild;
 QuickDraw table edits must publish a new seed. Misses use `GWorld8::colorIndex`,
 including its collision-ring validation and first-entry tie rule. This caches
 indices, never pixels, and requires no allocation or per-call table copy.
+
+`PenRect8.h` draws a solid zero-displacement QuickDraw pen as a directly clipped
+half-open rectangle. It validates map capacity, signed pen extents and all four
+clipping bounds before writing. Small spans avoid general rectangle setup;
+large spans reuse the aligned fill primitive. The caller supplies a current
+allocation capacity; no handle or framebuffer cache is retained by the helper.
