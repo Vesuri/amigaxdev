@@ -63,3 +63,5 @@ test-mac-runtime:
 	@tmp/tests/mac-pcm
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_vbl_passes.cpp -o tmp/tests/mac-vbl-passes
 	@tmp/tests/mac-vbl-passes
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_video_ticks.cpp -o tmp/tests/mac-video-ticks
+	@tmp/tests/mac-video-ticks

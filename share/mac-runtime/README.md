@@ -55,3 +55,8 @@ in the Dark. Each elapsed Macintosh tick starts a separate queue pass; callbacks
 resume the same pass after returning. Consumers retain task records, countdown
 semantics, ownership checks and user-mode trampolines. Synthetic tests exercise
 tick conservation, task removal, in-flight arrivals and wraparound.
+
+`VideoTicks.h` shares Alone in the Dark's PAL/NTSC field conversion and adds
+within-field PAL TickCount calculation. The platform must supply a coherent field
+epoch and beam position; callback scheduling and hardware sampling stay outside
+the helper. Tests include repeated five-tick deadlines that field-only ticks miss.
