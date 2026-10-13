@@ -60,3 +60,14 @@ tick conservation, task removal, in-flight arrivals and wraparound.
 within-field PAL TickCount calculation. The platform must supply a coherent field
 epoch and beam position; callback scheduling and hardware sampling stay outside
 the helper. Tests include repeated five-tick deadlines that field-only ticks miss.
+
+`HeapMoveHigh.inc` supplies `MacHeap::moveHigh` for the common arena/master-block
+allocator used by Alone in the Dark and Prince of Persia 2. Include it at file
+scope after the class declaration; the adapter supplies its existing block layout,
+copy helpers, validation and result publication. A fitting free tail before the
+next pinned block permits target-only relocation. Interior holes and insufficient
+tail space require the original compaction fallback. Payloads, handle flags and
+pinned addresses remain intact. Alone in the Dark's original System 7.5.5 fixture
+and sanitizer heap tests cover this contract. Prince of Persia 2 adoption is pending
+until its active worktree is clear; keep HEAP.1's size-preserving resize work on the
+same shared-allocator path instead of forking placement fixes.
