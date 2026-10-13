@@ -19,6 +19,7 @@ Run `make test-mac-runtime` for the portable synthetic edge and alias checks.
 
 `GWorld8.h`, `CopyBits8.h`, `FillRect8.h`, `WindowGeometry.h`, `RegionRows.h`
 and `RegionOps.h` consolidate the existing Alone in the Dark helpers used by
-Prince of Persia 2. Region union extends the existing parity-region operations;
-existing operation values and callers retain their behavior. Trap ownership and
+Prince of Persia 2. Define `AMIGAXDEV_REGION_UNION` to add region union to the parity-region
+operations. Consumers that do not use it retain the existing operation set and
+compiled dispatch; both configurations have sanitizer checks. Trap ownership and
 current-port selection remain consumer responsibilities.

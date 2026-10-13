@@ -53,3 +53,5 @@ test-mac-runtime:
 	@tmp/tests/mac-fonts
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_graphics.cpp -o tmp/tests/mac-graphics
 	@tmp/tests/mac-graphics
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -DAMIGAXDEV_REGION_UNION -Ishare/mac-runtime scripts/test_mac_graphics.cpp -o tmp/tests/mac-graphics-union
+	@tmp/tests/mac-graphics-union

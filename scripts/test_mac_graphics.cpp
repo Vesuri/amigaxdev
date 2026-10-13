@@ -12,7 +12,12 @@ int main() {
     uint8_t a[10]={},b[10]={},out[1024]={};
     GWorld8::word(a,10);rect(a+2,1,2,5,6);
     GWorld8::word(b,10);rect(b+2,3,4,7,8);
-    for(auto operation:{RegionOps::Xor,RegionOps::Difference,RegionOps::Intersection,RegionOps::Union}) {
+    const RegionOps::Operation operations[]={RegionOps::Xor,RegionOps::Difference,RegionOps::Intersection
+#ifdef AMIGAXDEV_REGION_UNION
+        ,RegionOps::Union
+#endif
+    };
+    for(auto operation:operations) {
         uint16_t size=0;
         assert(RegionOps::combine(a,10,b,10,operation,out,sizeof out,size));
         RegionRows::Cursor rows;assert(rows.begin(out,size));
