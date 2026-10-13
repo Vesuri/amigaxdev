@@ -66,13 +66,22 @@ each need a different one.
 | CIA-B timer PC sampler with a jittered period, recording PC and SR from the exception frame | Shares by routine, about 12% uniform overhead (Slicks) | Shares only. **Never sample through gdb interrupts:** FS-UAE services them only at vsync. That doubled C2P's share and hid physics (Slicks), and filed an autovector stub as "Kickstart 8%" (Rescue on Fractalus) |
 | VBL-counted phase marker: scopes publish a phase word, and the VBL handler counts it once per field | Statistical attribution without per-scope clock reads (Downwell) | Aliases with repeated work; a short phase can get no samples |
 | FS-UAE instruction profile (Barto format, `monitor profile`) | Exact cycles per PC over whole fields; call stacks can be rebuilt from `jsr`/`bsr` and SP, with interrupts kept on a separate stack (Downwell, Vette) | Code must be in the first hunk. No breakpoints in the window. The first and last frames are partial. A blitter stall can carry its cycles into the next field. Moving code changes attribution |
-| aprof FS-UAE, installed by AmigaXDev (`FSUAE_APROF`, `monitor aprof start/stop`) | Every instruction's cycle units, wait states included, per PC; timing for every CPU Chip-bus access; a call tree that includes Line-A traps (Alone in the Dark) | Cycle-exact 68020/68030 only. Refuses MMU, 040/060 and fast mode. The emulator's memory model, not hardware proof |
+| aprof FS-UAE, installed by AmigaXDev (`FSUAE_APROF`, `monitor aprof start/stop`) | Every instruction's cycle units, wait states included, per PC; timing for every CPU Chip-bus access; a call tree that includes Line-A traps (Alone in the Dark) | Cycle-exact 68020–68060 without an MMU model; refuses MMU and fast mode. PCs outside 24-bit space are kept only in the 16 MB Zorro III window at `0x40000000`. The emulator's memory model, not hardware proof; on 040/060 it is an instruction count (below) |
 | In-process differential: new and reference code on identical state in one run | The cost ratio of a replacement, and correctness | Quote the ratio; absolutes swing 15% between runs while the ratio holds to 0.5% (Rescue on Fractalus). Below about 500 cycles per call the timing column can have the wrong sign |
 | Shape probes: counters over a routine's own input distribution | Which cases dominate. Two special cases absorbed 47.7% of a rasteriser's subdivisions (Rescue on Fractalus) | One-off; remove them afterwards and keep the record |
 | Host build as a census | Exact call and line counts, matching the target (Revs) | Never timing |
 | Doubling or removal arms: run an idempotent pass twice, or delete it | The price of a sub-step without a bracket | Removal gives a ceiling only |
 | Static objdump cycle count | Finds defects | Over-reads about 6× at a grain of 2–7 instructions (Revs). Use it to find a defect, never to size one |
 | Read-only probes on the normal build | Acceptance figures | Ledger and trace observers add about 6–7%, and once inflated cold start by about 45% (Pokeri) |
+
+**FS-UAE's 040/060 timing is an instruction count.** Its cycle-exact 040/060 loop charges no
+time to instruction execution or to 32-bit Fast RAM accesses. Time advances only on
+Chip/custom accesses and multiply/divide, plus one colour clock after every four
+instructions that advanced nothing. The emulated CPU therefore runs about 14 million
+instructions per second whatever frequency is configured: 040/25 and 060/50 came within 1 FPS
+of each other (Red Baron). aprof books those charges as `gap`; it equals the zero-time
+executions × CYCLE_UNIT/4. Price emulated 040/060 work by instruction count plus Chip time,
+and confirm hardware frame rates on a real accelerator.
 
 Instrument rules:
 

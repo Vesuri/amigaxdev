@@ -1,5 +1,5 @@
 diff --git a/src/barto_gdbserver.cpp b/src/barto_gdbserver.cpp
-index 0f3249a..6cab1b5 100644
+index 0f3249a9..6cab1b55 100644
 --- a/src/barto_gdbserver.cpp
 +++ b/src/barto_gdbserver.cpp
 @@ -1,4 +1,7 @@
@@ -22,7 +22,7 @@ index 0f3249a..6cab1b5 100644
  										savestate_quick(1, 0); // restore state saved at process entry
  										barto_debug_resources_count = 0;
 diff --git a/src/custom.cpp b/src/custom.cpp
-index fea994a..ba04b9d 100644
+index fea994a4..ba04b9db 100644
 --- a/src/custom.cpp
 +++ b/src/custom.cpp
 @@ -15977,8 +15977,18 @@ void wait_cpu_cycle_write(uaecptr addr, int mode, uae_u32 v)
@@ -53,10 +53,10 @@ index fea994a..ba04b9d 100644
  
  	sync_cycles();
 diff --git a/src/newcpu.cpp b/src/newcpu.cpp
-index f6d7fd4..1555ba8 100644
+index f6d7fd40..e52002ab 100644
 --- a/src/newcpu.cpp
 +++ b/src/newcpu.cpp
-@@ -224,6 +224,176 @@ struct cpu_profiler {
+@@ -224,6 +224,178 @@ struct cpu_profiler {
  };
  // BARTO-END
  
@@ -119,21 +119,21 @@ index f6d7fd4..1555ba8 100644
 +	if (rte) aprof_unmatched_rte++; else aprof_unmatched_rts++;
 +}
 +
-+// Only m68k_run_2ce is instrumented: refuse other CPU loops rather than report nothing.
++// Only m68k_run_2ce and m68k_run_3ce are instrumented: refuse other CPU loops rather than report nothing.
 +bool aprof_start(void)
 +{
-+	if (!currprefs.cpu_cycle_exact || currprefs.cpu_model < 68020 || currprefs.cpu_model > 68030 || currprefs.mmu_model)
++	if (!currprefs.cpu_cycle_exact || currprefs.cpu_model < 68020 || currprefs.mmu_model)
 +		return false;
 +	if (!aprof_cyc) {
-+		aprof_cyc = (uae_u64 *)calloc(1 << 23, sizeof(uae_u64));
-+		aprof_cnt = (uae_u32 *)calloc(1 << 23, sizeof(uae_u32));
-+		aprof_chip = (uae_u64 *)calloc(1 << 23, sizeof(uae_u64));
-+		aprof_chipn = (uae_u32 *)calloc(1 << 23, sizeof(uae_u32));
++		aprof_cyc = (uae_u64 *)calloc(1 << 24, sizeof(uae_u64));
++		aprof_cnt = (uae_u32 *)calloc(1 << 24, sizeof(uae_u32));
++		aprof_chip = (uae_u64 *)calloc(1 << 24, sizeof(uae_u64));
++		aprof_chipn = (uae_u32 *)calloc(1 << 24, sizeof(uae_u32));
 +	} else {
-+		memset(aprof_chip, 0, (1 << 23) * sizeof(uae_u64));
-+		memset(aprof_chipn, 0, (1 << 23) * sizeof(uae_u32));
-+		memset(aprof_cyc, 0, (1 << 23) * sizeof(uae_u64));
-+		memset(aprof_cnt, 0, (1 << 23) * sizeof(uae_u32));
++		memset(aprof_chip, 0, (1 << 24) * sizeof(uae_u64));
++		memset(aprof_chipn, 0, (1 << 24) * sizeof(uae_u32));
++		memset(aprof_cyc, 0, (1 << 24) * sizeof(uae_u64));
++		memset(aprof_cnt, 0, (1 << 24) * sizeof(uae_u32));
 +	}
 +	aprof_nodes.clear();
 +	aprof_children.clear();
@@ -165,9 +165,9 @@ index f6d7fd4..1555ba8 100644
 +		(unsigned long long)aprof_gap, (unsigned long long)aprof_hi_cyc, (unsigned long long)aprof_overflow,
 +		(unsigned long long)aprof_unmatched_rts, (unsigned long long)aprof_unmatched_rte);
 +	fprintf(f, "chip_units %llu\nchip_accesses %llu\n", (unsigned long long)aprof_chip_total, (unsigned long long)aprof_chip_accesses);
-+	for (uae_u32 i = 0; i < (1u << 23); i++)
++	for (uae_u32 i = 0; i < (1u << 24); i++)
 +		if (aprof_cnt[i] || aprof_cyc[i])
-+			fprintf(f, "P %x %llu %u %llu %u\n", i << 1, (unsigned long long)aprof_cyc[i], aprof_cnt[i],
++			fprintf(f, "P %x %llu %u %llu %u\n", i < (1u << 23) ? i << 1 : 0x40000000u + ((i - (1u << 23)) << 1), (unsigned long long)aprof_cyc[i], aprof_cnt[i],
 +				(unsigned long long)aprof_chip[i], aprof_chipn[i]);
 +	for (size_t i = 0; i < aprof_nodes.size(); i++) {
 +		const auto &n = aprof_nodes[i];
@@ -205,12 +205,14 @@ index f6d7fd4..1555ba8 100644
 +	evt_t now = get_cycles();
 +	evt_t d = now - aprof_last;
 +	aprof_last = now;
-+	if (pc < 0x1000000) {
-+		aprof_cyc[pc >> 1] += d;
-+		aprof_cnt[pc >> 1]++;
++	// 24-bit space, then the 16 MB Z3 window at 0x40000000.
++	uae_u32 slot = pc < 0x1000000 ? pc >> 1 : pc - 0x40000000u < 0x1000000 ? (1u << 23) + ((pc - 0x40000000u) >> 1) : ~0u;
++	if (slot != ~0u) {
++		aprof_cyc[slot] += d;
++		aprof_cnt[slot]++;
 +		if (aprof_chip_cnt) {
-+			aprof_chip[pc >> 1] += aprof_chip_acc;
-+			aprof_chipn[pc >> 1] += aprof_chip_cnt;
++			aprof_chip[slot] += aprof_chip_acc;
++			aprof_chipn[slot] += aprof_chip_cnt;
 +		}
 +	} else {
 +		aprof_hi_cyc += d;
@@ -233,7 +235,7 @@ index f6d7fd4..1555ba8 100644
  const int areg_byteinc[] = { 1, 1, 1, 1, 1, 1, 1, 2 };
  const int imm8_table[] = { 8, 1, 2, 3, 4, 5, 6, 7 };
  
-@@ -3466,6 +3636,7 @@ kludge_me_do:
+@@ -3466,6 +3638,7 @@ kludge_me_do:
  	ipl_fetch_now();
  	fill_prefetch ();
  	exception_check_trace (nr);
@@ -241,7 +243,23 @@ index f6d7fd4..1555ba8 100644
  }
  
  // address = format $2 stack frame address field
-@@ -6169,6 +6340,7 @@ static void m68k_run_2ce (void)
+@@ -5970,6 +6143,7 @@ static void m68k_run_3ce (void)
+ 		TRY(prb) {
+ 			while (!exit) {
+ 				evt_t c = get_cycles();
++				if (aprof_on) aprof_before();
+ 				r->instruction_pc = m68k_getpc();
+ 				r->opcode = get_iword_cache_040(0);
+ 				// "prefetch"
+@@ -5981,6 +6155,7 @@ static void m68k_run_3ce (void)
+ 				}
+ 
+ 				(*cpufunctbl_noret[r->opcode])(r->opcode);
++				if (aprof_on) aprof_after(r->instruction_pc, r->opcode);
+ 
+ 				if (r->spcflags) {
+ 					if (do_specialties (0))
+@@ -6169,6 +6344,7 @@ static void m68k_run_2ce (void)
  					debug_trainer_match();
  				}
  
@@ -249,7 +267,7 @@ index f6d7fd4..1555ba8 100644
  				{ cpu_profiler profiler(r->instruction_pc); // BARTO
  					(*cpufunctbl_noret[r->opcode])(r->opcode);
  		
-@@ -6176,6 +6348,7 @@ static void m68k_run_2ce (void)
+@@ -6176,6 +6352,7 @@ static void m68k_run_2ce (void)
  					regs.instruction_cnt++;
  					regs.ce020extracycles++;
  				} // BARTO

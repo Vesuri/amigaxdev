@@ -113,7 +113,7 @@ both launch paths, every preset, conflicting project arguments and the override 
 |---|---|---|
 | x86_64 Barto build (Rosetta), `~/.local/fs-uae/fs-uae` | `fs-uae` on `PATH` | the default for run, debug and diag scripts; host lldb can attach to it, which the WHDLoad trace profiler needs |
 | native arm64 build | `FSUAE_ARM` | several times faster for long diagnostics and 68030 runs; lldb cannot attach, so the profiler window has to be set from the guest (playbook §5, Legends of Valour) |
-| arm64 with the cycle profiler | `$AMIGA_SHARE/fs-uae-aprof/fs-uae` | exact emulated cycles per PC between `monitor aprof start` and `monitor aprof stop FILE`; cycle-exact 68020/68030 loops only (Alone in the Dark `aprof.sh`) |
+| arm64 with the cycle profiler | `$AMIGA_SHARE/fs-uae-aprof/fs-uae` | exact emulated cycles per PC between `monitor aprof start` and `monitor aprof stop FILE`; cycle-exact 68020–68060 loops without an MMU model (Alone in the Dark `aprof.sh`; Red Baron `aprof_flight.py` for 040/060) |
 
 A project selects one with `FSUAE` (Alone in the Dark: `diag_run.sh` prefers `FSUAE_ARM` when
 `FSUAE` is unset). Matching clock settings across binaries do not make their memory timing
