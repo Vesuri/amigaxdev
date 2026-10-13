@@ -71,3 +71,19 @@ pinned addresses remain intact. Alone in the Dark's original System 7.5.5 fixtur
 and sanitizer heap tests cover this contract. The owner deferred Prince of Persia 2
 adoption while work there is ongoing; keep HEAP.1's size-preserving resize work on
 the same shared-allocator path instead of forking placement fixes.
+
+`HeapResize.inc` supplies in-place resizing for the same allocator adapters.
+The zone must have no adjacent free blocks on entry. A split or growth can only
+create a free/free pair at the resized allocation's tail, so merge that pair
+locally instead of rescanning the zone. Logical sizes, allocation placement,
+free-byte accounting and the adapter's compaction/failure paths stay unchanged.
+Alone in the Dark's sanitizer tests combine resizing with 2,500 fragmented-heap
+operations and check that no adjacent free blocks survive. Prince of Persia 2
+adoption remains deferred by the owner.
+
+`RegionResultCache.h` retains successful, pure QuickDraw record transformations
+in a 32 KiB FIFO arena with 32 metadata slots. The operation tag and exact input
+record bytes are the key; callers validate/compute misses and only insert
+successful results. Handles and pixel buffers are not cached. It is optional
+caller-owned storage, exercised by Alone in the Dark's polygon/InsetRgn camera
+mask rebuilding and mutation/relocation/eviction sanitizer fixtures.

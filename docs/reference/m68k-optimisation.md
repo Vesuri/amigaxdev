@@ -336,6 +336,12 @@ The largest wins were work skipped, not faster loops.
   sprite retention, area-aware dirty merging, all slower). Price them like any other change
   ([measurement method](measurement-method.md)).
 
+For an already coalesced arena, resizing one allocation can create adjacent free
+blocks only at its newly split tail. `HeapResize.inc` merges that pair locally;
+it preserves placement and accounting without walking unrelated blocks. Consumers
+must test the no-adjacent-free-block invariant alongside fragmented grow/shrink,
+compaction, payload, flag and failure checks (Alone in the Dark).
+
 ## 11. Size versus cycles
 
 A fold that turns `abs.l` operands into `d16(An)` has two acceptance tests that can disagree
