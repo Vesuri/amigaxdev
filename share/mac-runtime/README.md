@@ -68,6 +68,6 @@ copy helpers, validation and result publication. A fitting free tail before the
 next pinned block permits target-only relocation. Interior holes and insufficient
 tail space require the original compaction fallback. Payloads, handle flags and
 pinned addresses remain intact. Alone in the Dark's original System 7.5.5 fixture
-and sanitizer heap tests cover this contract. Prince of Persia 2 adoption is pending
-until its active worktree is clear; keep HEAP.1's size-preserving resize work on the
-same shared-allocator path instead of forking placement fixes.
+and sanitizer heap tests cover this contract. The owner deferred Prince of Persia 2
+adoption while work there is ongoing; keep HEAP.1's size-preserving resize work on
+the same shared-allocator path instead of forking placement fixes.
