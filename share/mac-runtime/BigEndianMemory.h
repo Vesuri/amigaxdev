@@ -10,10 +10,17 @@ namespace BigEndianMemory {
 struct __attribute__((packed, may_alias)) Word { uint16_t value; };
 struct __attribute__((packed, may_alias)) Long { uint32_t value; };
 #endif
+#ifdef __mc68000__
+#define AMIGAXDEV_MEMORY_READ16(p,v) __asm__("move.w %1,%0" : "=d"(v) : "m"(*(const BigEndianMemory::Word*)(p)) : "cc")
+#define AMIGAXDEV_MEMORY_READ32(p,v) __asm__("move.l %1,%0" : "=d"(v) : "m"(*(const BigEndianMemory::Long*)(p)) : "cc")
+#define AMIGAXDEV_MEMORY_WRITE16(p,v) __asm__ volatile("move.w %1,%0" : "=m"(*(BigEndianMemory::Word*)(p)) : "d"(v) : "cc")
+#define AMIGAXDEV_MEMORY_WRITE32(p,v) __asm__ volatile("move.l %1,%0" : "=m"(*(BigEndianMemory::Long*)(p)) : "d"(v) : "cc")
+#endif
+#ifndef AMIGAXDEV_MEMORY_PRIMITIVES_ONLY
 inline uint16_t read16(const uint8_t* p) {
 #ifdef __mc68000__
     uint16_t value;
-    __asm__("move.w %1,%0" : "=d"(value) : "m"(*(const Word*)p) : "cc");
+    AMIGAXDEV_MEMORY_READ16(p,value);
     return value;
 #else
     return uint16_t(p[0])<<8|p[1];
@@ -22,7 +29,7 @@ inline uint16_t read16(const uint8_t* p) {
 inline uint32_t read32(const uint8_t* p) {
 #ifdef __mc68000__
     uint32_t value;
-    __asm__("move.l %1,%0" : "=d"(value) : "m"(*(const Long*)p) : "cc");
+    AMIGAXDEV_MEMORY_READ32(p,value);
     return value;
 #else
     return uint32_t(read16(p))<<16|read16(p+2);
@@ -30,16 +37,17 @@ inline uint32_t read32(const uint8_t* p) {
 }
 inline void write16(uint8_t* p,uint16_t value) {
 #ifdef __mc68000__
-    __asm__ volatile("move.w %1,%0" : "=m"(*(Word*)p) : "d"(value) : "cc");
+    AMIGAXDEV_MEMORY_WRITE16(p,value);
 #else
     p[0]=uint8_t(value>>8);p[1]=uint8_t(value);
 #endif
 }
 inline void write32(uint8_t* p,uint32_t value) {
 #ifdef __mc68000__
-    __asm__ volatile("move.l %1,%0" : "=m"(*(Long*)p) : "d"(value) : "cc");
+    AMIGAXDEV_MEMORY_WRITE32(p,value);
 #else
     write16(p,uint16_t(value>>16));write16(p+2,uint16_t(value));
 #endif
 }
+#endif
 }

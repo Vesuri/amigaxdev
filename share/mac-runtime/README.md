@@ -27,3 +27,6 @@ current-port selection remain consumer responsibilities.
 `BigEndianMemory.h` shares Alone in the Dark’s explicit 68020 word/longword
 accesses, including unaligned addresses and alias-safe memory operands. Its host
 fallback preserves big-endian byte order; callers remain responsible for bounds.
+The native `AMIGAXDEV_MEMORY_PRIMITIVES_ONLY` mode exposes those same instruction
+macros to legacy adapters without adding inline function nodes to their compiler
+graph; this preserves Alone in the Dark’s existing function order and executable.
