@@ -30,3 +30,7 @@ fallback preserves big-endian byte order; callers remain responsible for bounds.
 The native `AMIGAXDEV_MEMORY_PRIMITIVES_ONLY` mode exposes those same instruction
 macros to legacy adapters without adding inline function nodes to their compiler
 graph; this preserves Alone in the Dark’s existing function order and executable.
+
+`CodeRangeCache.h` uses a 64-slot page-indexed cache of original CODE ranges. It rechecks
+the current base and size on every hit and retains the full search on misses;
+callers supply disjoint ranges and retain their own unknown-caller handling.

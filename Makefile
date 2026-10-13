@@ -57,3 +57,5 @@ test-mac-runtime:
 	@tmp/tests/mac-graphics-union
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_memory.cpp -o tmp/tests/mac-memory
 	@tmp/tests/mac-memory
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_code_ranges.cpp -o tmp/tests/mac-code-ranges
+	@tmp/tests/mac-code-ranges
