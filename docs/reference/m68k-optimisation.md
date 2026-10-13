@@ -70,6 +70,17 @@ load 4.16/4.16 cycles; immediate word/long store 6.22/8.28; `and.l #$ffff,dN` 6.
 `tst.l` 2.1; high-byte write by `ror`/`move.b`/`ror` 6.4 against `BFINS` 4.1; untaken short
 branch 1.3–1.4; immediate word/long compare 4.0/6.4–6.6.
 
+Standalone FS-UAE 68020/Fast probes (Secret Weapons of Luftwaffe,
+`amiga/cost_probe.sh`, three 50-field runs, 2026-10-13) measure about three
+extra cycles when a word/long crosses a four-byte boundary: word residue 3,
+long residues 1–3. Odd word residue 1 has no measured penalty. This applies
+to direct Fast accesses; do not transfer it to Chip RAM or physical hardware.
+Long multiply/divide report only 4.12–4.14 cycles per PC, against about
+21–22 for word multiply and 35–36 for word divide controls. Treat those long
+costs as an emulator limitation, not a reason to prefer long arithmetic on
+hardware. The project records exact operands, binary hashes and loop sizes;
+cache-sized and oversized loops both exhibit the result.
+
 Some code must stay 68000-compatible while one routine wants 68020 modes: assemble only that
 routine for the 68020 (Vette). A game that is itself 68020 code needs no 68000 plan (Alone in
 the Dark).
