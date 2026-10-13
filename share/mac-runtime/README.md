@@ -39,3 +39,13 @@ callers supply disjoint ranges and retain their own unknown-caller handling.
 Include it inside a namespace after defining `Dma` with `layout` and `stride`.
 It preserves decimated loop phase and word padding while copying uninterrupted
 source spans; the 68020 path converts four ordinary samples per transfer.
+
+`ResourceDirectory.h` and `ResourceDirectory.cpp` share Alone in the Dark's mutable
+resource metadata, stable identities and streamed publication. Define
+`AMIGAXDEV_RESOURCE_DIRECTORY_INDEXED` consistently across a consumer to enable
+Vette-style binary lookup over a lazily rebuilt sorted index. Identity breaks ties
+so the oldest surviving duplicate wins even after slot reuse. Successful opens,
+closes, additions, replacements and removals invalidate that index. The default
+configuration retains the existing linear implementation. Define
+`AMIGAXDEV_RESOURCE_DIRECTORY_MAP_LIMIT` to enforce the parser's per-map resource
+limit before mutation, as Prince of Persia 2 does.
