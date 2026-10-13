@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cstring>
 #include <initializer_list>
+#include <vector>
 #include "GWorld8.h"
 #include "CopyBits8.h"
 #include "FillRect8.h"
@@ -8,7 +9,31 @@
 static void rect(uint8_t* p,int t,int l,int b,int r) {
     GWorld8::rect(p,{int16_t(t),int16_t(l),int16_t(b),int16_t(r)});
 }
+static void validationCache() {
+    static RegionRows::ValidationCache cache;
+    std::vector<std::vector<uint8_t>> keys;
+    for(unsigned n=0;n<96;++n) {
+        std::vector<uint8_t> r(10,0);
+        for(unsigned y=0;y<(n%2?800:20);++y) {
+            r.push_back(y>>8);r.push_back(y);r.push_back(127);r.push_back(255);
+        }
+        r.push_back(127);r.push_back(255);
+        GWorld8::word(r.data(),r.size());r[5]=n;
+        keys.push_back(r);
+    }
+    for(unsigned round=0;round<3;++round)for(auto r:keys) {
+        RegionRows::Edges edges{};
+        assert(RegionRows::row(r.data(),r.size(),0,edges));
+        assert(cache.validate(r.data(),r.size()));
+        assert(cache.validate(r.data(),r.size()));
+        assert(!cache.validate(r.data(),r.size()-1));
+        r.back()=0;
+        assert(!RegionRows::row(r.data(),r.size(),0,edges));
+        assert(!cache.validate(r.data(),r.size()));
+    }
+}
 int main() {
+    validationCache();
     uint8_t a[10]={},b[10]={},out[1024]={};
     GWorld8::word(a,10);rect(a+2,1,2,5,6);
     GWorld8::word(b,10);rect(b+2,3,4,7,8);

@@ -101,3 +101,10 @@ half-open rectangle. It validates map capacity, signed pen extents and all four
 clipping bounds before writing. Small spans avoid general rectangle setup;
 large spans reuse the aligned fill primitive. The caller supplies a current
 allocation capacity; no handle or framebuffer cache is retained by the helper.
+
+`RegionRows::ValidationCache` retains fully validated region encodings in a
+32 KiB FIFO byte arena with 32 slots (maximum 4096 bytes per record). Keys include
+every byte; capacity checks precede lookup, and arena reuse evicts overlapping
+entries. `CopyBits8` validates the whole mask before rejecting a disjoint
+rectangle, then clips by coordinates and streams rows. Thumbnail scaling uses
+a separate routine; no pixel snapshots or handle-address keys are retained.
