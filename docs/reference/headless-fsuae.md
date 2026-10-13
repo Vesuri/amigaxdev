@@ -354,3 +354,33 @@ Several projects run emulators at once.
   Fractalus).
 - `run.sh` scripts that change directory before copying files must resolve relative arguments
   against the caller's directory first (Indianapolis 500).
+
+
+### Cached 040/060 MMU write attributes
+
+All native builds apply `patches/fsuae-mmu-write-cache.patch` to the pinned Barto
+core. Six ordinary/locked byte/word/long ATC write-hit paths incorrectly loaded
+cache attributes from the independent read entry. This could make CHIP writes
+copy-back despite write-through/noncacheable page descriptors, leaving stale DMA
+pixels. Use the write entry for both translation and attributes. The build stamp
+includes the correction hash, so old binaries are rebuilt on setup.
+
+Wing Commander reproduced this with both CPU caches enabled: 259 of 306 intro
+conversions differed from physical DMA pixels while CPU pixels matched. The
+corrected emulator passed 306 intro and 120 in-game conversions; a matched build
+without the correction failed 19 of its first 20 conversions. Normal frontend
+captures and user play-testing confirmed the visible fix. No guest cache flushes
+or cache disabling were needed. These checks establish 040 correctness in those
+windows, not 060 coverage or hardware timing calibration.
+
+A separate corrected native build is available as `FSUAE_MMU`, conventionally
+`$AMIGA_SHARE/fs-uae-mmu-fixed/fs-uae`. Select it with `FSUAE="$FSUAE_MMU"`.
+To rebuild that installation with the cycle profiler:
+
+```sh
+scripts/build-fsuae.sh fs-uae-mmu-fixed "$PWD/patches/fsuae-aprof.patch"
+```
+
+The existing `FSUAE_ARM` and `FSUAE_APROF` installations need their normal rebuild
+before they gain the correction. Retained project-local debugger binaries also
+need rebuilding; changing an environment variable cannot patch an old binary.

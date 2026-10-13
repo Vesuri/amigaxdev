@@ -15,13 +15,16 @@ dest="$AMIGA_SHARE/$name"
 build="$BUILD/$name"
 commit=$(rows git.tsv | awk -F'\t' '$1 == "fs-uae-barto" {print $2}')
 url=$(rows git.tsv | awk -F'\t' '$1 == "fs-uae-barto" {print $3}')
+core_patch="$REPO/patches/fsuae-mmu-write-cache.patch"
+core_sha=$(sha256 "$core_patch")
 patch_sha=""; [ -n "$patch" ] && patch_sha=$(sha256 "$patch")
 
 # Already built from the same commit and patch: nothing to do.
 rev="$dest/source-revision.txt"
 if [ -x "$dest/fs-uae" ] && [ -f "$rev" ] && grep -q "$commit" "$rev" \
+   && grep -q "core-fix $core_sha" "$rev" \
    && { [ -z "$patch_sha" ] || grep -q "$patch_sha" "$rev"; } \
-   && { [ -n "$patch_sha" ] || ! grep -q patch "$rev"; }; then
+   && { [ -n "$patch_sha" ] || ! grep -q " + patch " "$rev"; }; then
   exit 0
 fi
 
@@ -50,6 +53,8 @@ cp -f "$(automake --print-libdir)"/config.guess "$(automake --print-libdir)"/con
 [ -d "$src/.git" ] || git clone -q --filter=blob:none "$url" "$src"
 git -C "$src" checkout -q --force "$commit"
 git -C "$src" clean -qfdx
+git -C "$src" apply --check "$core_patch"
+git -C "$src" apply "$core_patch"
 [ -n "$patch" ] && git -C "$src" apply "$patch"
 export PKG_CONFIG_PATH="$deps/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 (cd "$src" && ./bootstrap >"$build/fs-uae.log" 2>&1 \
@@ -65,7 +70,7 @@ mkdir -p "$dest"
 cp -f "$src/fs-uae" "$src/fs-uae.dat" "$dest/"
 cp -R "$src/data" "$dest/data"
 {
-  printf '%s %s' "$url" "$commit"
+  printf '%s %s core-fix %s' "$url" "$commit" "$core_sha"
   [ -n "$patch" ] && printf ' + patch %s %s' "$(basename "$patch")" "$patch_sha"
   printf '\nSDL2_ttf 2.0.15 and libmpeg2 0.5.1 static; arm64; JIT disabled\n'
 } > "$rev"
