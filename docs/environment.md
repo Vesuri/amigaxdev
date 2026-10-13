@@ -88,7 +88,9 @@ for example `AMIGA_SETUP=a1200-fast amiga/run.sh`. Available names are `a500`, `
 `a1200`, `a1200-fast`, `a1200-030`, `a1200-040` and `a1200-060`. The preset overrides
 project machine defaults at launch; `EXTRA_ARGS` remains the explicit override. See
 [named machine setups](reference/headless-fsuae.md#named-machine-setups) for RAM, ROMs,
-clocks, MMU settings and project compatibility limits. Install updates with `make share`.
+clocks, MMU settings and project compatibility limits. CPU cache emulation is enabled
+for 68020 and faster (instruction cache on 020; instruction and data caches on 030+).
+Guest software still controls cache use. Install updates with `make share`.
 
 On macOS the shared launcher defaults debug/diagnostic runs to the leftmost display when
 multiple monitors are connected; ordinary interactive runs keep their usual placement.

@@ -197,7 +197,7 @@ fsuae_quiet() {
 fsuae_setup() {
   FSUAE_SETUP_ARGS=()
   [ -n "${AMIGA_SETUP:-}" ] || return 0
-  local chipset mmu=0 fpu=0 frequency exact=true
+  local chipset mmu=0 fpu=0 frequency exact=true data_cache=false
   local share="${AMIGA_SHARE:-${AMIGA_PREFIX:-$HOME/.local}/share/amiga}"
   case "$AMIGA_SETUP" in
     a500|a500+)
@@ -216,9 +216,9 @@ fsuae_setup() {
       KICKSTART="${KICKSTART_A1200:-$share/Kickstarts/kick40068.A1200}"
       case "$AMIGA_SETUP" in
         a1200) FAST_KB=0 ;;
-        a1200-030) CPU=68030 mmu=68030 frequency=50000000 ;;
-        a1200-040) CPU=68040 mmu=68040 fpu=68040 frequency=25000000 exact=false ;;
-        a1200-060) CPU=68060 mmu=68060 fpu=68060 frequency=50000000 exact=false ;;
+        a1200-030) CPU=68030 mmu=68030 frequency=50000000 data_cache=true ;;
+        a1200-040) CPU=68040 mmu=68040 fpu=68040 frequency=25000000 exact=false data_cache=true ;;
+        a1200-060) CPU=68060 mmu=68060 fpu=68060 frequency=50000000 exact=false data_cache=true ;;
       esac
       ;;
     *)
@@ -233,9 +233,15 @@ fsuae_setup() {
     --uae_chipset="$chipset" --uae_mmu_model="$mmu" --uae_fpu_model="$fpu"
     --jit_compiler=0 --uae_cachesize=0 --uae_cpu_speed=real
     --uae_cpu_multiplier=0 --uae_cpu_frequency="$frequency"
+    --uae_cpu_data_cache="$data_cache"
     --uae_cpu_compatible=true --uae_cpu_cycle_exact="$exact"
     --uae_cpu_memory_cycle_exact="$exact" --uae_blitter_cycle_exact="$exact"
   )
+  # 020 has only an instruction cache, supplied by the compatible CPU core.
+  # 030+ data caches require indirect UAE Boot ROM access for directory drives.
+  if [ "$data_cache" = true ]; then
+    FSUAE_SETUP_ARGS+=(--uae_uaeboard=full+indirect)
+  fi
 }
 
 fsuae_options() {

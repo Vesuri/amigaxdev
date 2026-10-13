@@ -35,6 +35,7 @@ fsuae_options || exit 1
         args = (' --amiga_model=A4000 --cpu=68040-NOMMU --chip_memory=8192'
                 ' --uae_mmu_model=0 --uae_fpu_model=0 --jit_compiler=1'
                 ' --uae_cpu_frequency=1 --uae_cpu_speed=max --uae_chipset=aga'
+                ' --uae_cpu_data_cache=false --uae_uaeboard=min'
                 ' --kickstart_file=wrong --hard_drive_0="game drive"')
         if mode == "exec":
             script += 'fsuae_exec' + args
@@ -71,12 +72,23 @@ fsuae_options || exit 1
                     self.assertEqual([values[k] for k in keys], list(map(str, case[1:])))
                     self.assertEqual(values["hard_drive_0"], "game drive")
                     self.assertEqual(values["jit_compiler"], "0")
+                    self.assertEqual(values["uae_cachesize"], "0")  # JIT cache, not CPU cache
+                    self.assertEqual(values["uae_cpu_compatible"], "true")
+                    data_cache = case[0] in ("a1200-030", "a1200-040", "a1200-060")
+                    self.assertEqual(values["uae_cpu_data_cache"], str(data_cache).lower())
+                    self.assertEqual(values["uae_uaeboard"], "full+indirect" if data_cache else "min")
                     rom = "kick40063.A600" if case[0].startswith("a500") else "kick40068.A1200"
                     self.assertEqual(values["kickstart_file"], str(self.work / "shared files/Kickstarts" / rom))
 
     def test_extra_args_override_preset(self):
         values = self.effective(self.run_launcher("a1200-fast", extra="--fast_memory=4096"))
         self.assertEqual(values["fast_memory"], "4096")
+
+    def test_explicit_cache_override(self):
+        for mode in ("exec", "launch"):
+            values = self.effective(self.run_launcher("a1200-040", mode,
+                extra="--uae_cpu_data_cache=false"))
+            self.assertEqual(values["uae_cpu_data_cache"], "false")
 
     def test_reapply_after_project_changes(self):
         values = self.effective(self.run_launcher("a1200-060", before="CPU=68000 FAST_KB=0"))

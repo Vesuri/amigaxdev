@@ -81,6 +81,14 @@ This preserves directory hard-drive boot support; these are not original factory
 `NTSC` remains a separate setting, retaining the project's default. Stock clocks follow it
 (PAL: 7,093,790 / 14,187,580 Hz; NTSC: 7,159,090 / 14,318,180 Hz).
 
+All 68020-and-faster presets enable instruction-cache emulation through the compatible
+CPU core. The 68030/040/060 presets also enable data-cache emulation
+(`uae_cpu_data_cache=true`) and use `uae_uaeboard=full+indirect`, required to retain data
+caches with directory hard drives. The 68020 has no data cache. `uae_cachesize=0` refers
+to the disabled JIT translation cache, not the emulated CPU caches. Guest software still
+controls its cache registers; WHDLoad games need the game's `CACHE` option when appropriate.
+Use `EXTRA_ARGS='--uae_cpu_data_cache=false'` for an explicit data-cache comparison.
+
 The full 030 has its MMU; the 040 and 060 have their integrated MMU and FPU. The 040/060
 presets use the non-cycle-exact MMU core: their nominal clock is configured, but that core
 does not honour hardware timing. Use these for functional/MMU checks, not performance
