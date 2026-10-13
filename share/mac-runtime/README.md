@@ -34,3 +34,8 @@ graph; this preserves Alone in the Dark’s existing function order and executab
 `CodeRangeCache.h` uses a 64-slot page-indexed cache of original CODE ranges. It rechecks
 the current base and size on every hit and retains the full search on misses;
 callers supply disjoint ranges and retain their own unknown-caller handling.
+
+`PcmDma.inc` shares Alone in the Dark’s signed PCM conversion with Prince of Persia 2.
+Include it inside a namespace after defining `Dma` with `layout` and `stride`.
+It preserves decimated loop phase and word padding while copying uninterrupted
+source spans; the 68020 path converts four ordinary samples per transfer.
