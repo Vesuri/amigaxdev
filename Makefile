@@ -55,3 +55,5 @@ test-mac-runtime:
 	@tmp/tests/mac-graphics
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -DAMIGAXDEV_REGION_UNION -Ishare/mac-runtime scripts/test_mac_graphics.cpp -o tmp/tests/mac-graphics-union
 	@tmp/tests/mac-graphics-union
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_memory.cpp -o tmp/tests/mac-memory
+	@tmp/tests/mac-memory

@@ -1,3 +1,4 @@
 project	commit	sources
 Alone in the Dark	935aed56a0ec6f7cf5965969c2ea2d85d74637e6	src/mac/RectBounds.h; src/mac/MacLoader.cpp OffsetRect/InsetRect
 Alone in the Dark	d425ac4f14026f6236eba8899cee8252e565615c	src/mac/BitmapFont.h; src/mac/Text8.h clipping and pixel addressing
+Alone in the Dark	1959252dee80af36b9c466fd9a16b844acbde327	src/mac/MacLoader.cpp read16/read32/write16/write32

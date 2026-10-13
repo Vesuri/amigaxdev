@@ -23,3 +23,7 @@ Prince of Persia 2. Define `AMIGAXDEV_REGION_UNION` to add region union to the p
 operations. Consumers that do not use it retain the existing operation set and
 compiled dispatch; both configurations have sanitizer checks. Trap ownership and
 current-port selection remain consumer responsibilities.
+
+`BigEndianMemory.h` shares Alone in the Dark’s explicit 68020 word/longword
+accesses, including unaligned addresses and alias-safe memory operands. Its host
+fallback preserves big-endian byte order; callers remain responsible for bounds.
