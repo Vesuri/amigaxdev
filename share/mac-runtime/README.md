@@ -87,3 +87,11 @@ record bytes are the key; callers validate/compute misses and only insert
 successful results. Handles and pixel buffers are not cached. It is optional
 caller-owned storage, exercised by Alone in the Dark's polygon/InsetRgn camera
 mask rebuilding and mutation/relocation/eviction sanitizer fixtures.
+
+`RGBColorCache.h` memoizes successful RGB-to-index lookups per port. Keys include
+both dereferenced table addresses, their QuickDraw seeds, format headers and all
+48 RGB bits. Relocation, seed or header changes invalidate the entries. The
+adapter must also invalidate on port disposal and any same-seed table rebuild;
+QuickDraw table edits must publish a new seed. Misses use `GWorld8::colorIndex`,
+including its collision-ring validation and first-entry tie rule. This caches
+indices, never pixels, and requires no allocation or per-call table copy.
