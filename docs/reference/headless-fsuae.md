@@ -395,9 +395,16 @@ PAL `512 * 28375160` overflows: a requested 50 MHz reports cpucycleunit 32,
 where the intended integer result is 290. Ferrari Formula One exposed this
 during accelerated qualification. Configuration text alone did not reveal it.
 
-Use `(uae_u64)CYCLE_UNIT * baseclock / currprefs.cpu_frequency` in the measurement
-build, then verify the live result and field counter. Integer scaling gives an
-effective 50.096834 MHz for cpucycleunit 290; report that quantization. Preserve
-old captures as rejected nominal-frequency evidence. This explicit-frequency
-branch does not affect default-clock profiles. The correction has been tested
-in a project-local observer; shared installed binaries are not yet changed.
+Widening the multiplication alone is insufficient. `baseclock` is eight times
+Chip clock, whereas `get_cycles()` advances by CYCLE_UNIT per Chip clock.
+The expected explicit-frequency expression is
+`(uae_u64)CYCLE_UNIT * (baseclock / 8) / currprefs.cpu_frequency`.
+Cross-check it against the stock 020 multiplier: explicit 14.18758 MHz must
+produce unit 128, matching the default 020, not 1024. A requested 50 MHz gives
+integer unit 36, about 50.445 MHz of cycle budget; report the quantization.
+Check both live metadata and independently observed cycle/field counts.
+Preserve rejected captures; the first widened-only fix (unit 290 at requested
+50 MHz) also used the wrong units. Default-clock profiles are unaffected. The
+project-local calibration passes: stock and explicit 020 settings produce
+identical complete DMA rows, 284,204 cycles per field, and driving-clock state
+across 1,000 fields. Shared installed binaries remain unchanged.
