@@ -111,19 +111,21 @@ inline bool validMap(const uint8_t* bounds,uint16_t stride,uint32_t bytes) {
 }
 // Vette's unscaled clipping equations, applied to byte pixels. The caller
 // supplies a measured colour map when the colour environments differ, and
-// establishes distinct owned buffers.
+// establishes owned buffers. Same-buffer copies require an unscaled, unmasked
+// transfer with identical strides; other aliasing forms remain unsupported.
 inline bool copy(const uint8_t* src,uint32_t srcBytes,uint16_t srcStride,const uint8_t* srcMap,
                  uint8_t* dst,uint32_t dstBytes,uint16_t dstStride,const uint8_t* dstMap,
                  const uint8_t* from,const uint8_t* to,const uint8_t* port,
                  const uint8_t* vis,const uint8_t* clip,uint8_t* drawn,const uint8_t* colors=0,
                  const uint8_t* mask=0,uint16_t maskBytes=0,RegionRows::ValidationCache* maskCache=nullptr) {
-    if(!src || !dst || src==dst || !srcMap || !dstMap || !from || !to
+    if(!src || !dst || !srcMap || !dstMap || !from || !to
        || !port || !vis || !clip || !drawn)return false;
     if(!validMap(srcMap,srcStride,srcBytes) || !validMap(dstMap,dstStride,dstBytes))return false;
     const int32_t h=coord(from,2)-coord(from,0),w=coord(from,3)-coord(from,1);
     const int32_t targetH=from==to ? h : coord(to,2)-coord(to,0);
     const int32_t targetW=from==to ? w : coord(to,3)-coord(to,1);
     if(h<=0 || w<=0 || targetH<=0 || targetW<=0)return false;
+    if(src==dst && (mask || colors || srcStride!=dstStride || h!=targetH || w!=targetW))return false;
     if(h!=targetH || w!=targetW) {
         return scale(src,srcStride,srcMap,dst,dstStride,dstMap,from,to,port,vis,clip,drawn,
                      colors,mask,maskBytes,maskCache,h,w,targetH,targetW);
@@ -155,6 +157,23 @@ inline bool copy(const uint8_t* src,uint32_t srcBytes,uint16_t srcStride,const u
     // Row addresses advance by stride; rectangle fields are read once.
     const uint8_t* source=src+uint32_t(coord(from,0)+limits[0]-coord(to,0)-coord(srcMap,0))*srcStride;
     uint8_t* target=dst+uint32_t(limits[0]-coord(dstMap,0))*dstStride;
+    if(src==dst) {
+        // Vette's overlap traversal, applied to byte pixels. Copy the last row
+        // first when its destination follows its source, and reverse each span
+        // when necessary. Clipping is resolved before selecting the direction.
+        const uint8_t* in=source+(sourceX+limits[1]);
+        uint8_t* out=target+(destinationX+limits[1]);
+        const uint32_t count=uint32_t(limits[3]-limits[1]);
+        const int32_t height=limits[2]-limits[0];
+        const bool backward=out>in;
+        for(int32_t i=0;i<height;++i) {
+            const int32_t row=backward?height-1-i:i;
+            const uint8_t* a=in+row*srcStride;uint8_t* b=out+row*dstStride;
+            if(backward)for(uint32_t x=count;x>0;--x)b[x-1]=a[x-1];
+            else for(uint32_t x=0;x<count;++x)b[x]=a[x];
+        }
+        return true;
+    }
     if(!mask) {
         const uint8_t* in=source+(sourceX+limits[1]);
         uint8_t* out=target+(destinationX+limits[1]);

@@ -9,6 +9,21 @@
 static void rect(uint8_t* p,int t,int l,int b,int r) {
     GWorld8::rect(p,{int16_t(t),int16_t(l),int16_t(b),int16_t(r)});
 }
+static void testOverlap() {
+    std::vector<uint8_t> bounds(8),clip(8);rect(bounds.data(),-2,-3,22,29);rect(clip.data(),0,0,21,27);
+    for(int dy=-9;dy<=9;++dy)for(int dx=-9;dx<=9;++dx) {
+        std::vector<uint8_t> initial(24*32),actual;
+        for(unsigned i=0;i<initial.size();++i)initial[i]=uint8_t(i*71+i/32);
+        actual=initial;auto expected=initial;
+        std::vector<uint8_t> from(8),to(8);rect(from.data(),3,4,17,21);rect(to.data(),3+dy,4+dx,17+dy,21+dx);
+        for(int y=0;y<21;++y)for(int x=0;x<27;++x)
+            if(y>=3+dy && y<17+dy && x>=4+dx && x<21+dx)
+                expected[(y+2)*32+x+3]=initial[(y-dy+2)*32+x-dx+3];
+        uint8_t drawn[8];
+        assert(CopyBits8::copy(actual.data(),actual.size(),32,bounds.data(),actual.data(),actual.size(),32,bounds.data(),from.data(),to.data(),bounds.data(),bounds.data(),clip.data(),drawn));
+        assert(actual==expected);
+    }
+}
 static void validationCache() {
     static RegionRows::ValidationCache cache;
     std::vector<std::vector<uint8_t>> keys;
@@ -33,6 +48,7 @@ static void validationCache() {
     }
 }
 int main() {
+    testOverlap();
     validationCache();
     uint8_t a[10]={},b[10]={},out[1024]={};
     GWorld8::word(a,10);rect(a+2,1,2,5,6);
