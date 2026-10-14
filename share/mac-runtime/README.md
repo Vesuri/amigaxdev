@@ -125,3 +125,8 @@ the source from purging during allocation and restores its state on success or
 failure. The new handle retains its allocator default state. Prince of Persia 2
 measures HandToHand against System 7.5.5 and tests this helper with the real heap;
 trap-register and error contracts remain the caller's responsibility.
+
+`BitmapRegion.h` converts MSB-first one-bit masks with `RegionOps::Writer`,
+using caller-owned staging storage. Region edge storage accommodates thirty-two
+transitions, including intermediate XOR states of smaller adjacent rows. Invalid
+extents or capacity exhaustion reject before a caller publishes the result.

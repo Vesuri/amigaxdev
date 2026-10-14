@@ -4,14 +4,14 @@
 #include "BigEndianMemory.h"
 namespace RegionRows {
 inline int16_t get(const uint8_t* p) {return int16_t(BigEndianMemory::read16(p));}
-struct Edges { int16_t x[16]; uint16_t count; };
+struct Edges { enum { capacity=32 }; int16_t x[capacity]; uint16_t count; };
 inline bool toggle(Edges& edges,int16_t x) {
     uint16_t at=0;while(at<edges.count && edges.x[at]<x)++at;
     if(at<edges.count && edges.x[at]==x) {
         for(uint16_t i=at;i+1<edges.count;++i)edges.x[i]=edges.x[i+1];
         --edges.count;return true;
     }
-    if(edges.count==16)return false;
+    if(edges.count==Edges::capacity)return false;
     for(uint16_t i=edges.count;i>at;--i)edges.x[i]=edges.x[i-1];
     edges.x[at]=x;++edges.count;return true;
 }
