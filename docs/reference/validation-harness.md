@@ -346,6 +346,17 @@ State each excluded region at the comparison tool, with the reason:
 
 The host harness cannot see Amiga-only code, endianness or beam timing.
 
+- **Keep a WHDLoad diagnostic entry within the positive signed-word range.**
+  `ws_GameLoader` is relative to the slave header, not to an appended payload.
+  Assert `0 <= entry_offset < 0x8000` before writing it; an unsigned 16-bit pack
+  accepting a larger value does not prove a valid boot entry. Growing VERIFY
+  code can cross this limit while the lean build still boots. Use a nearby
+  trampoline to the distant selection wrapper, preserve its entry ABI, and
+  range-check the trampoline's own branch or address calculation. Verify a real
+  boot and a nonzero diagnostic count after the repair. A missing initialized
+  marker is a failed capture, not an arithmetic mismatch or a capacity result
+  (Ferrari Formula One).
+
 - **Target-only assembly needs an in-process differential with a nonzero check count.** The
   assembly and its C oracle run back to back on identical state in every call, and are
   compared. Inline assembly is unverified until it has run on the target: a ROR/ROL-X bug
