@@ -38,7 +38,8 @@ callers supply disjoint ranges and retain their own unknown-caller handling.
 `PcmDma.inc` shares Alone in the Dark’s signed PCM conversion with Prince of Persia 2.
 Include it inside a namespace after defining `Dma` with `layout` and `stride`.
 It preserves decimated loop phase and word padding while copying uninterrupted
-source spans; the 68020 path converts four ordinary samples per transfer.
+source spans; the 68020 path converts eight longwords per loop with a register
+XOR mask, then exact longword/byte tails. Decimated spans retain their byte path.
 
 `ResourceDirectory.h` and `ResourceDirectory.cpp` share Alone in the Dark's mutable
 resource metadata, stable identities and streamed publication. Define
