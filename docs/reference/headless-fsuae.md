@@ -384,3 +384,20 @@ scripts/build-fsuae.sh fs-uae-mmu-fixed "$PWD/patches/fsuae-aprof.patch"
 The existing `FSUAE_ARM` and `FSUAE_APROF` installations need their normal rebuild
 before they gain the correction. Retained project-local debugger binaries also
 need rebuilding; changing an environment variable cannot patch an old binary.
+
+
+## Verify explicit CPU-frequency scaling
+
+Before using a named MHz profile for performance claims, inspect the running
+core's `baseclock`, `cpucycleunit` and configured frequency. Older FS-UAE source
+calculates `CYCLE_UNIT * baseclock / cpu_frequency` with a 32-bit intermediate.
+PAL `512 * 28375160` overflows: a requested 50 MHz reports cpucycleunit 32,
+where the intended integer result is 290. Ferrari Formula One exposed this
+during accelerated qualification. Configuration text alone did not reveal it.
+
+Use `(uae_u64)CYCLE_UNIT * baseclock / currprefs.cpu_frequency` in the measurement
+build, then verify the live result and field counter. Integer scaling gives an
+effective 50.096834 MHz for cpucycleunit 290; report that quantization. Preserve
+old captures as rejected nominal-frequency evidence. This explicit-frequency
+branch does not affect default-clock profiles. The correction has been tested
+in a project-local observer; shared installed binaries are not yet changed.
