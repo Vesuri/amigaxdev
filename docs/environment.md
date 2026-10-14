@@ -113,6 +113,7 @@ multiple monitors are connected; ordinary interactive runs keep their usual plac
 | `amigaxdev.env` | `path(NAME)`, `tool('objdump')`: the shared defaults with environment overrides | `local_env.py`, inline `AMIGA_TOOLCHAIN` lookups |
 | `amigaxdev.barto` | `load(trace)`, `Trace.instructions(field)`, `capture_part_starts()`; honours `NAME.pc-base` | `barto.py` |
 | `amigaxdev.gdbserve` | `Server(name, root, commands={...}).main(argv)`: serve / one-shot commands through the gdb stub (`stop`, `cont`, `gdb`, `shot`, `profile`, `wait`, `until`, `quit`; `commands` add or replace) | the `td2.py` skeleton |
+| `amigaxdev.callprofile` | `Reduction(marks, tally).feed(trace)` per chunk, `.tree()`, `.inclusive()`, `.dma_shares()`, `.save()`/`.load()`: chunked traces reduced to self/inclusive cycles with SP-rebuilt call stacks, per-field totals and timestamped marks | per-project trace reducers |
 | `amigaxdev.disasm` | `python3 -m amigaxdev.disasm dis\|disd\|hotspots [--label NAME] ...` | `dis.sh`, `disd.py`, `hotspots.py` |
 | `amigaxdev.adf`, `amigaxdev.patchlist` | `python3 -m amigaxdev.adf DISK`, `python3 -m amigaxdev.patchlist SLAVE OFFSET` | `adf.py`, `patchlist.py` |
 | `amigaxdev.release` | `archive(prefix, files, drawer_icon, dos_stamp(y, m, d))`, `write()`, `refuse_originals()`, `installer_icon(icons_dir, appname)` | the body of `package_release.py`, `installer_icon.py` |

@@ -451,7 +451,11 @@ Facts about this stub, all verified the hard way:
   working directory must be the harness root, so dump to a **harness-relative** path (`tmp/x-code.bin`), then move
   the file. Python 3.12's `tempfile.mkdtemp(dir='tmp')` returns an absolute path: pass it through
   `os.path.relpath` before handing it to gdb. Don't use `/tmp`: parallel jobs share it.
-- At most **100 fields** per `monitor profile`, about 5.4 MB per field.
+- At most **100 fields** per `monitor profile`, about 5.4 MB per field. For longer windows
+  capture consecutive chunks and reduce each with `amigaxdev.callprofile` before deleting it:
+  Prince of Persia's 990-field route reduces to 3 MB in 25 s. The reduction rebuilds call stacks
+  from JSR/BSR and the SP (the stub records none without a trigger) and timestamps marker PCs,
+  with a running tally of wait-loop cycles, for per-frame costs.
 - **One capture at a time per repo.** `fsuae_common.sh` gives each directory its own port, so
   two captures from the same repo collide on the debugger socket. Run them in sequence.
 - `run.sh` changes into `amiga/` before copying the slave, so resolve a relative `SLAVE` against
