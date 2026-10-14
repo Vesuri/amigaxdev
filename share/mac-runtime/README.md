@@ -117,3 +117,9 @@ every byte; capacity checks precede lookup, and arena reuse evicts overlapping
 entries. `CopyBits8` validates the whole mask before rejecting a disjoint
 rectangle, then clips by coordinates and streams rows. Thumbnail scaling uses
 a separate routine; no pixel snapshots or handle-address keys are retained.
+
+`HandleCopy.h` duplicates owned handle data through a heap adapter, protects
+the source from purging during allocation and restores its state on success or
+failure. The new handle retains its allocator default state. Prince of Persia 2
+measures HandToHand against System 7.5.5 and tests this helper with the real heap;
+trap-register and error contracts remain the caller's responsibility.
