@@ -48,6 +48,12 @@ static void validationCache() {
     }
 }
 int main() {
+    for(auto item:std::vector<std::vector<int>>{{512,384,528},{510,87,528},{510,384,528},{510,365,528},{365,365,384},{239,353,256},{510,225,528}}) {
+        GWorld8::Layout layout;
+        assert(GWorld8::layout({0,0,int16_t(item[1]),int16_t(item[0])},layout,16));
+        assert(layout.rowBytes==item[2] && layout.pixelBytes==unsigned(item[1]*item[2]));
+    }
+
     testOverlap();
     validationCache();
     uint8_t a[10]={},b[10]={},out[1024]={};
