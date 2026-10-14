@@ -53,7 +53,7 @@ variables can be left out once those files are installed.
 | Component | `make` target | Source | Installed as |
 |---|---|---|---|
 | m68k gcc/gdb/objdump, vasm, elf2hunk, Shrinkler, exe2adf, FS-UAE with the Barto gdb stub (x86_64), gcc8 support files | `toolchain` | BartmanAbyss amiga-debug 1.8.2 (GitHub release `.vsix`) | `~/.local/{opt,fs-uae,support}`, `~/.local/vasmm68k_mot` etc. |
-| WHDLoad 20.0 and 19.2 developer packages | `whdload` | whdload.de | `WHDLoad-20.0/`, `WHDLoad/` |
+| WHDLoad 20.1 developer package | `whdload` | whdload.de | `WHDLoad/` (latest only) |
 | NDK 3.2 Release 4 | `ndk` | Aminet `dev/misc/NDK3.2` | `ndk/` |
 | Installer 43.3 | `installer` | Aminet `util/misc/Installer-43_3` | `Installer43/Installer` |
 | Kickstart relocation tables (`.RTB`) | `rtb` | Aminet `util/boot/skick346` | `Kickstarts/*.RTB` |

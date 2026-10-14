@@ -24,8 +24,10 @@ while IFS=$'\t' read -r dest sha rest; do
 done < <(rows os.tsv)
 
 echo "Downloaded and built trees"
-check "WHDLoad 20.0"           test -f "$AMIGA_SHARE/WHDLoad-20.0/C/WHDLoad" -a -f "$AMIGA_SHARE/WHDLoad-20.0/Src/sources/whdload/kick13.s"
-check "WHDLoad 19.2"           test -f "$AMIGA_SHARE/WHDLoad/C/WHDLoad"
+while IFS=$'\t' read -r file sha; do
+  check "WHDLoad 20.1 $file" sha_ok "$AMIGA_SHARE/WHDLoad/$file" "$sha"
+done < <(rows whdload.tsv)
+check "no legacy WHDLoad developer tree" test ! -e "$AMIGA_SHARE/WHDLoad-20.0" -a ! -L "$AMIGA_SHARE/WHDLoad-20.0"
 check "NDK 3.2"                test -d "$AMIGA_SHARE/ndk/Include_I"
 check "Developer CD manuals"   test -f "$AMIGA_SHARE/adcd21/Reference/ROM_Kernel_Manuals/Hardware_Manual" -a -f "$AMIGA_SHARE/adcd21/Reference/HTML/Hardware_Manual.html"
 check "AGA guide"              test -f "$AMIGA_SHARE/AGA.Guide"

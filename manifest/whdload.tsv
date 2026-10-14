@@ -1,0 +1,5 @@
+# Key installed files from the pinned WHDLoad 20.1 developer archive.
+# path (relative to WHDLoad/)	sha256
+C/WHDLoad	e904dbe9494f85475fedf926b53ee8597dcdf581209f00122d7baf7b7df4cd8e
+Include/whdload.i	ef7402e32fd7885ee018d4fec48d2c5ca52f7d3c1d30c21910560ea77430698b
+Src/sources/whdload/kick13.s	80a20a97bc3bf964760b033e1c65af3b0e970bf257b5a83a800669a46222841c

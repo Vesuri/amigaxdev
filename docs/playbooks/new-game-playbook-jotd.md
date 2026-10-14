@@ -87,7 +87,7 @@ shared `~/.local/share/amiga/env.sh` and then sets only what the project changes
 | FS-UAE with the Barto gdb stub (x86_64) | `~/.local/fs-uae/fs-uae` | `fs-uae --version` after `source amiga/env.sh` |
 | m68k gdb / objdump / gcc | `~/.local/opt/bin/m68k-amiga-elf-*` | `m68k-amiga-elf-gdb --version` |
 | vasm (Motorola syntax) | `~/.local/vasmm68k_mot` | runs and prints usage |
-| WHDLoad 20.0 (binary, includes, kickemu sources) | `~/.local/share/amiga/WHDLoad-20.0/` (env `WHDLOAD` = the directory, for `Include/` and `Src/`; `WHDLOAD_BINARY` defaults to `$WHDLOAD/C/WHDLoad`); `WHDLoad/` is 19.2, useful to test older versions | `C/WHDLoad` exists |
+| WHDLoad 20.1 (binary, includes, kickemu sources) | `~/.local/share/amiga/WHDLoad/` (env `WHDLOAD` = the directory, for `Include/` and `Src/`; `WHDLOAD_BINARY` defaults to `$WHDLOAD/C/WHDLoad`); only the latest developer package is installed | `C/WHDLoad` exists |
 | Shared kill/port helper | `~/.local/share/amiga/fsuae_common.sh` | sourced by `run.sh` |
 | Host Kickstart 3.1 | `~/.local/share/amiga/Kickstarts/kick40063.A600` (env `KICKSTART`) | |
 | Kick images for kickemu slaves | `~/.local/share/amiga/Kickstarts/`: `kick34005.A500` + `.RTB` (env `KICKSTART13`, `RTB`; adapt older donors using `KICK13`), `kick40068.A1200` (env `KICKSTART_A1200`, the 68020 capture machine; its `.RTB` for kick31 slaves isn't there yet) | |
@@ -857,7 +857,7 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
   wrapper with explicit paths; do not rewrite shared build settings for this Mac.
 - Use vasm’s `-m68000 -pic -x -devpac -Fhunkexe -nosym` as the starting flags, adapting them
   only as the existing source requires. Resolve API headers, `lvo/` and `whdload/kick13.s`
-  against the shared WHDLoad 20.0 development tree and NDK (§1). If directory names differ,
+  against the shared WHDLoad 20.1 development tree and NDK (§1). If directory names differ,
   build an ignored include staging tree pointing to the official sources, not a second copy
   of the game slave. Record the actual dependency versions, flags and paths in local notes.
   No SDK files were added by `testdrive2`; do not silently vendor them into this fork.
@@ -870,7 +870,7 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
   `slv_Version = 16` unless a newly used API or macro requires more. TD2 uses interface 17
   because `PL_IFCx` needs WHDLoad 17.2; that is not a reason to bump every slave to 17 or 20.
   Change the header and ReadMe requirements together when needed; test the stated minimum
-  runtime and WHDLoad 20.0. Keep normal and VERIFY outputs separate and force rebuilding
+  runtime and WHDLoad 20.1. Keep normal and VERIFY outputs separate and force rebuilding
   when defines change. Update `Makefile_windows.mak` dependencies for each added module,
   following TD2, and check all include files needed by an upstream build are accounted for.
 - Gate every change behind a `CUSTOMn` bit and declare it in `slv_config`. With the bit off, the
@@ -1084,7 +1084,7 @@ tmp/dev/tools/build.sh
 SLAVE="$PWD/tmp/dev/tmp/build/RedBaron.slave" tmp/dev/amiga/run.sh
 ```
 
-The build uses shared WHDLoad 20.0 headers/KickEmu and `ndk/Include_I`; its generated local
+The build uses shared WHDLoad 20.1 headers/KickEmu and `ndk/Include_I`; its generated local
 LVO wrappers map `lvo/dos.i` etc. to NDK `*_lib.i` files with include guards. vasm 1.9 required
 an explicit PC-relative `_resload` reference and word-sized callback exit branches. Naming
 that exit `cb_loadseg_done` also avoids relying on a macro-local `.out` label. These small

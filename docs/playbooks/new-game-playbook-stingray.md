@@ -97,7 +97,7 @@ shared `~/.local/share/amiga/env.sh` and then sets only what the project changes
 | FS-UAE with the Barto gdb stub (x86_64) | `~/.local/fs-uae/fs-uae` | `fs-uae --version` after `source amiga/env.sh` |
 | m68k gdb / objdump / gcc | `~/.local/opt/bin/m68k-amiga-elf-*` | `m68k-amiga-elf-gdb --version` |
 | vasm (Motorola syntax) | `~/.local/vasmm68k_mot` | runs and prints usage |
-| WHDLoad 20.0 (binary, includes, kickemu sources) | `~/.local/share/amiga/WHDLoad-20.0/` (env `WHDLOAD` = the directory, for `Include/` and `Src/`; `WHDLOAD_BINARY` defaults to `$WHDLOAD/C/WHDLoad`); `WHDLoad/` is 19.2, useful to test older versions | `C/WHDLoad` exists |
+| WHDLoad 20.1 (binary, includes, kickemu sources) | `~/.local/share/amiga/WHDLoad/` (env `WHDLOAD` = the directory, for `Include/` and `Src/`; `WHDLOAD_BINARY` defaults to `$WHDLOAD/C/WHDLoad`); only the latest developer package is installed | `C/WHDLoad` exists |
 | Shared kill/port helper | `~/.local/share/amiga/fsuae_common.sh` | sourced by `run.sh` |
 | Host Kickstart 3.1 | `~/.local/share/amiga/Kickstarts/kick40063.A600` (env `KICKSTART`) | |
 | Kick images for kickemu slaves | `~/.local/share/amiga/Kickstarts/`: `kick34005.A500` + `.RTB` (env `KICKSTART13`, `RTB`; adapt older donors using `KICK13`), `kick40068.A1200` (env `KICKSTART_A1200`, the 68020 capture machine; its `.RTB` for kick31 slaves isn't there yet) | |
@@ -887,7 +887,7 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
   `tmp/build/`: `tools/build.sh [NAME] [-DDEFINE=1 ...]` writes
   `tmp/build/Indianapolis500[-NAME].Slave` and always assembles, so a define never leaves a
   stale variant. Upstream has no build file for any game; do not add one to the repository.
-- vasm's `-m68000 -pic -x -devpac -Fhunkexe -nosym`, with `Games/`, the shared WHDLoad 20.0
+- vasm's `-m68000 -pic -x -devpac -Fhunkexe -nosym`, with `Games/`, the shared WHDLoad 20.1
   `Include/` and the NDK (`~/.local/opt/m68k-amiga-elf/sys-include`) on the include path. vasm
   finds `WHDLoad.i` through `-I`; StingRay's `INCDIR SOURCES:INCLUDE/` line stays. Record the
   actual dependency versions, flags and paths in local notes. Do not vendor SDK files into the
@@ -899,7 +899,7 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
   change distinct from game optimizations and validate it before relying on a new baseline.
 - Keep the slave's `ws_Version` (17 for Indianapolis 500, because of `ws_config`) unless a newly
   used API, patch command or header field requires more. Change the header and the ReadMe's
-  requirements together when needed; test the stated minimum runtime and WHDLoad 20.0. Keep
+  requirements together when needed; test the stated minimum runtime and WHDLoad 20.1. Keep
   normal and diagnostic outputs separate.
 - Gate every change behind a `CUSTOMn` bit and declare it in `ws_config`. With the bit off, the
   original bytes must be untouched. Write a checker that reads the local original file and

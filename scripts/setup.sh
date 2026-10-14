@@ -87,22 +87,31 @@ EOF
   stamp toolchain "$(sha256 "$vsix")"
 }
 
-unpack_whdload() { # ARCHIVE DEST
-  local a st="$BUILD/whdload"
-  installed "$2" "$(manifest_sha "$1")" "$AMIGA_SHARE/$2/C/WHDLoad" "$AMIGA_SHARE/$2/Include" && return 0
-  a=$(download "$1")
-  rm -rf "$st"; mkdir -p "$st"
-  unar -q -D -o "$st" "$a" >/dev/null
-  # The .lzx archives do not store empty directories; the .lha release has this one.
-  mkdir -p "$st/WHDLoad/Src/qa/data/dir"
-  sync_tree "$st/WHDLoad" "$AMIGA_SHARE/$2"
-  rm -rf "$st"
-  stamp "$2" "$(sha256 "$a")"
-}
-
 c_whdload() {
-  unpack_whdload WHDLoad_20.0_dev.lzx WHDLoad-20.0
-  unpack_whdload WHDLoad_19.2_dev.lzx WHDLoad
+  local archive=WHDLoad_20.1_dev.lzx dest="$AMIGA_SHARE/WHDLoad"
+  local a file sha current=1 st="$BUILD/whdload" legacy="$AMIGA_SHARE/WHDLoad-20.0"
+  stamped WHDLoad "$(manifest_sha "$archive")" || current=0
+  [ ! -L "$dest" ] || current=0
+  while IFS=$'\t' read -r file sha; do
+    sha_ok "$dest/$file" "$sha" || current=0
+  done < <(rows whdload.tsv)
+  if [ "$current" = 0 ]; then
+    a=$(download "$archive")
+    rm -rf "$st"; mkdir -p "$st"
+    unar -q -D -o "$st" "$a" >/dev/null
+    while IFS=$'\t' read -r file sha; do
+      sha_ok "$st/WHDLoad/$file" "$sha" || die "WHDLoad package mismatch: $file"
+    done < <(rows whdload.tsv)
+    mkdir -p "$st/WHDLoad/Src/qa/data/dir" "$AMIGA_SHARE"
+    # Replace the whole tree, preserving the old one without retaining obsolete files.
+    if [ -e "$dest" ] || [ -L "$dest" ]; then set_aside "$dest"; fi
+    mv "$st/WHDLoad" "$dest"
+    stamp WHDLoad "$(sha256 "$a")"
+  fi
+  # Retire old developer paths without compatibility aliases.
+  if [ -e "$legacy" ] || [ -L "$legacy" ]; then set_aside "$legacy"; fi
+  [ ! -e "$AMIGA_SHARE/WHDLoad_dev-20.0.lha" ] || set_aside "$AMIGA_SHARE/WHDLoad_dev-20.0.lha"
+  [ ! -e "$STAMP_DIR/WHDLoad-20.0" ] || set_aside "$STAMP_DIR/WHDLoad-20.0"
 }
 
 c_ndk() {

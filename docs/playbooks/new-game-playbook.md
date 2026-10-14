@@ -78,7 +78,7 @@ shared `~/.local/share/amiga/env.sh` and then sets only what the project changes
 | FS-UAE with the Barto gdb stub (x86_64) | `~/.local/fs-uae/fs-uae` | `fs-uae --version` after `source amiga/env.sh` |
 | m68k gdb / objdump / gcc | `~/.local/opt/bin/m68k-amiga-elf-*` | `m68k-amiga-elf-gdb --version` |
 | vasm (Motorola syntax) | `~/.local/vasmm68k_mot` | runs and prints usage |
-| WHDLoad 20.0 (binary, includes, kickemu sources) | `~/.local/share/amiga/WHDLoad-20.0/` (env `WHDLOAD` = the directory, for `Include/` and `Src/`; `WHDLOAD_BINARY` defaults to `$WHDLOAD/C/WHDLoad`); `WHDLoad/` is 19.2, useful to test older versions | `C/WHDLoad` exists |
+| WHDLoad 20.1 (binary, includes, kickemu sources) | `~/.local/share/amiga/WHDLoad/` (env `WHDLOAD` = the directory, for `Include/` and `Src/`; `WHDLOAD_BINARY` defaults to `$WHDLOAD/C/WHDLoad`); only the latest developer package is installed | `C/WHDLoad` exists |
 | Shared kill/port helper | `~/.local/share/amiga/fsuae_common.sh` | sourced by `run.sh` |
 | Host Kickstart 3.1 | `~/.local/share/amiga/Kickstarts/kick40063.A600` (env `KICKSTART`) | |
 | Kick images for kickemu slaves | `~/.local/share/amiga/Kickstarts/`: `kick34005.A500` + `.RTB` (env `KICK13`, `RTB`), `kick40068.A1200` (env `KICKSTART_A1200`, the 68020 capture machine) + `.RTB` | |
@@ -693,13 +693,12 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
 ## 10. Building and gating patches
 
 - Cross-build the slave with vasm (copy `whdload/makefile`):
-  `-m68000 -pic -x -devpac -Fhunkexe -nosym -I$(WHDLOAD)/Include -I$(NDK)`. Build on the 20.0
+  `-m68000 -pic -x -devpac -Fhunkexe -nosym -I$(WHDLOAD)/Include -I$(NDK)`. Build on the shared 20.1
   KickEmu and headers (vendored), but **declare `slv_Version = 17`** and no `slv_MemConfig` unless
   the slave really needs a v20 feature: `kick13.s` handles both through `IFGE slv_Version-20`.
-  TFH's slave runs unchanged under WHDLoad 19.2 and 20.0 (`~/.local/share/amiga/WHDLoad/` is 19.2:
-  test with `WHDLOAD=~/.local/share/amiga/WHDLoad`, or only `WHDLOAD_BINARY` pointing there).
-  LoV predates the 20.0 convention: its `WHDLOAD` and `WHDLOAD_BINARY` default to the 19.2
-  `WHDLoad/` tree (a deliberate, behaviour-preserving exception; new repos use `WHDLoad-20.0/`).
+  Use the single shared `WHDLoad/` development tree; old versioned paths are retired
+  without aliases. Test a stated older runtime minimum with an explicitly
+  supplied runtime binary via `WHDLOAD_BINARY`; setup maintains only the latest developer kit.
 - **Test paths containing spaces at both make and shell levels.** Quoting `-o "$@"` is
   insufficient if make has already split `$(OUT)/Game.Slave` into separate targets. Escape
   spaces in the target/prerequisite spelling, and separately quote assembler, listing and

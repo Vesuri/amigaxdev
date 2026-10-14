@@ -36,9 +36,9 @@ export RTB="${RTB:-$KICK13.RTB}"
 export WORKBENCH_ADF="${WORKBENCH_ADF:-$AMIGA_SHARE/Workbenchv2.04rev37.67Workbench.adf}"
 export SETPATCH="${SETPATCH:-$AMIGA_SHARE/SetPatch}"
 
-# WHDLoad 20.0 (Include/, Src/ with the KickEmu sources, C/WHDLoad).  $AMIGA_SHARE/WHDLoad is
-# 19.2, for testing older versions.  Commodore's Installer 43.3, for install scripts.
-export WHDLOAD="${WHDLOAD:-$AMIGA_SHARE/WHDLoad-20.0}"
+# Latest pinned WHDLoad developer package (Include/, Src/ KickEmu, C/WHDLoad).
+# Commodore's Installer 43.3, for install scripts.
+export WHDLOAD="${WHDLOAD:-$AMIGA_SHARE/WHDLoad}"
 export WHDLOAD_BINARY="${WHDLOAD_BINARY:-$WHDLOAD/C/WHDLoad}"
 export INSTALLER43="${INSTALLER43:-$AMIGA_SHARE/Installer43/Installer}"
 

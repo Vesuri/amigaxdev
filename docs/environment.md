@@ -11,7 +11,7 @@ A project's `amiga/env.sh` sources the shared file, then adds only what is its o
 ```sh
 #!/usr/bin/env bash
 # Project values that differ from the shared defaults go *before* the source line:
-#   export WHDLOAD="${WHDLOAD:-$HOME/.local/share/amiga/WHDLoad}"   # e.g. a 19.2 build
+#   export WHDLOAD="${WHDLOAD:-$HOME/.local/share/amiga/WHDLoad}"   # optional explicit shared tree
 . "${AMIGA_ENV:-$HOME/.local/share/amiga/env.sh}"
 ```
 
@@ -54,7 +54,7 @@ Makefiles use `?=` with the same default, so they work with or without `env.sh`.
 | `RTB` | `$KICK13.RTB` | its relocation table |
 | `WORKBENCH_ADF` | `Workbenchv2.04rev37.67Workbench.adf` | Workbench 2.04 boot floppy (`C:` and `Libs:`) |
 | `SETPATCH` | `SetPatch` | SetPatch 40.16 from Workbench 3.1 |
-| `WHDLOAD` | `WHDLoad-20.0` | WHDLoad 20.0: `Include/`, `Src/sources/whdload/` (KickEmu), `C/WHDLoad` |
+| `WHDLOAD` | `WHDLoad` | WHDLoad 20.1: `Include/`, `Src/sources/whdload/` (KickEmu), `C/WHDLoad` |
 | `WHDLOAD_BINARY` | `$WHDLOAD/C/WHDLoad` | the WHDLoad executable put on the game drive |
 | `INSTALLER43` | `Installer43/Installer` | Commodore Installer 43.3 |
 | `ADCD` | `adcd21/Reference` | Developer CD 2.1 `Reference/`: `ROM_Kernel_Manuals/Hardware_Manual` (and `Libraries_Manual`, `Devices_Manual`, AmigaGuide text), `HTML/` (the same as pages), autodocs, Amiga Mail |
@@ -75,13 +75,22 @@ Other shared files have no variable of their own:
 | File | What |
 |---|---|
 | `Kickstarts/kick33180.A500`, `kick37175.A500` (+ `.RTB`) | Kickstart 1.2 and 2.04 (A500+), for testing slaves on them |
-| `WHDLoad/` | WHDLoad 19.2, to test that a slave still runs on older versions |
 | `ndk/` | NDK 3.2 Release 4 (`Include_I/`, `Include_H/`, Autodocs) |
 | `kalms-c2p/` | Mikael Kalms' c2p routines; vendor the ones used (playbook §10) |
 | `python/` | Python 3.12 with Pillow, numpy, capstone and amitools (`xdftool` reads and writes ADFs) |
 | `new-game-playbook*.md` | the playbooks, from `docs/playbooks/` |
 
 ## Shared tools
+
+`make whdload share` installs the single pinned WHDLoad 20.1 developer package at
+`$AMIGA_SHARE/WHDLoad`, including the runtime binary, headers and KickEmu sources.
+The shared shell and Python defaults use this stable path. The old `WHDLoad-20.0` path is
+retired without an alias: projects that hardcode it must be updated during their own work.
+Old installations move to `.replaced/` for
+recovery; setup no longer installs or maintains older developer versions. Files already
+copied into a project's game drive or vendored sources remain unchanged until that project's
+normal staging/update process runs. A shared upgrade does not establish per-game compatibility
+or byte-identical rebuilds. Explicit paths outside these shared locations remain overrides.
 
 Run scripts using the shared launcher accept `AMIGA_SETUP` to select a complete machine,
 for example `AMIGA_SETUP=a1200-fast amiga/run.sh`. Available names are `a500`, `a500+`,

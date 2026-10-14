@@ -32,18 +32,18 @@ StingRay's slave repository (harness in the ignored `tmp/dev/`).
 | Their Finest Hour | W | migrated | — |
 | Battlehawks 1942 | W | migrated | — |
 | Indianapolis 500 | W | migrated | — |
-| Legends of Valour | W | migrated; keeps WHDLoad 19.2 and its native vasm build deliberately | — |
+| Legends of Valour | W | migrated; uses `WHDLoad/`; retains its native vasm build | — |
 | Powerdrome | W | migrated | — |
 | Stellar 7 | W | migrated; NTSC is its default | — |
-| Pokeri | P | migrated; keeps WHDLoad 19.2 for its slave and tests | — |
-| Revs | P | migrated; keeps WHDLoad 19.2; tests use their own `WHDLOAD_BIN` | — |
-| Slicks | P | migrated; keeps WHDLoad 19.2; unstripped `SlicksDiag.exe` differs on every build (stripped release identical) | — |
-| Vette | P | migrated; keeps WHDLoad 19.2 | — |
-| Alone in the Dark | P | migrated; keeps WHDLoad 19.2, its fixed port 24377 and its own machine arguments; uses the shared `fs-uae-aprof` | — |
-| Rescue on Fractalus | P | migrated; keeps WHDLoad 19.2 | — |
+| Pokeri | P | migrated; uses `WHDLoad/` for its slave and tests | — |
+| Revs | P | migrated; uses `WHDLoad/`; tests use their own `WHDLOAD_BIN` | — |
+| Slicks | P | migrated; uses `WHDLoad/`; unstripped `SlicksDiag.exe` differs on every build (stripped release identical) | — |
+| Vette | P | migrated; uses `WHDLoad/` | — |
+| Alone in the Dark | P | migrated; uses `WHDLoad/`, its fixed port 24377 and its own machine arguments; uses the shared `fs-uae-aprof` | — |
+| Rescue on Fractalus | P | migrated; uses `WHDLoad/` | — |
 | Secret Weapons of Luftwaffe | P | migrated; its tests take Unicorn from `AMIGA_UNICORN` | — |
 | Downwell | P | migrated; its HEAD did not build before the change (`MotionBinary64`), generated files identical | — |
-| Stunt Car Racer | P | migrated (no run script); `tools/test_whdload.py` keeps WHDLoad 19.2 as the binary releases were validated with | — |
+| Stunt Car Racer | P | migrated (no run script); `tools/test_whdload.py` uses the shared `WHDLoad/` path | — |
 | Red Baron | F | migrated (harness in `tmp/dev`, playbook reference on the branch) | — |
 | 4D Sports Driving | F | migrated (harness in `tmp/dev`) | — |
 | Hard Drivin' | F | on the shared environment from the start (harness in `tmp/dev`; slave changes, VERIFY variants and performance docs on the branch) | — |
@@ -61,6 +61,13 @@ and window for debug and warp runs. FS-UAE's own log is now under `.run/fsuae/Ca
 (the launcher sets `--base_dir`).
 
 ## Changes in the shared tree that reach every project
+
+- `WHDLoad/` contains the sole active WHDLoad 20.1 developer package (including its runtime).
+  `WHDLoad-20.0/` is retired without an alias; hardcoded references must be fixed during
+  project work. Shared defaults use `WHDLoad/`; older-version comments do not pin the
+  installed version. Existing staged
+  binaries and vendored sources remain unchanged. The migration byte-identity checks below
+  describe the path migration, not validation of a rebuild against the new developer package.
 
 - `kick40068.A1200` is now the TOSEC `[!]` dump. The old file was Harry Sintonen's
   `mathieeesingbas.library` fix (revision 40.69); A1200 measurements taken before 2026-10-10
