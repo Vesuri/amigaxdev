@@ -46,6 +46,13 @@ to older ticks. Record input against the clock consumed by the simulation instea
   menus and text editing. Test queue pressure, producer backpressure and shutdown as well
   as ordinary movement keys. Do not let a collector outlive the game or consume modal
   input on the wrong path.
+- Distinguish auto-repeat from a burst of fresh presses across slow screen transitions.
+  Rejecting repeat-qualified events does not remove fresh Enter/Space presses queued
+  during a fade. When a transition is deliberately non-interactive, discard its pending
+  input at the boundary where the next screen becomes ready, then verify fresh input
+  still works. Also check mixed keyboard/joystick readers: a queued key must not bypass
+  hardware polling and then select from stale cached joystick state without consuming
+  the key. Grand Prix Circuit exhibited both mechanisms; test them separately.
 - Input history is finite. Define and instrument overflow behavior; test ordinary play
   and long pauses so a test-only history limit does not become a release abort. If the
   policy discards elapsed input/time, expose that as recovery, not a successful exact match.
