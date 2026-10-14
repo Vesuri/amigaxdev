@@ -124,7 +124,7 @@ both launch paths, every preset, conflicting project arguments and the override 
 | Binary | Variable | Use |
 |---|---|---|
 | x86_64 Barto build (Rosetta), `~/.local/fs-uae/fs-uae` | `fs-uae` on `PATH` | the default for run, debug and diag scripts; host lldb can attach to it, which the WHDLoad trace profiler needs |
-| native arm64 build | `FSUAE_ARM` | several times faster for long diagnostics and 68030 runs; lldb cannot attach, so the profiler window has to be set from the guest (playbook §5, Legends of Valour) |
+| native arm64 build | `FSUAE_ARM` | several times faster for long diagnostics and 68030 runs; drives keyboard input and whole fields from gdb (below); lldb cannot attach, but without a trigger it profiles the whole 24-bit space, so no window fix is needed |
 | arm64 with the cycle profiler | `$AMIGA_SHARE/fs-uae-aprof/fs-uae` | exact emulated cycles per PC between `monitor aprof start` and `monitor aprof stop FILE`; cycle-exact 68020–68060 loops without an MMU model (Alone in the Dark `aprof.sh`; Red Baron `aprof_flight.py` for 040/060) |
 
 A project selects one with `FSUAE` (Alone in the Dark: `diag_run.sh` prefers `FSUAE_ARM` when
@@ -179,6 +179,27 @@ separate from `NoWriteCache`.
 ## The gdb stub
 
 The Barto stub in both FS-UAE builds, driven by `m68k-amiga-elf-gdb`.
+
+### Harness commands (native builds)
+
+`patches/fsuae-harness.patch` goes into every native build (`FSUAE_ARM`, `FSUAE_APROF`,
+`FSUAE_MMU`), not into the x86_64 one:
+
+| Command | Does |
+|---|---|
+| `monitor key RAW 0\|1` | queues raw Amiga key code `RAW` (hex) as pressed (1) or released (0) on the emulated keyboard, exactly as a host key would arrive; works with the window in the background or with no window |
+| `monitor fields N` | runs N whole PAL/NTSC fields (1–6000) from a stop and stops again: the reply comes at the last vsync |
+| `monitor profile N "" FILE` | as before; with no `--remote_debugger_trigger` the PC window is the whole 24-bit space instead of the stub's uninitialised `[0x0100007f, +0)` |
+
+Together they replace input tapes for keyboard-controllable games: stop, `key`, `fields`,
+`key`, `fields`, with `profile` chunks between key events. The run is exactly repeatable with
+`WARP=1 DETERMINISTIC=1 JOY0=none` (Prince of Persia: identical per-PC cycles, field totals
+and frame timestamps across boots). Joystick-only games still need a slave tape. Key codes:
+cursor `4c-4f`, Return `44`, Space `40`, Esc `45`, Ctrl `63`, left Shift `60`, keypad digits
+`0f 1d 1e 1f 2d 2e 2f 3d 3e 3f` (0–9).
+
+A rebuild changes the binary hash. Projects that pin the hash of a shared build must re-pin
+after `make setup` rebuilds it.
 
 - **Reads work, writes are dropped silently.** `set var` on a global, an array element or
   emulated memory reads back unchanged, with no error (Revs, Rescue on Fractalus; WHDLoad

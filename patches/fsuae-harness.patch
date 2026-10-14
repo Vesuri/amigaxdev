@@ -1,0 +1,108 @@
+diff --git a/src/barto_gdbserver.cpp b/src/barto_gdbserver.cpp
+index 0f3249a9..a2aef2cd 100644
+--- a/src/barto_gdbserver.cpp
++++ b/src/barto_gdbserver.cpp
+@@ -22,6 +22,7 @@
+ #include "newcpu.h"
+ #include "debug.h"
+ #include "inputdevice.h"
++#include "keybuf.h"
+ #include "uae.h"
+ #include "debugmem.h"
+ #include "custom.h"
+@@ -246,6 +247,7 @@ namespace barto_gdbserver {
+ 	std::string profile_outname;
+ 	int profile_num_frames{};
+ 	int profile_frame_count{};
++	unsigned advance_fields{}; // "monitor fields": vsyncs left to run
+ 	std::unique_ptr<cpu_profiler_unwind[]> profile_unwind{};
+ 
+ 	enum class state {
+@@ -254,6 +256,7 @@ namespace barto_gdbserver {
+ 		debugging,
+ 		profile,
+ 		profiling,
++		advancing,
+ 	};
+ 
+ 	state debugger_state{ state::inited };
+@@ -690,6 +693,26 @@ namespace barto_gdbserver {
+ 										savestate_quick(1, 0); // restore state saved at process entry
+ 										barto_debug_resources_count = 0;
+ 										response += "OK";
++									} else if(cmd.substr(0, strlen("fields ")) == "fields ") {
++										// AmigaXDev harness: run N whole fields, then stop again.
++										unsigned n = 0; char extra;
++										if(sscanf(cmd.c_str(), "fields %u %c", &n, &extra) == 1 && n > 0 && n <= 6000) {
++											send_ack(ack);
++											advance_fields = n + 1; // the first vsync ends the current partial field
++											debugger_state = state::advancing;
++											deactivate_debugger();
++											return; // response is sent at the last vsync
++										} else
++											response += "E01";
++									} else if(cmd.substr(0, strlen("key ")) == "key ") {
++										// AmigaXDev harness: raw Amiga key code (hex), 1 = press, 0 = release,
++										// queued on the emulated keyboard like a host key.
++										unsigned key = 0; int pressed = -1; char extra;
++										if(sscanf(cmd.c_str(), "key %x %d %c", &key, &pressed, &extra) == 2 && key < 0x80 && (pressed == 0 || pressed == 1)) {
++											const unsigned raw = key | (pressed ? 0 : 0x80);
++											response += record_key_debug(((raw << 1) | (raw >> 7)) & 0xff) ? "OK" : "E02";
++										} else
++											response += "E01";
+ 									} else {
+ 										// unknown monitor command
+ 										response += "E01";
+@@ -972,6 +995,11 @@ namespace barto_gdbserver {
+ 		if(!enabled) // "gdbserver"
+ 			return;
+ 
++		if(debugger_state == state::advancing && --advance_fields == 0) {
++			send_response("$OK");
++			debugger_state = state::debugging;
++			activate_debugger();
++		}
+ 		static uae_u32 profile_start_cycles{};
+ 		static size_t profile_custom_regs_size{};
+ 		static uae_u8* profile_custom_regs{}; // at start of profile 
+@@ -1051,7 +1079,9 @@ start_profile:
+ 			}
+ 
+ 			// start profiler
+-			start_cpu_profiler(baseText, baseText + sizeText, profile_unwind.get());
++			// Without a trigger (WHDLoad, directory boots) there is no program to unwind: profile
++			// the whole 24-bit address space instead of the uninitialised [baseText, +sizeText).
++			start_cpu_profiler(profile_unwind ? baseText : 0, profile_unwind ? baseText + sizeText : 0x01000000, profile_unwind.get());
+ 			debug_dma = 1;
+ 			profile_start_cycles = static_cast<uae_u32>(get_cycles() / cpucycleunit);
+ 			//barto_log("GDBSERVER: Start CPU Profiler @ %u cycles\n", get_cycles() / cpucycleunit);
+diff --git a/src/include/keybuf.h b/src/include/keybuf.h
+index d411ec02..2475a884 100644
+--- a/src/include/keybuf.h
++++ b/src/include/keybuf.h
+@@ -14,6 +14,7 @@ extern int get_next_key (void);
+ extern int keys_available (void);
+ extern int record_key (int);
+ extern int record_key_direct (int);
++extern int record_key_debug (int);
+ extern void keybuf_init (void);
+ extern int getcapslockstate (void);
+ extern void setcapslockstate (int);
+diff --git a/src/keybuf.cpp b/src/keybuf.cpp
+index a9ba38eb..a120d65c 100644
+--- a/src/keybuf.cpp
++++ b/src/keybuf.cpp
+@@ -297,6 +297,13 @@ int record_key_direct (int kc)
+ 	return 1;
+ }
+ 
++// Debugger input (monitor key) is independent of frontend focus transitions.
++int record_key_debug (int kc)
++{
++	ignore_next_release = false;
++	return record_key_direct (kc);
++}
++
+ void keybuf_init (void)
+ {
+ 	kpb_first = kpb_last = 0;

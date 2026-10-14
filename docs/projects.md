@@ -49,6 +49,7 @@ StingRay's slave repository (harness in the ignored `tmp/dev/`).
 | Hard Drivin' | F | on the shared environment from the start (harness in `tmp/dev`; slave changes, VERIFY variants and performance docs on the branch) | — |
 | Indianapolis 500 JOTD | F | harness in `tmp/dev` migrated; uncommitted slave work untouched | — |
 | Indianapolis 500 StingRay | F | migrated (harness in `tmp/dev`) | — |
+| Prince of Persia | F | on the shared environment from the start (harness in `tmp/dev`; keyboard route driven with `monitor key`) | — |
 
 Not Amiga game projects, left alone: dA JoRMaS (an Amiga demo repo; it already uses
 `fsuae_common.sh`, whose old functions are unchanged), Excellence, PETSCIIRobots-SDL, Tutka,
@@ -62,6 +63,11 @@ and window for debug and warp runs. FS-UAE's own log is now under `.run/fsuae/Ca
 
 ## Changes in the shared tree that reach every project
 
+- Native FS-UAE builds (`FSUAE_ARM`, `FSUAE_APROF`, `FSUAE_MMU`) apply
+  `fsuae-cpu-frequency.patch` and `fsuae-harness.patch`. The first changes timing: presets with
+  an explicit CPU frequency (all `AMIGA_SETUP` names) ran about 10.8% fast on a 68000 before it.
+  Each rebuild changes the binaries' hashes; projects that pin them (Prince of Persia 2,
+  Ferrari Formula One) re-pin and re-measure.
 - `WHDLoad/` contains the sole active WHDLoad 20.1 developer package (including its runtime).
   `WHDLoad-20.0/` is retired without an alias; hardcoded references must be fixed during
   project work. Shared defaults use `WHDLoad/`; older-version comments do not pin the

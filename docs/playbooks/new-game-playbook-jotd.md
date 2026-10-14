@@ -432,15 +432,21 @@ Facts about this stub, all verified the hard way:
   nothing. Every change to the game must go through the slave.
 - **Emulated time stops while gdb holds the CPU**, so stops and the lldb attach cost no emulated
   time.
-- **Without a trigger the profiler records no PCs.** The window `[baseText, +sizeText)` reads as
-  `[0x0100007f, +0)`. The shared server's `profile` fixes it each time by lldb-writing `0`/`0x7fffffff` at
+- **Prefer the native build (`FSUAE="$FSUAE_ARM"`) with the server's `profile_window=False`.**
+  AmigaXDev's native builds profile the whole 24-bit space without a trigger, take keyboard
+  input from gdb (`monitor key`) and run whole fields (`monitor fields`); see
+  [harness commands](../reference/headless-fsuae.md#harness-commands-native-builds). The next
+  bullet is about the x86_64 build, which has none of that.
+- **On the x86_64 build, without a trigger the profiler records no PCs.** The window
+  `[baseText, +sizeText)` reads as `[0x0100007f, +0)`. The shared server's `profile` fixes it each time by lldb-writing `0`/`0x7fffffff` at
   link-time `0x32dea04` plus the slide. For a different FS-UAE binary, re-derive that address
   from the `GDBSERVER: enabled` setup and `start_cpu_profiler` (TD2 `docs/profiling.md` §3). The
   assert fails loudly if it's wrong.
 - **Screenshots come only from traces** (`shot`). macOS denies screen capture to this process,
-  and posted key events never reach FS-UAE. A shot taken at an arbitrary checkpoint (a keyboard
-  task, a tape step) can catch a partial redraw: stop at the frame-publication instruction (§7)
-  before saving a picture you will compare (4D Sports Driving).
+  and posted host key events never reach FS-UAE (use `monitor key` instead). A shot taken at an
+  arbitrary checkpoint (a keyboard task, a tape step) can catch a partial redraw: stop at the
+  frame-publication instruction (§7) before saving a picture you will compare (4D Sports
+  Driving).
 - `gdb` splits arguments at spaces, and repo paths often contain them (`Their Finest Hour`). gdb's
   working directory must be the harness root, so dump to a **harness-relative** path (`tmp/x-code.bin`), then move
   the file. Python 3.12's `tempfile.mkdtemp(dir='tmp')` returns an absolute path: pass it through
@@ -503,6 +509,14 @@ And a byte-vote locator needs a quorum (a third of the windows, address ≥ dump
 buffers in chip RAM held pieces of `BH` and outvoted nothing, giving a negative "base".
 
 **Driving.** Prefer the attract demo when there is one (TD2's and I500's drive themselves). Otherwise:
+- **Keyboard-controllable games: `monitor key` on the native build**, no slave changes. Stop,
+  then alternate `monitor key RAW 1|0` with `monitor fields N` (and `monitor profile` chunks in
+  the window). With `WARP=1 DETERMINISTIC=1 JOY0=none` the route repeats exactly. Find the
+  controls first: Prince of Persia starts paused (two Returns), needs Ctrl-K to select the
+  keyboard, and moves only on the keypad, not the cursor keys. Keep a joystick in port 1 if the
+  slave reads a CD32 pad there: with nothing plugged in, its reader saw Play held and paused
+  the game. Map each step with a contact sheet of `shot`s every few fields, then extend the route
+  one move at a time (Prince of Persia `tools/route.py`, `tools/spikes_route.sh`).
 - **Not** FS-UAE input recordings: in this FS-UAE build playback never works. FS-UAE emits two
   events of its own at startup (2263, 2272, whatever the ports are), and recording an event
   during playback truncates the recording at the play position, i.e. at 0. (Recording works;
