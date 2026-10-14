@@ -40,8 +40,7 @@ class WHDLoadInstall(unittest.TestCase):
                     name, expected = line.split('\t')
                     self.assertEqual(hashlib.sha256((share / 'WHDLoad' / name).read_bytes()).hexdigest(), expected)
                 if legacy:
-                    markers = list((share / '.replaced').rglob('old-marker'))
-                    self.assertEqual(sorted(p.read_text() for p in markers), ['WHDLoad', 'WHDLoad-20.0'])
+                    self.assertFalse((share / '.replaced').exists())
                     self.assertFalse((share / '.setup/WHDLoad-20.0').exists())
                 snapshot = {str(p.relative_to(share)): p.lstat().st_mtime_ns
                             for p in share.rglob('*')}

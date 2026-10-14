@@ -74,7 +74,8 @@ Paths without a directory are under `~/.local/share/amiga`. Every download, git 
 licensed file is pinned in `manifest/`. `docs/environment.md` lists the shared variables and
 how a project uses them.
 
-Setup never deletes an installed file. A file that differs from the manifest is moved to
+Except for the latest-only WHDLoad developer package, setup preserves installed files.
+A file that differs from the manifest is moved to
 `~/.local/share/amiga/.replaced/<time>/` before the new one goes in. The shared files from
 this repo are copies: if one was edited in place, setup stops; `make pull-shared` copies the
 edit back here to commit.

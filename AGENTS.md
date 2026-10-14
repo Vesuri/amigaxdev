@@ -17,6 +17,8 @@ The playbook's §0 rules apply here (`docs/playbooks/new-game-playbook.md`), in 
 - **Pin every input** in `manifest/` by sha256 or commit. Check it before installing it.
 - **Setup never deletes**: a file that differs is moved to `.replaced/`. Never overwrite a
   shared file that was edited in place; `make pull-shared` brings the edit back here.
+  WHDLoad developer packages are the explicit exception: retain only the latest, discard
+  older installations after verifying the replacement, and do not keep `.replaced/` backups.
 - **Never `pkill fs-uae` or `pkill gdb`**: other projects run emulators at the same time.
 - Commits: author and committer `Vesa Halttunen <vesuri@jormas.com>`, unsigned,
   `core.hooksPath=/dev/null`, no Co-Authored-By or other trailers, one commit per coherent change.

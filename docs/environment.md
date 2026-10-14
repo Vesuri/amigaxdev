@@ -86,8 +86,8 @@ Other shared files have no variable of their own:
 `$AMIGA_SHARE/WHDLoad`, including the runtime binary, headers and KickEmu sources.
 The shared shell and Python defaults use this stable path. The old `WHDLoad-20.0` path is
 retired without an alias: projects that hardcode it must be updated during their own work.
-Old installations move to `.replaced/` for
-recovery; setup no longer installs or maintains older developer versions. Files already
+Old WHDLoad installations are discarded after the replacement package is verified;
+setup neither maintains nor backs up older developer versions. Files already
 copied into a project's game drive or vendored sources remain unchanged until that project's
 normal staging/update process runs. A shared upgrade does not establish per-game compatibility
 or byte-identical rebuilds. Explicit paths outside these shared locations remain overrides.

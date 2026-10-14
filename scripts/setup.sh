@@ -103,15 +103,14 @@ c_whdload() {
       sha_ok "$st/WHDLoad/$file" "$sha" || die "WHDLoad package mismatch: $file"
     done < <(rows whdload.tsv)
     mkdir -p "$st/WHDLoad/Src/qa/data/dir" "$AMIGA_SHARE"
-    # Replace the whole tree, preserving the old one without retaining obsolete files.
-    if [ -e "$dest" ] || [ -L "$dest" ]; then set_aside "$dest"; fi
+    # WHDLoad is latest-only: discard the old tree after verifying its replacement.
+    rm -rf "$dest"
     mv "$st/WHDLoad" "$dest"
     stamp WHDLoad "$(sha256 "$a")"
   fi
   # Retire old developer paths without compatibility aliases.
-  if [ -e "$legacy" ] || [ -L "$legacy" ]; then set_aside "$legacy"; fi
-  [ ! -e "$AMIGA_SHARE/WHDLoad_dev-20.0.lha" ] || set_aside "$AMIGA_SHARE/WHDLoad_dev-20.0.lha"
-  [ ! -e "$STAMP_DIR/WHDLoad-20.0" ] || set_aside "$STAMP_DIR/WHDLoad-20.0"
+  rm -rf "$legacy"
+  rm -f "$AMIGA_SHARE/WHDLoad_dev-20.0.lha" "$STAMP_DIR/WHDLoad-20.0"
 }
 
 c_ndk() {
