@@ -417,6 +417,12 @@ need rebuilding; changing an environment variable cannot patch an old binary.
 
 ## Verify explicit CPU-frequency scaling
 
+`patches/fsuae-cpu-frequency.patch`, applied to every native build, carries the expression
+below. Before it, every `AMIGA_SETUP` preset (they all pass `uae_cpu_frequency`) ran too fast
+on native builds: the A500's 68000 got cycle unit 231 instead of 256, 10.8% fast, 157481 CPU
+cycles per PAL field instead of 142102 (Prince of Persia). A500 figures measured with a preset
+on an older native build are inflated by that much; re-measure them.
+
 Before using a named MHz profile for performance claims, inspect the running
 core's `baseclock`, `cpucycleunit` and configured frequency. Older FS-UAE source
 calculates `CYCLE_UNIT * baseclock / cpu_frequency` with a 32-bit intermediate.

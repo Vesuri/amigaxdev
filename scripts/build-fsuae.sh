@@ -3,6 +3,8 @@
 #   scripts/build-fsuae.sh NAME [PATCH]
 # Source: the grahambates/fs-uae remote_debugger_barto fork (manifest/git.tsv), plus PATCH if
 # given (patches/fsuae-aprof.patch adds `monitor aprof start` / `monitor aprof stop FILE`).
+# Every build also gets patches/fsuae-mmu-write-cache.patch (the core fix) and
+# patches/fsuae-cpu-frequency.patch (explicit CPU frequencies without 32-bit overflow).
 # SDL2_ttf and libmpeg2 are linked statically from pinned tarballs; glib, gettext, libpng,
 # freetype and SDL2 come from Homebrew (Brewfile), so rebuild after a major upgrade of those.
 set -euo pipefail
@@ -17,12 +19,15 @@ commit=$(rows git.tsv | awk -F'\t' '$1 == "fs-uae-barto" {print $2}')
 url=$(rows git.tsv | awk -F'\t' '$1 == "fs-uae-barto" {print $3}')
 core_patch="$REPO/patches/fsuae-mmu-write-cache.patch"
 core_sha=$(sha256 "$core_patch")
+freq_patch="$REPO/patches/fsuae-cpu-frequency.patch"
+freq_sha=$(sha256 "$freq_patch")
 patch_sha=""; [ -n "$patch" ] && patch_sha=$(sha256 "$patch")
 
 # Already built from the same commit and patch: nothing to do.
 rev="$dest/source-revision.txt"
 if [ -x "$dest/fs-uae" ] && [ -f "$rev" ] && grep -q "$commit" "$rev" \
    && grep -q "core-fix $core_sha" "$rev" \
+   && grep -q "cpu-frequency $freq_sha" "$rev" \
    && { [ -z "$patch_sha" ] || grep -q "$patch_sha" "$rev"; } \
    && { [ -n "$patch_sha" ] || ! grep -q " + patch " "$rev"; }; then
   exit 0
@@ -55,6 +60,7 @@ git -C "$src" checkout -q --force "$commit"
 git -C "$src" clean -qfdx
 git -C "$src" apply --check "$core_patch"
 git -C "$src" apply "$core_patch"
+git -C "$src" apply "$freq_patch"
 [ -n "$patch" ] && git -C "$src" apply "$patch"
 export PKG_CONFIG_PATH="$deps/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 (cd "$src" && ./bootstrap >"$build/fs-uae.log" 2>&1 \
@@ -70,7 +76,7 @@ mkdir -p "$dest"
 cp -f "$src/fs-uae" "$src/fs-uae.dat" "$dest/"
 cp -R "$src/data" "$dest/data"
 {
-  printf '%s %s core-fix %s' "$url" "$commit" "$core_sha"
+  printf '%s %s core-fix %s cpu-frequency %s' "$url" "$commit" "$core_sha" "$freq_sha"
   [ -n "$patch" ] && printf ' + patch %s %s' "$(basename "$patch")" "$patch_sha"
   printf '\nSDL2_ttf 2.0.15 and libmpeg2 0.5.1 static; arm64; JIT disabled\n'
 } > "$rev"
