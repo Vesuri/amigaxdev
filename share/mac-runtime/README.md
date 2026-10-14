@@ -56,6 +56,14 @@ resume the same pass after returning. Consumers retain task records, countdown
 semantics, ownership checks and user-mode trampolines. Synthetic tests exercise
 tick conservation, task removal, in-flight arrivals and wraparound.
 
+System 7.5.5 fixtures in Prince of Persia 2 and Alone in the Dark establish that
+counts decrement modulo 16 bits, and only reaching zero dispatches. A callback
+leaving zero is removed; VRemove then returns qErr (-1). AitD's original fixture
+also verifies that automatic and explicit removal leave the removed record's
+qLink intact. Keep these policies in the consumer adapter; check membership before
+reading a returned callback's record, since it may have removed itself. Removing
+one callback must adjust the pass iterator without skipping its next neighbour.
+
 `VideoTicks.h` shares Alone in the Dark's PAL/NTSC field conversion and adds
 within-field PAL TickCount calculation. The platform must supply a coherent field
 epoch and beam position; callback scheduling and hardware sampling stay outside
