@@ -189,6 +189,9 @@ writable. Put WHDLoad in the runtime copy and, when `SLAVE` is set, copy that bu
 `dh1/$SLAVE_NAME`. Make only the runtime copy writable. Boot with `CD DH1:` and
 `WHDLoad RedBaron.slave PRELOAD ...`; Red Baron’s `slv_CurrentDir` selects `data` itself.
 Keep Kickstart images and RTBs in runtime `DH0:devs/Kickstarts`, using §1 shared inputs.
+Start the startup-sequence with `FailAt 999` and create `DH0:devs` even for a direct slave that
+needs no Kickstart: a failing `Assign DEVS: DH0:devs` before `FailAt` ends the script at a
+`1>` prompt (Prince of Persia).
 
 From the harness root, once the adapted runner and builds exist:
 
@@ -1101,6 +1104,11 @@ The local harness now builds the fork source with `tmp/dev/tools/build.sh` and r
 tmp/dev/tools/build.sh
 SLAVE="$PWD/tmp/dev/tmp/build/RedBaron.slave" tmp/dev/amiga/run.sh
 ```
+
+Slaves that include WHDLoad's own sources (`savegame.s` includes `macros/ntypes.i`) also need
+`-I$AMIGA_SHARE/WHDLoad/Src`. Prince of Persia's slave rebuilds byte-identical with
+`vasmm68k_mot -DDATETIME -I$AMIGA_SHARE/WHDLoad/Include -I$AMIGA_SHARE/WHDLoad/Src
+-I$AMIGA_SHARE/ndk/Include_I -I. -devpac -nosym -Fhunkexe -pic`.
 
 The build uses shared WHDLoad 20.1 headers/KickEmu and `ndk/Include_I`; its generated local
 LVO wrappers map `lvo/dos.i` etc. to NDK `*_lib.i` files with include guards. vasm 1.9 required

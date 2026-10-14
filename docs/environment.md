@@ -25,7 +25,9 @@ OBJDUMP = os.path.join(TOOLCHAIN, 'bin', 'm68k-amiga-elf-objdump')
 ```
 
 or, simpler, through the shared `amigaxdev` package (`from amigaxdev.env import path, tool`).
-The shared venv has it on its path already; a tool that may run under another `python3` puts
+The shared venv has it on its path already (`amiga/env.sh` puts that venv's `python3` first,
+so run tools after sourcing it; a bare shell may find another `python3`, where
+`python3 -m amigaxdev...` fails); a tool that may run under another `python3` puts
 this shim (`tools/_amigaxdev.py`) next to itself and imports it first:
 
 ```python
