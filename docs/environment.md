@@ -93,8 +93,9 @@ normal staging/update process runs. A shared upgrade does not establish per-game
 or byte-identical rebuilds. Explicit paths outside these shared locations remain overrides.
 
 Run scripts using the shared launcher accept `AMIGA_SETUP` to select a complete machine,
-for example `AMIGA_SETUP=a1200-fast amiga/run.sh`. Available names are `a500`, `a500+`,
-`a1200`, `a1200-fast`, `a1200-030`, `a1200-040` and `a1200-060`. The preset overrides
+for example `AMIGA_SETUP=a1200-fast amiga/run.sh`. Available names are `a500`, `a500-1.5m`
+(the playbooks' A500-equivalent), `a500+`, `a1200`, `a1200-fast`, `a1200-030`, `a1200-040` and
+`a1200-060`. The preset overrides
 project machine defaults at launch; `EXTRA_ARGS` remains the explicit override. See
 [named machine setups](reference/headless-fsuae.md#named-machine-setups) for RAM, ROMs,
 clocks, MMU settings and project compatibility limits. CPU cache emulation is enabled

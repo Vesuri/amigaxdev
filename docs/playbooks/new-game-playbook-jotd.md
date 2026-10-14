@@ -675,9 +675,9 @@ CPU=68030 SLOW_KB=0 EXTRA_ARGS='--uae_cpu_speed=real --uae_cpu_multiplier=0 --ua
 Use `--base 0x200000` for fast-RAM dumps.
 
 **The machine matrix.** The projects converged on one set, all running the same build and window:
-the A500-equivalent (68000, 512 KB chip + 1.5 MB slow); a stock A1200 (68EC020, 2 MB chip, no
-fast RAM), which TFH found behaves differently from an A1200 with fast RAM; an A1200 with 4–8 MB
-fast; a cycle-exact 68030/50 with and without WHDLoad's `MMU` option, whose out-of-box cache states
+the A500-equivalent (68000, 512 KB chip + 1.5 MB slow, `AMIGA_SETUP=a500-1.5m`); a stock
+A1200 (68EC020, 2 MB chip, no fast RAM), which TFH found behaves differently from an A1200
+with fast RAM; an A1200 with 4–8 MB fast; a cycle-exact 68030/50 with and without WHDLoad's `MMU` option, whose out-of-box cache states
 differ (Red Baron); and a 68040/25 and 68060/50 as `-NOMMU` (below). Add NTSC cells only when the
 game supports NTSC (§9). Script the matrix to run one capture at a time (Stellar 7
 `rate_matrix.sh`, LoV `ab_window.sh`) and give each boot a deadline, so a hung cell fails instead

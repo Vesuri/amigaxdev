@@ -200,8 +200,9 @@ fsuae_setup() {
   local chipset mmu=0 fpu=0 frequency exact=true data_cache=false
   local share="${AMIGA_SHARE:-${AMIGA_PREFIX:-$HOME/.local}/share/amiga}"
   case "$AMIGA_SETUP" in
-    a500|a500+)
+    a500|a500-1.5m|a500+)
       AMIGA_MODEL=A500 CPU=68000 CHIP_KB=512 FAST_KB=0 SLOW_KB=512
+      [ "$AMIGA_SETUP" = a500-1.5m ] && SLOW_KB=1536
       chipset=ocs frequency=7093790
       [ "${NTSC:-0}" = 1 ] && frequency=7159090
       if [ "$AMIGA_SETUP" = a500+ ]; then
@@ -222,7 +223,7 @@ fsuae_setup() {
       esac
       ;;
     *)
-      echo "Unknown AMIGA_SETUP '$AMIGA_SETUP'; use a500, a500+, a1200, a1200-fast, a1200-030, a1200-040 or a1200-060" >&2
+      echo "Unknown AMIGA_SETUP '$AMIGA_SETUP'; use a500, a500-1.5m, a500+, a1200, a1200-fast, a1200-030, a1200-040 or a1200-060" >&2
       return 1 ;;
   esac
   export AMIGA_MODEL CPU CHIP_KB FAST_KB SLOW_KB KICKSTART

@@ -68,12 +68,16 @@ AMIGA_SETUP=a1200-040 DEBUG=1 amiga/run.sh
 | `AMIGA_SETUP` | Model / chipset | CPU / nominal clock | Chip KB | Slow KB | Fast KB | MMU | FPU |
 |---|---|---|---:|---:|---:|---|---|
 | `a500` | A500 / OCS | 68000 / 7 MHz | 512 | 512 | 0 | none | none |
+| `a500-1.5m` | A500 / OCS | 68000 / 7 MHz | 512 | 1536 | 0 | none | none |
 | `a500+` | A500+ / ECS | 68000 / 7 MHz | 1024 | 0 | 0 | none | none |
 | `a1200` | A1200 / AGA | 68EC020 / 14 MHz | 2048 | 0 | 0 | none | none |
 | `a1200-fast` | A1200 / AGA | 68EC020 / 14 MHz | 2048 | 0 | 8192 | none | none |
 | `a1200-030` | A1200 / AGA | 68030 / 50 MHz | 2048 | 0 | 8192 | 68030 | none |
 | `a1200-040` | A1200 / AGA | 68040 / 25 MHz | 2048 | 0 | 8192 | 68040 | 68040 |
 | `a1200-060` | A1200 / AGA | 68060 / 50 MHz | 2048 | 0 | 8192 | 68060 | 68060 |
+
+`a500-1.5m` is the playbooks' A500-equivalent: most WHDLoad slaves need more than the 512 KB
+trapdoor expansion of `a500` (Prince of Persia's ExpMem alone is about 820 KB).
 
 All presets disable JIT and extra Zorro III/motherboard RAM. They select Kickstart 3.1:
 `kick40063.A600` for the 68000 models and `KICKSTART_A1200` (`kick40068.A1200`) for A1200.
