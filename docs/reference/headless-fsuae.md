@@ -147,6 +147,31 @@ executable. gdb reads the `.elf` from `out/`.
   Revs inherited).
 - AGA programs need the user's `SetPatch` (`$SETPATCH`) copied onto the boot volume.
 
+### WHDLoad startup memory and saved-file completion
+
+`SplashDelay=0` does not disable the configurable-options splash. For tight-memory
+qualification, test `ConfigDelay=0` separately and record both settings. Ferrari
+Formula One on a 2 MiB Chip-only 020 failed ExpMem allocation with WHDLoad 20.1's
+configuration splash but completed the same startup with it disabled. Version 17
+still needed more memory in that configuration. A required API version is not a
+promise of identical memory requirements across runtime versions.
+
+A successful native save dialog or `resload_Abort(TDREASON_OK)` is not enough to
+prove persistence or successful exit. WHDLoad normally buffers writes until exit.
+Keep the emulator running until the system prompt is visible, verify the new file
+in the host directory, then close it. Use a new filename so an old file cannot
+produce a false pass. Compare complete saved contents with the native reference;
+scripted calendar changes during loading may legitimately change the original
+file's timestamp fields.
+
+In Ferrari Formula One's 020+Fast directory-drive tests, both enabled and legacy
+paths stalled in WHDLoad file-cache cleanup after creating a new season file on
+20.0 and 20.1. The documented `NoWriteCache` option made the 20.1 enabled save
+persist and returned to AmigaDOS. Preserve the failing controls and qualify the
+working option explicitly; do not infer a general hardware/runtime defect from
+this emulator-specific observation. CPU-cache options such as `NoCache` are
+separate from `NoWriteCache`.
+
 ## The gdb stub
 
 The Barto stub in both FS-UAE builds, driven by `m68k-amiga-elf-gdb`.
