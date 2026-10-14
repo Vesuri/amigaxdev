@@ -4,6 +4,13 @@
 #include "RectBounds.h"
 static void words(uint8_t* p,const uint16_t* v) {for(unsigned i=0;i<4;++i){p[2*i]=v[i]>>8;p[2*i+1]=v[i];}}
 int main() {
+ const uint16_t equality[][4]={{0,0,10,20},{0,0,10,20},{0,0,0,0},{10,20,0,0},{0x8000,0xffff,0x7fff,0},{0,1,10,20}};
+ for(const auto& a:equality)for(const auto& b:equality){
+  uint8_t aa[8],bb[8];words(aa,a);words(bb,b);bool same=false;
+  assert(RectBounds::equal(aa,bb,same) && same==(!std::memcmp(aa,bb,8)));
+  assert(RectBounds::equal(aa,aa,same) && same);
+  assert(!RectBounds::equal(nullptr,bb,same));
+ }
  const uint16_t cases[][10]={
   {0,0,10,20,3,2,2,3,8,17},
   {20,30,10,15,2,3,23,32,7,13},

@@ -3,6 +3,8 @@
 These sources are canonical, platform-independent services for the Macintosh ports.
 `RectBounds.h` is used by Alone in the Dark and Prince of Persia 2. It combines the
 rectangle helper and OffsetRect/InsetRect operations from Alone in the Dark.
+EqualRect additionally compares all four coordinates without normalizing empty or
+inverted bounds; Prince of Persia 2 pairs its Boolean result with System 7.5.5.
 `BitmapFont.h` shares the existing compatibility-font parser and a bounded reader
 for original one-bit FOND/NFNT resources. `BitmapText8.h` adapts the clipping and
 pixel addressing of Alone in the Dark’s Text8 renderer to NFNT glyphs with integer
