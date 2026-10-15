@@ -8,7 +8,7 @@ private:
     Range ranges_[16]={};
     struct Slot {const void* address=nullptr;uint8_t* flags=nullptr;};
     Slot slots_[32]={};
-    static unsigned slotIndex(const void* slot){return (uintptr_t(slot)>>2)&31;}
+    static unsigned slotIndex(const void* slot){return ((unsigned long)slot>>2)&31;}
 public:
     void clear(){for(auto& r:ranges_)r=Range();for(auto& s:slots_)s=Slot();}
     // The caller supplies this mapping only after validating a pinned slot.
