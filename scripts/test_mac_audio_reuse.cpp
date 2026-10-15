@@ -24,7 +24,8 @@ unsigned Conversion::calls=0;
 int main() {
     PaulaChannelState channel;
     assert(!channel.quiet() && channel.disableLines()==579);
-    channel.disabled();channel.period(124);channel.markQuiet();
+    channel.disabled();assert(channel.disableLines()==0 && !channel.quiet());
+    channel.period(124);channel.markQuiet();
     assert(channel.quiet() && channel.disableLines()==0);
     channel.period(300);channel.started();
     assert(!channel.quiet() && channel.disableLines()==4);

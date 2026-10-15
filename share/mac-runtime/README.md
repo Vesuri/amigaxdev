@@ -146,6 +146,9 @@ composition for all 256 state inputs, plus disposed/null/interior rejection.
 period-ceiling bookkeeping out of its hardware wrapper. Reset it at takeover;
 mark a channel quiet only after the DMA-off and DAC-zero waits complete. It does
 not replace those waits or infer quietness from a zero volume.
+After the DMA-off wait, `disabled()` also permits an immediate replacement to
+avoid repeating that wait. This is not a quiet DAC: an actual stop still needs
+the DAT-zero handshake, as do error cleanup and hardware handoff.
 
 `ImmutablePcmCache.h` generalizes the donor's retained immutable song variants
 with bounded memory and explicit users. The caller supplies the plan comparison,

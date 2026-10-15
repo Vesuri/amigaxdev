@@ -8,13 +8,14 @@
 class PaulaChannelState {
     uint16_t ceiling_=65535;
     bool quiet_=false;
+    bool disabled_=false;
 public:
     bool quiet() const {return quiet_;}
     uint16_t disableLines() const {
-        return quiet_ ? 0 : uint16_t((uint32_t(ceiling_)*2)/227+2);
+        return disabled_ ? 0 : uint16_t((uint32_t(ceiling_)*2)/227+2);
     }
-    void disabled() {ceiling_=0;}
+    void disabled() {ceiling_=0;disabled_=true;}
     void period(uint16_t value) {if(value>ceiling_)ceiling_=value;}
     void markQuiet() {quiet_=true;}
-    void started() {quiet_=false;}
+    void started() {quiet_=false;disabled_=false;}
 };
