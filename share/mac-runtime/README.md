@@ -134,3 +134,10 @@ trap-register and error contracts remain the caller's responsibility.
 using caller-owned staging storage. Region edge storage accommodates thirty-two
 transitions, including intermediate XOR states of smaller adjacent rows. Invalid
 extents or capacity exhaustion reject before a caller publishes the result.
+
+`HeapLockHandle.inc` consolidates HLock into one validated master-slot lookup,
+using the existing query error policy without rewriting unchanged zone headers. It preserves
+resource/purge flags and never moves payloads or changes the free list. Consumers
+declare `int16_t lockHandle(Handle)` and include the method beside their state
+accessors. Prince of Persia 2 checks whole-arena equality against state/setState
+composition for all 256 state inputs, plus disposed/null/interior rejection.
