@@ -17,7 +17,15 @@ int main() {
         }
         ranges[1][0]+=32;ranges[2][1]=pass&1 ? 31 : 0;
     }
-    uint32_t collision[2][2]={{0x1000,32},{0x41000,32}};
+    uint32_t separated[2][2]={{0x1000,32},{0x41000,32}};
+    for(unsigned n=0;n<2;++n){uint32_t i=0,o=0;
+        assert(cache.find(separated,2,separated[n][0]+4,i,o) && i==n && o==4);}
+    // Regions 256 KiB apart retain independent candidates. Hits must still
+    // reread live bounds when a region moves or is unloaded.
+    assert(cache.indexes()[1]==1 && cache.indexes()[65]==2);
+    separated[0][1]=0;
+    {uint32_t i=0,o=0;assert(!cache.find(separated,2,0x1004,i,o));}
+    uint32_t collision[2][2]={{0x1000,32},{0x101000,32}};
     for(unsigned n=0;n<20;++n){uint32_t i=0,o=0;unsigned wanted=n&1;
         assert(cache.find(collision,2,collision[wanted][0]+4,i,o) && i==wanted && o==4);}
     uint32_t i=0,o=0;

@@ -7,7 +7,7 @@
 // Offsets must leave room for a complete 68k instruction word.
 class CodeRangeCache {
 public:
-    enum {slots=64};
+    enum {slots=256};
 private:
     uint32_t recent_[slots]={}; // index+1; zero means no cached range.
     static bool contains(const uint32_t* range,uint32_t pc) {
@@ -19,7 +19,7 @@ public:
     const uint32_t* indexes() const {return recent_;}
     bool find(const uint32_t (*ranges)[2],uint32_t count,uint32_t pc,
               uint32_t& index,uint32_t& offset) {
-        const unsigned slot=(pc>>12)&63;
+        const unsigned slot=(pc>>12)&(slots-1);
         uint32_t cached=recent_[slot];
         if(cached && cached<=count && contains(ranges[cached-1],pc)) {
             index=cached-1;offset=pc-ranges[index][0];return true;
