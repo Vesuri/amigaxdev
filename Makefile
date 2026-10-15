@@ -47,6 +47,10 @@ check:
 .PHONY: test-mac-runtime
 test-mac-runtime:
 	@mkdir -p tmp/tests
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_slot_ranges.cpp -o tmp/tests/mac-slot-ranges
+	@tmp/tests/mac-slot-ranges
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_deadline_beam.cpp -o tmp/tests/mac-deadline-beam
+	@tmp/tests/mac-deadline-beam
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_audio_reuse.cpp -o tmp/tests/mac-audio-reuse
 	@tmp/tests/mac-audio-reuse
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_heap_lock.cpp -o tmp/tests/mac-heap-lock

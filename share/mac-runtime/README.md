@@ -147,6 +147,18 @@ It preserves allocated-slot rejection, high state bits, query MemError and the
 read-only zone-header policy. Its controls cover all 256 slot-byte values and
 null handles; consumers also exercise their real master-block ownership guards.
 
+`PinnedSlotRanges.h` retains sixteen recently validated immutable master-block
+ranges behind a caller's last-range fast path. Membership and slot alignment
+are checked on every lookup; allocation flags and pointees are never cached.
+Call `clear()` whenever the arena resets. It is unsuitable for blocks that can
+move, shrink or be freed during an arena's lifetime.
+
+`VideoTicks::deadlinePALBeam` inverts the nominal PAL beam-to-microsecond
+conversion for due/not-due checks. It retains the 19,999-microsecond clamp and
+requires a stable beam snapshot with HP below 227. Tests cover both sides of
+every microsecond boundary and every valid PAL beam position. It changes no
+deadline or clock epoch.
+
 `PaulaChannelState.h` factors Alone in the Dark's settled-channel and conservative
 period-ceiling bookkeeping out of its hardware wrapper. Reset it at takeover;
 mark a channel quiet only after the DMA-off and DAC-zero waits complete. It does
