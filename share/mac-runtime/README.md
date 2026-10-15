@@ -141,3 +141,17 @@ resource/purge flags and never moves payloads or changes the free list. Consumer
 declare `int16_t lockHandle(Handle)` and include the method beside their state
 accessors. Prince of Persia 2 checks whole-arena equality against state/setState
 composition for all 256 state inputs, plus disposed/null/interior rejection.
+
+`PaulaChannelState.h` factors Alone in the Dark's settled-channel and conservative
+period-ceiling bookkeeping out of its hardware wrapper. Reset it at takeover;
+mark a channel quiet only after the DMA-off and DAC-zero waits complete. It does
+not replace those waits or infer quietness from a zero volume.
+
+`ImmutablePcmCache.h` generalizes the donor's retained immutable song variants
+with bounded memory and explicit users. The caller supplies the plan comparison,
+conversion and allocation policies. Every conversion-affecting field belongs in
+the comparison; period may be excluded when only sample stride affects bytes.
+Sources must remain owned and immutable throughout retention. Stop DMA before
+releasing its entry, and release every user before clearing at shutdown. Mutable
+effect descriptors/data need a different policy. Exhaustion returns null for an
+uncached fallback; it never evicts samples still used by DMA.
