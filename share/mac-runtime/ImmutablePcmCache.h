@@ -1,5 +1,5 @@
 #pragma once
-#include <stdint.h>
+// Fixed-width types are supplied by the caller (including Amiga compat types).
 
 // Bounded reuse of immutable PCM variants, following Alone in the Dark's
 // prepared-song samples. Source ownership and immutability are caller contracts;

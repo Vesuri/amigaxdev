@@ -1,5 +1,5 @@
 #pragma once
-#include <stdint.h>
+// Fixed-width types are supplied by the caller (including Amiga compat types).
 
 // Register-state bookkeeping from Alone in the Dark's Paula restart protocol.
 // The caller owns the hardware exclusively and performs the indicated waits.

@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cstdint>
 #include <cstdlib>
 #include "PaulaChannelState.h"
 #include "ImmutablePcmCache.h"
