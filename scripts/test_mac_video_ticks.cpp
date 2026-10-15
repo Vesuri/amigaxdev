@@ -14,6 +14,14 @@ int main() {
         }
         ticks+=VideoTicks::fieldDelta(true,phase);
     }
+    for(uint16_t p=0;p<5;++p)for(uint16_t line=0;line<313;++line)
+        for(uint16_t hp=0;hp<227;++hp) {
+            uint32_t micro=line*64+hp*64/227;
+            if(micro>19999)micro=19999;
+            for(uint32_t base:{0u,0xffffffffu})
+                assert(VideoTicks::withinPALBeam(base,p,line,hp)==
+                       VideoTicks::withinPALField(base,p,uint16_t(micro)));
+        }
     assert(ticks==120 && phase==0);
     for(unsigned n=0;n<60;++n)assert(VideoTicks::fieldDelta(false,phase)==1);
     assert(phase==0);

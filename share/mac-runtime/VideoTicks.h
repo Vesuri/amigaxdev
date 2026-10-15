@@ -16,5 +16,13 @@ inline uint16_t fieldDelta(bool pal,uint16_t& phase) {
 inline uint32_t withinPALField(uint32_t fieldTick,uint16_t phase,uint16_t microseconds) {
     return fieldTick+(uint32_t(phase)*20000UL+uint32_t(microseconds)*6>=100000UL);
 }
+// Exact equivalent of withinPALField for a stable PAL beam with HP < 227.
+// Derive each boundary from the nominal 64 us line / 227 positions used above.
+// Callers retain responsibility for ambiguous beam/interrupt snapshots.
+inline uint32_t withinPALBeam(uint32_t fieldTick,uint16_t phase,uint16_t line,uint16_t hp) {
+    static const uint32_t boundary[5]={0x10460,0x0d04f,0x09c39,0x06828,0x03416};
+    return fieldTick+((uint32_t(line)<<8|hp)>=boundary[phase]);
+}
+
 }
 #endif
