@@ -142,6 +142,11 @@ declare `int16_t lockHandle(Handle)` and include the method beside their state
 accessors. Prince of Persia 2 checks whole-arena equality against state/setState
 composition for all 256 state inputs, plus disposed/null/interior rejection.
 
+`HeapReadHandleState.inc` reads HGetState with one validated master-slot lookup.
+It preserves allocated-slot rejection, high state bits, query MemError and the
+read-only zone-header policy. Its controls cover all 256 slot-byte values and
+null handles; consumers also exercise their real master-block ownership guards.
+
 `PaulaChannelState.h` factors Alone in the Dark's settled-channel and conservative
 period-ceiling bookkeeping out of its hardware wrapper. Reset it at takeover;
 mark a channel quiet only after the DMA-off and DAC-zero waits complete. It does
