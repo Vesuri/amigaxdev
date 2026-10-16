@@ -130,3 +130,10 @@ trap-register and error contracts remain the caller's responsibility.
 using caller-owned staging storage. Region edge storage accommodates thirty-two
 transitions, including intermediate XOR states of smaller adjacent rows. Invalid
 extents or capacity exhaustion reject before a caller publishes the result.
+
+`BlitterCompletion.h` supplies the completion policy for AmigaHardware’s existing
+blitter queue. Its hardware adapter is template-injected for latency/race tests.
+The platform owns INTB_BLIT, excludes producers while advancing the queue, bounds
+the batch to queue capacity, and drains before CPU access, OS handback or teardown.
+It acknowledges completion before starting the next blit, including zero-latency
+completion; synchronous consumers do not change.

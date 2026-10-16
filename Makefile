@@ -47,6 +47,9 @@ check:
 .PHONY: test-mac-runtime
 test-mac-runtime:
 	@mkdir -p tmp/tests
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_blitter_completion.cpp -o tmp/tests/blitter-completion
+	@tmp/tests/blitter-completion
+	@mkdir -p tmp/tests
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_bitmap_region.cpp -o tmp/tests/mac-bitmap-region
 	@tmp/tests/mac-bitmap-region
 	@mkdir -p tmp/tests
