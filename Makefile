@@ -47,6 +47,9 @@ check:
 .PHONY: test-mac-runtime
 test-mac-runtime:
 	@mkdir -p tmp/tests
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined scripts/test_heap_search.cpp -o tmp/tests/heap-search
+	./tmp/tests/heap-search
+	@mkdir -p tmp/tests
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_bitmap_region.cpp -o tmp/tests/mac-bitmap-region
 	@tmp/tests/mac-bitmap-region
 	@mkdir -p tmp/tests

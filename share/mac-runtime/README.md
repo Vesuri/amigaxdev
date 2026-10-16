@@ -79,9 +79,8 @@ copy helpers, validation and result publication. A fitting free tail before the
 next pinned block permits target-only relocation. Interior holes and insufficient
 tail space require the original compaction fallback. Payloads, handle flags and
 pinned addresses remain intact. Alone in the Dark's original System 7.5.5 fixture
-and sanitizer heap tests cover this contract. The owner deferred Prince of Persia 2
-adoption while work there is ongoing; keep HEAP.1's size-preserving resize work on
-the same shared-allocator path instead of forking placement fixes.
+and sanitizer heap tests cover this contract. Prince of Persia 2 adopts this helper under item 19.7 with its own original
+System 7.5.5 placement fixture.
 
 `HeapResize.inc` supplies in-place resizing for the same allocator adapters.
 The zone must have no adjacent free blocks on entry. A split or growth can only
@@ -89,8 +88,7 @@ create a free/free pair at the resized allocation's tail, so merge that pair
 locally instead of rescanning the zone. Logical sizes, allocation placement,
 free-byte accounting and the adapter's compaction/failure paths stay unchanged.
 Alone in the Dark's sanitizer tests combine resizing with 2,500 fragmented-heap
-operations and check that no adjacent free blocks survive. Prince of Persia 2
-adoption remains deferred by the owner.
+operations and check that no adjacent free blocks survive. Prince of Persia 2 adopts the same helper under item 19.7.
 
 `RegionResultCache.h` retains successful, pure QuickDraw record transformations
 in a 32 KiB FIFO arena with 32 metadata slots. The operation tag and exact input
@@ -130,3 +128,12 @@ trap-register and error contracts remain the caller's responsibility.
 using caller-owned staging storage. Region edge storage accommodates thirty-two
 transitions, including intermediate XOR states of smaller adjacent rows. Invalid
 extents or capacity exhaustion reject before a caller publishes the result.
+
+`HeapFindSpace.inc` retains the first-fit allocation policy while skipping a
+known occupied prefix. The adapter owns a mutable `searchStart_` block boundary,
+initially `headerBytes`. Split rewinds it to the modified block; coalescing records
+the first free block or zone end; compaction resets it. MoveHHi must finish through
+release/coalesce. The full-heap invariant must reject an interior hint or a free
+block preceding it. No fitting-size cache or placement change is permitted.
+Prince of Persia 2's mixed-operation oracle compares against a complete chain walk;
+the standalone shared test enumerates all small occupancy layouts and safe hints.
