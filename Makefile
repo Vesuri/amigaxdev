@@ -47,6 +47,9 @@ check:
 .PHONY: test-mac-runtime
 test-mac-runtime:
 	@mkdir -p tmp/tests
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined scripts/test_dirty_bands.cpp -o tmp/tests/dirty-bands
+	tmp/tests/dirty-bands
+	@mkdir -p tmp/tests
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_bitmap_region.cpp -o tmp/tests/mac-bitmap-region
 	@tmp/tests/mac-bitmap-region
 	@mkdir -p tmp/tests

@@ -130,3 +130,8 @@ trap-register and error contracts remain the caller's responsibility.
 using caller-owned staging storage. Region edge storage accommodates thirty-two
 transitions, including intermediate XOR states of smaller adjacent rows. Invalid
 extents or capacity exhaustion reject before a caller publishes the result.
+
+`DirtyBands.h` extracts Alone in the Dark’s coordinate-only disjoint C2P planner.
+Callers supply viewport dimensions and input capacity; it clips before alignment,
+coalesces adjacent equal bands and falls back to a complete bounding rectangle
+on output exhaustion. Synthetic controls cover both 320×200 and 512×384 views.
