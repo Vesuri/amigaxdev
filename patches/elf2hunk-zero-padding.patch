@@ -1,0 +1,14 @@
+--- a/elf2hunk.c
++++ b/elf2hunk.c
+@@ -367,9 +367,9 @@
+ 
+ static void *load_block(int file, ULONG offset, ULONG size)
+ {
+-	ULONG lsize = (size + sizeof(ULONG) - 1) / sizeof(ULONG);
++	ULONG lsize = (size + sizeof(ULONG)) / sizeof(ULONG);
+ 	D(bug("[ELF2HUNK] Load Block (size=%d)\n", (int)size));
+-	void *block = malloc(lsize * sizeof(ULONG));
++	void *block = calloc(lsize, sizeof(ULONG));
+ 	if(block) {
+ 		lseek(file, offset, SEEK_SET);
+ 		if(read(file, block, size) == size) {

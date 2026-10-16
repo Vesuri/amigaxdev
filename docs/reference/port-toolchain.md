@@ -325,3 +325,30 @@ Each port keeps a host build of the same core sources: Clang, GNU Make, SDL2 fro
   which dies with SIGILL on arm64 where an add/subtract-with-borrow folds to a constant.
   Unicorn's 68020: write SR before A7 (A7 is the active stack pointer).
 - `brew install` on a managed Mac may raise a privilege prompt: let the user start installs.
+
+### Deterministic stripped HUNK padding
+
+MEASURED in Prince of Persia 2 release qualification: the bundled converter can
+write an uninitialized extra word after a section whose size is divisible by
+four. Two otherwise identical stripped executables differed only in the word
+after `.init_array`. The upstream converter writes `(size + 4) / 4` words but
+allocates only the rounded section length. This can read beyond its allocation.
+
+`patches/elf2hunk-zero-padding.patch` makes that allocation match the existing
+output size and zeroes it. Hunk sizes, section data and relocation records stay
+unchanged. Upstream source is pinned as `elf2hunk-86fdfadb.tar.gz` in
+`manifest/downloads.tsv` (revision
+`86fdfadb3ddab50b9457f5018c36c796c716cc13` of
+[BartmanAbyss/elf2hunk](https://github.com/BartmanAbyss/elf2hunk)).
+Extract the verified archive into a fresh build directory, apply the patch with
+`patch -p1`, then run `make`. Install the result as
+`$AMIGA_SHARE/elf2hunk-fixed`, preserving any differing existing file in
+`.replaced/`. Do not replace the bundled tool silently. Ports select it through
+an overridable `ELF2HUNK` variable and pin its binary hash before use.
+
+`python3 scripts/check-elf2hunk-padding.py input.elf old.exe fixed.exe` checks
+stripped HUNK output against the ELF's allocated section sizes: only trailing
+padding may change, every new padding byte must be zero, and all other bytes
+including relocation tables must match. Altering a real section byte must fail.
+The Prince of Persia 2 game and native installer both pass this check; repeat
+conversion and clean-build comparisons are required in the consuming port.

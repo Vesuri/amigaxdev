@@ -9,3 +9,4 @@ SDL2_ttf-2.0.15.tar.gz	a9eceb1ad88c1f1545cd7bd28e7cbc0b2c14191d40238f531a15b01b1
 libmpeg2-0.5.1.tar.gz	dee22e893cb5fc2b2b6ebd60b88478ab8556cb3b93f9a0d7ce8f3b61851871d4	https://download.videolan.org/contrib/libmpeg2/libmpeg2-0.5.1.tar.gz
 agamanual.lha	fa8dd87bf9669c41a94fe03d51e0e4983d43af2399ad41c2b8359a37a578662f	https://aminet.net/docs/misc/agamanual.lha
 unicorn-2.1.4.tar.gz	ea8863f095a0136388694e5a6063afd9bb7650e30243dd6251af59c5ce5601f4	https://github.com/unicorn-engine/unicorn/archive/refs/tags/2.1.4.tar.gz
+elf2hunk-86fdfadb.tar.gz	171d4a9a08b3397ca2575300169d3947e94a3710d057eea95a1d871303123e7f	https://api.github.com/repos/BartmanAbyss/elf2hunk/tarball/86fdfadb3ddab50b9457f5018c36c796c716cc13
