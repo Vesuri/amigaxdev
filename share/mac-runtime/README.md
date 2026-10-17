@@ -173,16 +173,19 @@ Sources must remain owned and immutable throughout retention. Stop DMA before
 releasing its entry, and release every user before clearing at shutdown. Mutable
 effect descriptors/data need a different policy. Exhaustion returns null for an
 uncached fallback; it never evicts samples still used by DMA.
+
 `DirtyBands.h` extracts Alone in the Dark’s coordinate-only disjoint C2P planner.
 Callers supply viewport dimensions and input capacity; it clips before alignment,
 coalesces adjacent equal bands and falls back to a complete bounding rectangle
 on output exhaustion. Synthetic controls cover both 320×200 and 512×384 views.
+
 `BlitterCompletion.h` supplies the completion policy for AmigaHardware’s existing
 blitter queue. Its hardware adapter is template-injected for latency/race tests.
 The platform owns INTB_BLIT, excludes producers while advancing the queue, bounds
 the batch to queue capacity, and drains before CPU access, OS handback or teardown.
 It acknowledges completion before starting the next blit, including zero-latency
 completion; synchronous consumers do not change.
+
 `HeapFindSpace.inc` retains the first-fit allocation policy while skipping a
 known occupied prefix. The adapter owns a mutable `searchStart_` block boundary,
 initially `headerBytes`. Split rewinds it to the modified block; coalescing records
@@ -191,3 +194,10 @@ release/coalesce. The full-heap invariant must reject an interior hint or a free
 block preceding it. No fitting-size cache or placement change is permitted.
 Prince of Persia 2's mixed-operation oracle compares against a complete chain walk;
 the standalone shared test enumerates all small occupancy layouts and safe hints.
+
+`DirtyBandsAlign.inc` and `DirtyBandsPlan.inc` expose the same implementation
+bodies to existing namespace adapters. Alone in the Dark retains its original
+function identities and compiler output through these includes; new consumers
+can use the typed `DirtyBands.h` interface. The adapter defines dimensions,
+capacity, viewport validation and alignment macros, then undefines them after
+inclusion. No game-specific data or pixel comparisons enter the planner.
