@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 import unittest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'share/pylib'))
-from amigaxdev.aprof import parse_profile, call_tree
+from amigaxdev.aprof import parse_profile, call_tree, require_return_pairing
 
 BASE='''AITDPROF 1
 units 1024
@@ -35,6 +35,12 @@ class Checks(unittest.TestCase):
         for bad in ({1:nodes[1]}, {**nodes,1:(2,256,0,768,1)},
                     {**nodes,1:(1,256,0,768,1)}):
             with self.assertRaises(ValueError):call_tree(bad)
+    def test_pairing_gate(self):
+        header,_,_=parse_profile(BASE)
+        require_return_pairing(header)
+        for key in ('overflow','unmatched_rts','unmatched_rte'):
+            for bad in (None,1,-1):
+                with self.assertRaises(ValueError):require_return_pairing({**header,key:bad})
     def test_unmatched_is_not_hidden(self):
         h,_,_=parse_profile(BASE.replace('unmatched_rts 0','unmatched_rts 7'))
         self.assertEqual(h['unmatched_rts'],7)

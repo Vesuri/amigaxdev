@@ -394,7 +394,10 @@ reader reports `header['tail']` separately; it never assigns it to a function.
 accounting corruption, overflow and malformed trees.
 
 A structurally valid tree is not proof of correct dynamic return pairing.
-Unmatched RTS/RTE counters remain visible, and consumers must establish pairing
-for the workload before claiming inclusive or active-work costs. Frame rows and
+Unmatched RTS/RTE counters remain visible. `require_return_pairing(header)`
+rejects missing/nonzero return diagnostics or overflow; consumers must also
+establish workload-specific completion before claiming paired inclusive or
+active-work costs. Historical approximate opening reports retain their explicit
+qualification and are not promoted to exact call-tree evidence. Frame rows and
 actual publications can have different phase boundaries; consumers must state
 which denominator they use and retain it in before/after comparisons.

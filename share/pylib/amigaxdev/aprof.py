@@ -63,3 +63,12 @@ def call_tree(nodes):
     return children, order, inclusive
 
 
+def require_return_pairing(header):
+    """Reject inclusive/active attribution when dynamic returns are unpaired.
+
+    Flat PC accounting remains independently available. Zero diagnostics are a
+    necessary gate; the caller still owns workload-specific completion controls.
+    """
+    require(header.get('overflow') == 0, 'CALL TREE OVERFLOW')
+    require(header.get('unmatched_rts') == 0 and header.get('unmatched_rte') == 0,
+            'UNVERIFIED RETURN PAIRING; USE FLAT PC COSTS')
