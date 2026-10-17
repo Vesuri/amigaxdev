@@ -1,7 +1,9 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <initializer_list>
 #include "RectBounds.h"
+#include "BigEndianMemory.h"
 static void words(uint8_t* p,const uint16_t* v) {for(unsigned i=0;i<4;++i){p[2*i]=v[i]>>8;p[2*i+1]=v[i];}}
 int main() {
  const uint16_t equality[][4]={{0,0,10,20},{0,0,10,20},{0,0,0,0},{10,20,0,0},{0x8000,0xffff,0x7fff,0},{0,1,10,20}};
@@ -26,4 +28,17 @@ int main() {
  assert(RectBounds::unite(ra,ra,rb));assert(!std::memcmp(ra,expected,8));
  words(ra,a);bool nonempty=false;words(expected,i);
  assert(RectBounds::intersect(rb,ra,rb,nonempty)&&nonempty);assert(!std::memcmp(rb,expected,8));
+ // Native-accessor instantiations use the same signed and alias-safe geometry.
+ for(const auto& a:equality)for(const auto& b:equality)for(unsigned dest:{0u,1u,8u,16u}) {
+  uint8_t portable[32]={},accessors[32]={};words(portable,a);words(portable+8,b);
+  std::memcpy(accessors,portable,32);
+  assert(RectBounds::unite(portable+dest,portable,portable+8));
+  assert((RectBounds::unite<BigEndianMemory::read16,BigEndianMemory::write16>(accessors+dest,accessors,accessors+8)));
+  assert(!std::memcmp(portable,accessors,32));
+  words(portable,a);words(portable+8,b);std::memcpy(accessors,portable,32);
+  bool p=false,n=false;
+  assert(RectBounds::intersect(portable+dest,portable,portable+8,p));
+  assert((RectBounds::intersect<BigEndianMemory::read16,BigEndianMemory::write16>(accessors+dest,accessors,accessors+8,n)));
+  assert(p==n && !std::memcmp(portable,accessors,32));
+ }
 }

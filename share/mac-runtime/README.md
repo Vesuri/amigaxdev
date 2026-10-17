@@ -5,6 +5,10 @@ These sources are canonical, platform-independent services for the Macintosh por
 rectangle helper and OffsetRect/InsetRect operations from Alone in the Dark.
 EqualRect additionally compares all four coordinates without normalizing empty or
 inverted bounds; Prince of Persia 2 pairs its Boolean result with System 7.5.5.
+Union/intersection accept explicit load/store template arguments, like adjustment.
+Native callers can select shared `BigEndianMemory` word accesses while retaining
+the same signed comparisons, empty handling and full-input-before-output rule.
+The default overloads retain byte accesses; consumers opt in per call.
 `BitmapFont.h` shares the existing compatibility-font parser and a bounded reader
 for original one-bit FOND/NFNT resources. `BitmapText8.h` adapts the clipping and
 pixel addressing of Alone in the Dark’s Text8 renderer to NFNT glyphs with integer
@@ -130,3 +134,44 @@ trap-register and error contracts remain the caller's responsibility.
 using caller-owned staging storage. Region edge storage accommodates thirty-two
 transitions, including intermediate XOR states of smaller adjacent rows. Invalid
 extents or capacity exhaustion reject before a caller publishes the result.
+
+`HeapLockHandle.inc` consolidates HLock into one validated master-slot lookup,
+using the existing query error policy without rewriting unchanged zone headers. It preserves
+resource/purge flags and never moves payloads or changes the free list. Consumers
+declare `int16_t lockHandle(Handle)` and include the method beside their state
+accessors. Prince of Persia 2 checks whole-arena equality against state/setState
+composition for all 256 state inputs, plus disposed/null/interior rejection.
+
+`HeapReadHandleState.inc` reads HGetState with one validated master-slot lookup.
+It preserves allocated-slot rejection, high state bits, query MemError and the
+read-only zone-header policy. Its controls cover all 256 slot-byte values and
+null handles; consumers also exercise their real master-block ownership guards.
+
+`PinnedSlotRanges.h` retains sixteen recently validated immutable master-block
+ranges behind a caller's last-range fast path. Membership and slot alignment
+are checked on every lookup; allocation flags and pointees are never cached.
+Call `clear()` whenever the arena resets. It is unsuitable for blocks that can
+move, shrink or be freed during an arena's lifetime.
+
+`VideoTicks::deadlinePALBeam` inverts the nominal PAL beam-to-microsecond
+conversion for due/not-due checks. It retains the 19,999-microsecond clamp and
+requires a stable beam snapshot with HP below 227. Tests cover both sides of
+every microsecond boundary and every valid PAL beam position. It changes no
+deadline or clock epoch.
+
+`PaulaChannelState.h` factors Alone in the Dark's settled-channel and conservative
+period-ceiling bookkeeping out of its hardware wrapper. Reset it at takeover;
+mark a channel quiet only after the DMA-off and DAC-zero waits complete. It does
+not replace those waits or infer quietness from a zero volume.
+After the DMA-off wait, `disabled()` also permits an immediate replacement to
+avoid repeating that wait. This is not a quiet DAC: an actual stop still needs
+the DAT-zero handshake, as do error cleanup and hardware handoff.
+
+`ImmutablePcmCache.h` generalizes the donor's retained immutable song variants
+with bounded memory and explicit users. The caller supplies the plan comparison,
+conversion and allocation policies. Every conversion-affecting field belongs in
+the comparison; period may be excluded when only sample stride affects bytes.
+Sources must remain owned and immutable throughout retention. Stop DMA before
+releasing its entry, and release every user before clearing at shutdown. Mutable
+effect descriptors/data need a different policy. Exhaustion returns null for an
+uncached fallback; it never evicts samples still used by DMA.

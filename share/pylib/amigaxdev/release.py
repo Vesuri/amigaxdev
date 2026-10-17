@@ -60,14 +60,15 @@ def member(name, data, stamp):
                              'set LHA to its absolute path') from error
         raw = (work / 'member.lha').read_bytes()
     header = raw[2:2 + raw[0]]
-    if header[:5] != b'-lh5-' or header[18] != 0:
-        raise ValueError('compressor did not produce a level-zero LH5 member')
+    if header[:5] not in (b'-lh5-', b'-lh0-') or header[18] != 0:
+        raise ValueError('compressor did not produce a level-zero LH5/LH0 member')
     packed, unpacked = struct.unpack_from('<II', header, 5)
     payload = raw[2 + raw[0]:2 + raw[0] + packed]
     if unpacked != len(data) or len(payload) != packed:
         raise ValueError('invalid compressor output lengths')
     name = name.replace('/', '\\').encode('ascii')
-    body = b'-lh5-' + struct.pack('<III', len(payload), len(data), stamp)
+    # LHa stores incompressible small members; retain that declared method.
+    body = header[:5] + struct.pack('<III', len(payload), len(data), stamp)
     body += bytes((0x20, 0, len(name))) + name + struct.pack('<H', crc16(data))
     return bytes((len(body), sum(body) & 255)) + body + payload
 
