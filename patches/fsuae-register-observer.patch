@@ -1,0 +1,11 @@
+--- a/src/barto_gdbserver.cpp
++++ b/src/barto_gdbserver.cpp
+@@ -439,6 +439,8 @@
+ 		// need to byteswap because GDB expects 68k big-endian
+ 		switch(reg) {
+ 		case SR: 
++			// The CPU keeps condition flags separately; regs.sr can be stale.
++			MakeSR();
+ 			regvalue = regs.sr; 
+ 			break;
+ 		case PC: 

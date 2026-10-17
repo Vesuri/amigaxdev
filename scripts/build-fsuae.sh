@@ -14,6 +14,8 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 [ -d /opt/homebrew/bin ] && PATH="/opt/homebrew/bin:$PATH"
 
 name="$1"; patch="${2:-}"
+# git -C resolves patch filenames from the source checkout.
+[ -z "$patch" ] || patch="$(cd "$(dirname "$patch")" && pwd)/$(basename "$patch")"
 dest="$AMIGA_SHARE/$name"
 build="$BUILD/$name"
 commit=$(rows git.tsv | awk -F'\t' '$1 == "fs-uae-barto" {print $2}')
@@ -24,6 +26,8 @@ freq_patch="$REPO/patches/fsuae-cpu-frequency.patch"
 freq_sha=$(sha256 "$freq_patch")
 harness_patch="$REPO/patches/fsuae-harness.patch"
 harness_sha=$(sha256 "$harness_patch")
+register_patch="$REPO/patches/fsuae-register-observer.patch"
+register_sha=$(sha256 "$register_patch")
 patch_sha=""; [ -n "$patch" ] && patch_sha=$(sha256 "$patch")
 
 # Already built from the same commit and patch: nothing to do.
@@ -32,6 +36,7 @@ if [ -x "$dest/fs-uae" ] && [ -f "$rev" ] && grep -q "$commit" "$rev" \
    && grep -q "core-fix $core_sha" "$rev" \
    && grep -q "cpu-frequency $freq_sha" "$rev" \
    && grep -q "harness $harness_sha" "$rev" \
+   && grep -q "register-observer $register_sha" "$rev" \
    && { [ -z "$patch_sha" ] || grep -q "$patch_sha" "$rev"; } \
    && { [ -n "$patch_sha" ] || ! grep -q " + patch " "$rev"; }; then
   exit 0
@@ -66,6 +71,7 @@ git -C "$src" apply --check "$core_patch"
 git -C "$src" apply "$core_patch"
 git -C "$src" apply "$freq_patch"
 git -C "$src" apply "$harness_patch"
+git -C "$src" apply "$register_patch"
 [ -n "$patch" ] && git -C "$src" apply "$patch"
 export PKG_CONFIG_PATH="$deps/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 (cd "$src" && ./bootstrap >"$build/fs-uae.log" 2>&1 \
@@ -82,6 +88,7 @@ cp -f "$src/fs-uae" "$src/fs-uae.dat" "$dest/"
 cp -R "$src/data" "$dest/data"
 {
   printf '%s %s core-fix %s cpu-frequency %s harness %s' "$url" "$commit" "$core_sha" "$freq_sha" "$harness_sha"
+  printf ' register-observer %s' "$register_sha"
   [ -n "$patch" ] && printf ' + patch %s %s' "$(basename "$patch")" "$patch_sha"
   printf '\nSDL2_ttf 2.0.15 and libmpeg2 0.5.1 static; arm64; JIT disabled\n'
 } > "$rev"
