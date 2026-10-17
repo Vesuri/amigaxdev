@@ -1,0 +1,63 @@
+--- a/src/barto_gdbserver.cpp
++++ b/src/barto_gdbserver.cpp
+@@ -247,6 +247,7 @@
+ 	std::string profile_outname;
+ 	int profile_num_frames{};
+ 	int profile_frame_count{};
++	bool cache_memory{}; // Explicit physical data-cache overlay, never guest mutation.
+ 	unsigned advance_fields{}; // "monitor fields": vsyncs left to run
+ 	std::unique_ptr<cpu_profiler_unwind[]> profile_unwind{};
+ 
+@@ -625,7 +626,15 @@
+ 									auto cmd = from_hex(request.substr(strlen("qRcmd,")));
+ 									barto_log("GDBSERVER:   monitor %s\n", cmd.c_str());
+ 									// syntax: monitor profile <num_frames> <unwind_file> <out_file>
+-									if(cmd.substr(0, strlen("profile")) == "profile") {
++									if(cmd == "memory physical") {
++                                        cache_memory = false;
++                                        response += "OK";
++                                    } else if(cmd == "memory cache") {
++                                        if(currprefs.cpu_model == 68040) {
++                                            cache_memory = true;
++                                            response += "OK";
++                                        } else response += "E01";
++                                    } else if(cmd.substr(0, strlen("profile")) == "profile") {
+ 										auto s = cmd.substr(strlen("profile "));
+ 										std::string profile_unwindname;
+ 										profile_num_frames = 0;
+@@ -928,7 +937,10 @@
+ 											int data = -1;
+ 											if (debug_safe_addr(adr, 1)) {
+ 												ad = &get_mem_bank(adr);
+-												data = ad->bget(adr);
++												if(cache_memory && (ad->flags & ABFLAG_RAM)) {
++                                                    bool cached;
++                                                    data = get_byte_cache_debug(adr, &cached);
++                                                } else data = ad->bget(adr);
+ 											} else {
+ 												if ((adr >= 0xdff000) && (adr < 0xdff1fe)) {
+ 													if (custom_data == NULL) {
+--- a/src/newcpu.cpp
++++ b/src/newcpu.cpp
+@@ -9612,16 +9612,17 @@
+ 	c = &dcaches040[index];
+ 	for (line = 0; line < CACHELINES040; line++) {
+ 		if (c->valid[line] && c->tag[line] == tag) {
+-			// cache hit
++			// Read-only cache hit: no replacement, allocation or writeback.
++            *cached = true;
+ 			return dcache040_get_data(addr_o, c, line, size);
+ 		}
+ 	}
+ nocache:
+ 	if (size == 0)
+-		return get_byte_debug(addr);
++		return get_byte_debug(addr_o);
+ 	if (size == 1)
+-		return get_word_debug(addr);
+-	return get_long_debug(addr);
++		return get_word_debug(addr_o);
++	return get_long_debug(addr_o);
+ }
+ 
+ static uae_u32 read_dcache040(uae_u32 addr, int size, uae_u32 (*fetch)(uaecptr))
