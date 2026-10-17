@@ -340,10 +340,10 @@ unchanged. Upstream source is pinned as `elf2hunk-86fdfadb.tar.gz` in
 `manifest/downloads.tsv` (revision
 `86fdfadb3ddab50b9457f5018c36c796c716cc13` of
 [BartmanAbyss/elf2hunk](https://github.com/BartmanAbyss/elf2hunk)).
-Extract the verified archive into a fresh build directory, apply the patch with
-`patch -p1`, then run `make`. Install the result as
+`make elf2hunk-fixed` (also part of `make setup`) verifies the archive, applies
+the pinned patch in a fresh build directory and installs
 `$AMIGA_SHARE/elf2hunk-fixed`, preserving any differing existing file in
-`.replaced/`. Do not replace the bundled tool silently. Ports select it through
+`.replaced/`. The bundled tool stays unchanged. Ports select the fixed tool through
 an overridable `ELF2HUNK` variable and pin its binary hash before use.
 
 `python3 scripts/check-elf2hunk-padding.py input.elf old.exe fixed.exe` checks

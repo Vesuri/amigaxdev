@@ -48,6 +48,7 @@ check "m68k-amiga-elf-gcc"     "$PREFIX/opt/bin/m68k-amiga-elf-gcc" --version
 check "m68k-amiga-elf-gdb"     "$PREFIX/opt/bin/m68k-amiga-elf-gdb" --version
 check "m68k-amiga-elf-objdump" "$PREFIX/opt/bin/m68k-amiga-elf-objdump" --version
 check "elf2hunk"               test -x "$PREFIX/elf2hunk"
+check "elf2hunk-fixed"         test -x "$AMIGA_SHARE/elf2hunk-fixed"
 check "gcc8 support files"     test -f "$PREFIX/support/gcc8_c_support.c"
 # vasm prints its banner and exits non-zero without a source file.
 check "vasm (x86_64)"          sh -c "'$PREFIX/vasmm68k_mot' 2>&1 | grep -q 'vasm'"

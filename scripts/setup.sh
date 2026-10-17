@@ -87,6 +87,21 @@ EOF
   stamp toolchain "$(sha256 "$vsix")"
 }
 
+c_elf2hunk_fixed() {
+  local archive=elf2hunk-86fdfadb.tar.gz patch="$REPO/patches/elf2hunk-zero-padding.patch"
+  local key a st dest="$AMIGA_SHARE/elf2hunk-fixed"
+  key="$(manifest_sha "$archive")$(sha256 "$patch")"
+  installed elf2hunk-fixed "$key" "$dest" && return 0
+  a=$(download "$archive")
+  mkdir -p "$BUILD"
+  st=$(mktemp -d "$BUILD/elf2hunk-fixed.XXXXXX")
+  tar xzf "$a" --strip-components=1 -C "$st"
+  patch -p1 -s -d "$st" < "$patch" || die "elf2hunk-fixed: patch failed"
+  make -C "$st" > "$st/build.log" 2>&1 || die "elf2hunk-fixed: see $st/build.log"
+  install_file "$st/elf2hunk" "$dest" "$(sha256 "$st/elf2hunk")"
+  stamp elf2hunk-fixed "$key"
+}
+
 c_whdload() {
   local archive=WHDLoad_20.1_dev.lzx dest="$AMIGA_SHARE/WHDLoad"
   local a file sha current=1 st="$BUILD/whdload" legacy="$AMIGA_SHARE/WHDLoad-20.0"
