@@ -380,3 +380,21 @@ is reusable, and say plainly that it did not ship.
   standing baseline.
 - Keep current measurements and one-line dispositions in the project's performance doc.
   Investigation logs belong in git history.
+
+## Shared instruction-profile reader
+
+`amigaxdev.aprof.parse_profile` reads `AITDPROF 1` flat-PC and call-node records;
+`call_tree` supplies child lists, traversal order and inclusive totals. Consumers
+retain their own symbols, buckets and workload denominators. The parser requires
+flat-PC time plus gap/high time to equal node self-time. Elapsed time may exceed
+that accounting by an aligned tail of at most one `CYCLE_UNIT`: profiler stop
+prints the current clock without charging the last gap to an instruction. The
+reader reports `header['tail']` separately; it never assigns it to a function.
+`python3 scripts/test_aprof.py` tests zero, partial and full-clock stop tails,
+accounting corruption, overflow and malformed trees.
+
+A structurally valid tree is not proof of correct dynamic return pairing.
+Unmatched RTS/RTE counters remain visible, and consumers must establish pairing
+for the workload before claiming inclusive or active-work costs. Frame rows and
+actual publications can have different phase boundaries; consumers must state
+which denominator they use and retain it in before/after comparisons.
