@@ -45,7 +45,7 @@ check:
 	@scripts/check.sh
 
 .PHONY: test-mac-runtime
-test-mac-runtime:
+test-mac-runtime: test-block-move
 	@mkdir -p tmp/tests
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_slot_ranges.cpp -o tmp/tests/mac-slot-ranges
 	@tmp/tests/mac-slot-ranges
@@ -89,3 +89,9 @@ test-mac-runtime:
 	@tmp/tests/mac-vbl-passes
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_video_ticks.cpp -o tmp/tests/mac-video-ticks
 	@tmp/tests/mac-video-ticks
+
+.PHONY: test-block-move
+test-block-move:
+	@mkdir -p tmp/tests
+	$(CXX) -std=c++17 -O2 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_block_move.cpp -o tmp/tests/block-move
+	@tmp/tests/block-move

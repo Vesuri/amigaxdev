@@ -354,3 +354,14 @@ A fold that turns `abs.l` operands into `d16(An)` has two acceptance tests that 
   relocations). Keep such folds in boot and bulk code, where cycles do not matter.
 - Read a function and its `.part.N` siblings as one when comparing sizes.
 - Count `RELOC32` entries in the hunk, not the ELF: `elf2hunk` adds them.
+
+## Overlap-safe longword copies
+
+`share/mac-runtime/BlockMoveBytes.h` shares Alone in the Dark’s 68020+ copy
+helper unchanged. It selects traversal direction for overlapping ranges,
+aligns the source, uses longword transfers and retains byte tails. The bulk
+loop is 128 bytes; small copies never enter it. `BlockMoveChecks.h` supplies
+28,388 independent byte-oracle cases, including every alignment, short overlap
+and large loop boundaries. Run `make test-block-move` for the sanitizer host
+gate. Consumers must also run the fixture on their target and measure their own
+workload; Alone in the Dark’s native 68030 evidence is not a 68020 timing claim.
