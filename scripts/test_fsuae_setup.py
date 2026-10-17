@@ -58,6 +58,7 @@ fsuae_options || exit 1
             ("a500", "A500", "68000", 512, 0, 512, 0, 0, 7093790),
             ("a500-1.5m", "A500", "68000", 512, 0, 1536, 0, 0, 7093790),
             ("a500+", "A500+", "68000", 1024, 0, 0, 0, 0, 7093790),
+            ("a3000", "A3000", "68030", 2048, 8192, 0, 68030, 68882, 25000000),
             ("a1200", "A1200", "68EC020", 2048, 0, 0, 0, 0, 14187580),
             ("a1200-fast", "A1200", "68EC020", 2048, 8192, 0, 0, 0, 14187580),
             ("a1200-030", "A1200", "68030", 2048, 8192, 0, 68030, 0, 50000000),
@@ -75,11 +76,20 @@ fsuae_options || exit 1
                     self.assertEqual(values["jit_compiler"], "0")
                     self.assertEqual(values["uae_cachesize"], "0")  # JIT cache, not CPU cache
                     self.assertEqual(values["uae_cpu_compatible"], "true")
-                    data_cache = case[0] in ("a1200-030", "a1200-040", "a1200-060")
+                    data_cache = case[0] in ("a3000", "a1200-030", "a1200-040", "a1200-060")
                     self.assertEqual(values["uae_cpu_data_cache"], str(data_cache).lower())
                     self.assertEqual(values["uae_uaeboard"], "full+indirect" if data_cache else "min")
-                    rom = "kick40063.A600" if case[0].startswith("a500") else "kick40068.A1200"
+                    rom = "kick40068.A1200" if case[0].startswith("a1200") else "kick40063.A600"
                     self.assertEqual(values["kickstart_file"], str(self.work / "shared files/Kickstarts" / rom))
+
+    def test_a3000_ecs_and_rom_override(self):
+        for mode in ("exec", "launch"):
+            values = self.effective(self.run_launcher("a3000", mode,
+                before='KICKSTART_A3000="custom A3000 ROM"'))
+            self.assertEqual(values["uae_chipset"], "ecs")
+            self.assertEqual(values["kickstart_file"], "custom A3000 ROM")
+            for key in ("zorro_iii_memory", "uae_mbresmem_size", "uae_a3000mem_size"):
+                self.assertEqual(values[key], "0")
 
     def test_extra_args_override_preset(self):
         values = self.effective(self.run_launcher("a1200-fast", extra="--fast_memory=4096"))
