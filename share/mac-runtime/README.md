@@ -179,3 +179,9 @@ uncached fallback; it never evicts samples still used by DMA.
 Callers supply viewport dimensions and input capacity; it clips before alignment,
 coalesces adjacent equal bands and falls back to a complete bounding rectangle
 on output exhaustion. Synthetic controls cover both 320×200 and 512×384 views.
+`BlitterCompletion.h` supplies the completion policy for AmigaHardware’s existing
+blitter queue. Its hardware adapter is template-injected for latency/race tests.
+The platform owns INTB_BLIT, excludes producers while advancing the queue, bounds
+the batch to queue capacity, and drains before CPU access, OS handback or teardown.
+It acknowledges completion before starting the next blit, including zero-latency
+completion; synchronous consumers do not change.
