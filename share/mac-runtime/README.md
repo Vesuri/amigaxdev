@@ -175,3 +175,7 @@ Sources must remain owned and immutable throughout retention. Stop DMA before
 releasing its entry, and release every user before clearing at shutdown. Mutable
 effect descriptors/data need a different policy. Exhaustion returns null for an
 uncached fallback; it never evicts samples still used by DMA.
+`DirtyBands.h` extracts Alone in the Dark’s coordinate-only disjoint C2P planner.
+Callers supply viewport dimensions and input capacity; it clips before alignment,
+coalesces adjacent equal bands and falls back to a complete bounding rectangle
+on output exhaustion. Synthetic controls cover both 320×200 and 512×384 views.
