@@ -73,6 +73,8 @@ test-mac-runtime: test-block-move
 	@tmp/tests/mac-fonts
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_graphics.cpp -o tmp/tests/mac-graphics
 	@tmp/tests/mac-graphics
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_copybits_changes.cpp -o tmp/tests/copybits-changes
+	@tmp/tests/copybits-changes
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_rgb_cache.cpp -o tmp/tests/mac-rgb-cache
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_pen_rect.cpp -o tmp/tests/mac-pen-rect
 	@tmp/tests/mac-pen-rect

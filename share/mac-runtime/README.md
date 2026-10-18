@@ -30,6 +30,22 @@ operations. Consumers that do not use it retain the existing operation set and
 compiled dispatch; both configurations have sanitizer checks. Trap ownership and
 current-port selection remain consumer responsibilities.
 
+`CopyBits8::Changes` optionally reports changed row spans through a caller-supplied
+copy callback for distinct, unscaled, unmasked identity copies. Missing callbacks
+or insufficient report capacity retain the ordinary copy and report `valid=false`;
+overlap, mapped and scaled forms retain their existing paths. Row bounds may
+conservatively include unchanged edge bytes. The caller owns publication,
+viewport invalidation and palette changes.
+
+`CopyChangedRows.inc` supplies the 68020 C-ABI `copy_changed_rows` body for
+0–640 pixels and 0–480 rows. It compares row ends and copies the differing
+middle without a second framebuffer. The macro preserves callee-saved registers;
+its declared scratch registers/CCR follow the C ABI. Prince of Persia 2's native
+1,665-case fixture covers pixels, row bounds, padding, source preservation and
+registers. Its shared macro assembles identically to that tested body. Native
+performance still requires a matched consumer workload; this helper alone does
+not establish any game's frame cadence.
+
 `BigEndianMemory.h` shares Alone in the Dark’s explicit 68020 word/longword
 accesses, including unaligned addresses and alias-safe memory operands. Its host
 fallback preserves big-endian byte order; callers remain responsible for bounds.
