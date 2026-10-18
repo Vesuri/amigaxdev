@@ -5,6 +5,7 @@ Unmatched return counters are retained: a structurally valid tree does not
 establish that dynamic return pairing was correct.
 """
 import collections
+import math
 
 
 def require(ok, why):
@@ -37,7 +38,12 @@ def parse_profile(text):
     # aprof_stop prints the current clock without flushing aprof_last. Keep
     # that final sub-clock remainder explicit, never charge it to a function.
     tail = header['units'] - accounted
-    require(0 <= tail <= header['CYCLE_UNIT'] and tail % header['cycleunit'] == 0, 'UNBOUNDED PROFILE TAIL')
+    # CPU units need not divide the Chip clock (50 MHz uses 36 versus 512).
+    # sync_cycles rounds to a Chip boundary, so differences are aligned to
+    # their greatest common divisor, not necessarily to a whole CPU unit.
+    require(header['cycleunit'] > 0 and header['CYCLE_UNIT'] > 0, 'INVALID CLOCK UNITS')
+    quantum = math.gcd(header['cycleunit'], header['CYCLE_UNIT'])
+    require(0 <= tail <= header['CYCLE_UNIT'] and tail % quantum == 0, 'UNBOUNDED PROFILE TAIL')
     header['tail'] = tail
     return header, pcs, nodes
 

@@ -157,6 +157,15 @@ each replaced a habit that had already cost time.
 - **Read the full output file, not the terminal.** A wrapper that ends with `tail` drops the
   header, which holds the sanity lines. Check the log belongs to the current run (Revs).
 
+The shared AITDPROF reader keeps the unassigned stop remainder separate from
+function costs. Its alignment is `gcd(cpucycleunit, CYCLE_UNIT)`: CPU units
+need not divide the Chip clock. At requested 50 MHz, units 36 and 512 allow
+an 80-unit remainder (`512 - 12*36`) after Chip-boundary synchronization.
+The former CPU-unit-only check incorrectly rejected such corrected-clock
+captures. The one-colour-clock bound, exact PC/tree accounting and return-pairing
+requirements remain unchanged; synthetic tests reject negative, misaligned and
+oversized remainders.
+
 **Builds**
 
 - **Prove the flags reached the build.** zsh does not word-split `$VAR`, so

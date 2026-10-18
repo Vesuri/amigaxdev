@@ -27,6 +27,19 @@ class Checks(unittest.TestCase):
             self.assertEqual(sum(p[0] for p in pcs.values())+h['gap']+tail,h['units'])
         for units in (895,897,1409):
             with self.assertRaises(ValueError):parse_profile(BASE.replace('units 1024',f'units {units}'))
+    def test_fractional_cpu_clock_tail(self):
+        # 512 - 12*36 = 80: rounding CPU execution to a Chip-clock boundary.
+        base=BASE.replace('cycleunit 128','cycleunit 36')
+        for tail in range(0,513,4):
+            h,pcs,nodes=parse_profile(base.replace('units 1024',f'units {896+tail}'))
+            self.assertEqual(h['tail'],tail)
+            self.assertEqual(sum(p[0] for p in pcs.values())+h['gap']+tail,h['units'])
+        for tail in (-4,1,79,81,516):
+            with self.assertRaises(ValueError):
+                parse_profile(base.replace('units 1024',f'units {896+tail}'))
+        for unit in (0,-36):
+            with self.assertRaises(ValueError):
+                parse_profile(base.replace('cycleunit 36',f'cycleunit {unit}'))
     def test_accounting(self):
         for before,after in [('768 3','769 3'),('gap 128','gap 0'),('overflow 0','overflow 1'),('AITDPROF 1','AITDPROF 2')]:
             with self.assertRaises(ValueError):parse_profile(BASE.replace(before,after))
