@@ -217,3 +217,10 @@ function identities and compiler output through these includes; new consumers
 can use the typed `DirtyBands.h` interface. The adapter defines dimensions,
 capacity, viewport validation and alignment macros, then undefines them after
 inclusion. No game-specific data or pixel comparisons enter the planner.
+
+`IdentityIndexCache.h` supplies bounded lookup hints for unique live record identities.
+Every hit rechecks the current identity/liveness predicate and count. Collisions,
+removal, slot reuse and storage repopulation retain the linear-lookup fallback;
+failed lookups preserve the output index. Callers still resolve their namespace
+(such as the active resource-file chain) first. The sanitizer suite compares
+100,000 mutation/resize queries with a linear oracle.

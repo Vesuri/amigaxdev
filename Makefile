@@ -47,6 +47,8 @@ check:
 .PHONY: test-mac-runtime
 test-mac-runtime: test-block-move
 	@mkdir -p tmp/tests
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_identity_index_cache.cpp -o tmp/tests/identity-index-cache
+	@tmp/tests/identity-index-cache
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_slot_ranges.cpp -o tmp/tests/mac-slot-ranges
 	@tmp/tests/mac-slot-ranges
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_deadline_beam.cpp -o tmp/tests/mac-deadline-beam
