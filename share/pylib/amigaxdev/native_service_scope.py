@@ -39,3 +39,19 @@ def validate(headers, exits, text_range):
     except KeyError as error:
         raise ValueError('NATIVE SCOPE / MISSING COUNTER '+str(error)) from error
     return dict(totals),dict(interrupts=interrupts,irq_before=headers[0]['native_scope_irq_before'],irq_after=irq_carry)
+
+
+def linea_entries(header, pcs, nodes):
+    """Validate CPU Line-A entry charges, separately from native handler PCs."""
+    def require(ok, reason):
+        if not ok:raise ValueError('LINE-A ENTRY / '+reason)
+    require(header.get('executed_pc_frozen')==1 and header.get('linea_entry_version')==1,'INSTRUMENT IDENTITY')
+    ids={int(m[1],16) for key in header if (m:=re.fullmatch(r'linea_([0-9a-f]{8})_(units|calls)',key))}
+    result={};calls=0
+    for pc in ids:
+        units=header.get(f'linea_{pc:08x}_units');count=header.get(f'linea_{pc:08x}_calls')
+        require(isinstance(units,int) and units>=0 and isinstance(count,int) and count>0,'MISSING OR INVALID COUNTER')
+        require(pc in pcs and pcs[pc][:2]==(units,count),'FLAT INSTRUCTION ACCOUNTING')
+        result[pc]=units;calls+=count
+    require(calls==sum(row[4] for row in nodes.values() if row[2]==10),'EXCEPTION CALL COUNT')
+    return result

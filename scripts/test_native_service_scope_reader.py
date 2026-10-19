@@ -27,3 +27,15 @@ for rows in ([a,h],[h,b],[]):
  except ValueError:controls+=1
  else:raise AssertionError('accepted broken continuity')
 print(f'NATIVE SERVICE SCOPE READER PASS: partition, repeated and crossing scopes; {controls} rejected alterations')
+h={'executed_pc_frozen':1,'linea_entry_version':1,'linea_00000200_units':90,'linea_00000200_calls':3}
+pcs={0x200:(90,3,0,0)};nodes={0:(0,0,0,0,0),1:(0,0xa000a055,10,90,3)}
+assert module.linea_entries(h,pcs,nodes)=={0x200:90}
+for key,value in [('executed_pc_frozen',0),('linea_entry_version',0),('linea_00000200_units',91),('linea_00000200_calls',4)]:
+ bad=dict(h);bad[key]=value
+ try:module.linea_entries(bad,pcs,nodes)
+ except ValueError:pass
+ else:raise AssertionError('accepted altered Line-A record '+key)
+try:module.linea_entries(h,pcs,{0:nodes[0]})
+except ValueError:pass
+else:raise AssertionError('accepted missing Line-A event')
+print('LINE-A ENTRY READER PASS: exact PC/exception accounting and five rejected alterations')

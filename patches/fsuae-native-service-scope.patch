@@ -59,10 +59,10 @@ index fea994a..ba04b9d 100644
  	sync_cycles();
 diff --git a/src/include/NativeServiceScope.h b/src/include/NativeServiceScope.h
 new file mode 100644
-index 0000000..272e2c3
+index 0000000..c54d775
 --- /dev/null
 +++ b/src/include/NativeServiceScope.h
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,85 @@
 +#pragma once
 +#include <stdint.h>
 +#include <stdio.h>
@@ -75,7 +75,7 @@ index 0000000..272e2c3
 +    uint16_t traps[64]; uint32_t entryPC[64],irqReturns[64];
 +    unsigned depth=0,irqDepth=0,irqBefore=0;
 +    uint32_t exits[3]={},textLow=0,textHigh=0,execLow=0,execHigh=0,supervisor=0;
-+    uint64_t privilegeCalls=0;
++    uint64_t privilegeCalls=0,prefixReturns=0;
 +    uint64_t faults=0,irqEntered=0,irqExited=0,unscoped=0;
 +    bool enabled=false,prefix=true;
 +    void configure(uint32_t a,uint32_t b,uint32_t c,uint32_t low=0,uint32_t high=0xffffffffu) {
@@ -84,7 +84,7 @@ index 0000000..272e2c3
 +        enabled=true;prefix=true;faults=0;privilegeCalls=0;execLow=execHigh=supervisor=0;reset();
 +    }
 +    void reset() {
-+        memset(cost,0,sizeof(cost));irqEntered=irqExited=unscoped=privilegeCalls=0;
++        memset(cost,0,sizeof(cost));irqEntered=irqExited=unscoped=privilegeCalls=prefixReturns=0;
 +        irqBefore=irqDepth;
 +        for(unsigned i=0;i<depth;++i)++cost[traps[i]].before;
 +    }
@@ -124,12 +124,13 @@ index 0000000..272e2c3
 +        }
 +        if(pc!=exits[0] && pc!=exits[1] && pc!=exits[2])return;
 +        if(opcode!=(pc==exits[2]?0x4e75:0x4e73)){++faults;return;}
-+        if(!depth){if(!prefix)++faults;return;}
++        if(!depth){if(!prefix)++faults;else if(measuring)++prefixReturns;return;}
 +        unsigned trap=traps[--depth];
 +        if(measuring)++cost[trap].returns;
 +    }
 +    void write(FILE* f) const {
 +        if(!enabled)return;
++        fprintf(f,"native_scope_prefix_returns %llu\n",(unsigned long long)prefixReturns);
 +        fprintf(f,"native_scope_version 1\nnative_scope_faults %llu\nnative_scope_unscoped %llu\nnative_scope_irq_before %u\nnative_scope_irq_after %u\nnative_scope_irq_entered %llu\nnative_scope_irq_exited %llu\n",
 +            (unsigned long long)faults,(unsigned long long)unscoped,irqBefore,irqDepth,
 +            (unsigned long long)irqEntered,(unsigned long long)irqExited);
@@ -148,10 +149,10 @@ index 0000000..272e2c3
 +    }
 +};
 diff --git a/src/newcpu.cpp b/src/newcpu.cpp
-index f6d7fd4..8326617 100644
+index f6d7fd4..3d4c3d0 100644
 --- a/src/newcpu.cpp
 +++ b/src/newcpu.cpp
-@@ -224,6 +224,213 @@ struct cpu_profiler {
+@@ -224,6 +224,222 @@ struct cpu_profiler {
  };
  // BARTO-END
  
@@ -174,6 +175,8 @@ index f6d7fd4..8326617 100644
 +static uae_u64 *aprof_cyc = nullptr;
 +static uae_u32 *aprof_cnt = nullptr;
 +static uae_u64 aprof_hi_cyc = 0, aprof_gap = 0;
++struct aprof_linea_cost { uae_u64 units=0,calls=0; };
++static std::unordered_map<uae_u32,aprof_linea_cost> aprof_linea;
 +static std::vector<aprof_node> aprof_nodes;
 +static std::unordered_map<uae_u64, uae_u32> aprof_children;
 +static aprof_frame aprof_stack[512];
@@ -253,6 +256,7 @@ index f6d7fd4..8326617 100644
 +		memset(aprof_cnt, 0, (1 << 24) * sizeof(uae_u32));
 +	}
 +	native_scope.reset();
++	aprof_linea.clear();
 +	aprof_nodes.clear();
 +	aprof_children.clear();
 +	aprof_nodes.push_back({0, 0, 0, 0, 0}); // root
@@ -292,6 +296,11 @@ index f6d7fd4..8326617 100644
 +		fprintf(f, "N %zu %u %x %u %llu %llu\n", i, n.parent, n.target, n.kind,
 +			(unsigned long long)n.self, (unsigned long long)n.calls);
 +	}
++	fprintf(f,"executed_pc_frozen 1\nlinea_entry_version 1\n");
++    for(const auto& row:aprof_linea) {
++        fprintf(f,"linea_%08x_units %llu\nlinea_%08x_calls %llu\n",row.first,
++            (unsigned long long)row.second.units,row.first,(unsigned long long)row.second.calls);
++    }
 +	native_scope.write(f);
 +	fclose(f);
 +	return true;
@@ -335,6 +344,7 @@ index f6d7fd4..8326617 100644
 +        get_long_debug(native_pc+2)>=0xf80000 && get_long_debug(native_pc+2)<0x1000000;
 +    native_scope.charge(d,native_pc,osVector);
 +	native_scope.after(native_pc,native_opcode,m68k_getpc(),true);
++    if((opcode&0xf000)==0xa000){aprof_linea[pc].units+=d;++aprof_linea[pc].calls;}
 +	// 24-bit space, then the 16 MB Z3 window at 0x40000000.
 +	uae_u32 slot = pc < 0x1000000 ? pc >> 1 : pc - 0x40000000u < 0x1000000 ? (1u << 23) + ((pc - 0x40000000u) >> 1) : ~0u;
 +	if (slot != ~0u) {
@@ -365,7 +375,7 @@ index f6d7fd4..8326617 100644
  const int areg_byteinc[] = { 1, 1, 1, 1, 1, 1, 1, 2 };
  const int imm8_table[] = { 8, 1, 2, 3, 4, 5, 6, 7 };
  
-@@ -3466,6 +3673,7 @@ kludge_me_do:
+@@ -3466,6 +3682,7 @@ kludge_me_do:
  	ipl_fetch_now();
  	fill_prefetch ();
  	exception_check_trace (nr);
@@ -373,7 +383,7 @@ index f6d7fd4..8326617 100644
  }
  
  // address = format $2 stack frame address field
-@@ -5970,6 +6178,7 @@ static void m68k_run_3ce (void)
+@@ -5970,6 +6187,7 @@ static void m68k_run_3ce (void)
  		TRY(prb) {
  			while (!exit) {
  				evt_t c = get_cycles();
@@ -381,31 +391,31 @@ index f6d7fd4..8326617 100644
  				r->instruction_pc = m68k_getpc();
  				r->opcode = get_iword_cache_040(0);
  				// "prefetch"
-@@ -5980,7 +6189,9 @@ static void m68k_run_3ce (void)
+@@ -5980,7 +6198,9 @@ static void m68k_run_3ce (void)
  					debug_trainer_match();
  				}
  
-+				if(native_scope.enabled){native_pc=r->instruction_pc;native_opcode=r->opcode;}
++				if(aprof_on || native_scope.enabled){native_pc=r->instruction_pc;native_opcode=r->opcode;}
  				(*cpufunctbl_noret[r->opcode])(r->opcode);
-+				if (aprof_on || native_scope.enabled) aprof_after(r->instruction_pc, r->opcode);
++				if (aprof_on || native_scope.enabled) aprof_after(native_pc, native_opcode);
  
  				if (r->spcflags) {
  					if (do_specialties (0))
-@@ -6169,13 +6380,16 @@ static void m68k_run_2ce (void)
+@@ -6169,13 +6389,16 @@ static void m68k_run_2ce (void)
  					debug_trainer_match();
  				}
  
 +				if (aprof_on) aprof_before();
  				{ cpu_profiler profiler(r->instruction_pc); // BARTO
 -					(*cpufunctbl_noret[r->opcode])(r->opcode);
-+					if(native_scope.enabled){native_pc=r->instruction_pc;native_opcode=r->opcode;}
++					if(aprof_on || native_scope.enabled){native_pc=r->instruction_pc;native_opcode=r->opcode;}
 +				(*cpufunctbl_noret[r->opcode])(r->opcode);
  		
  					wait_memory_cycles();
  					regs.instruction_cnt++;
  					regs.ce020extracycles++;
  				} // BARTO
-+				if (aprof_on || native_scope.enabled) aprof_after(r->instruction_pc, r->opcode);
++				if (aprof_on || native_scope.enabled) aprof_after(native_pc, native_opcode);
  
  		cont:
  				if (r->spcflags || regs.ipl[0] > 0) {

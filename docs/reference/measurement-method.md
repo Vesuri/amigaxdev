@@ -420,11 +420,14 @@ retain the source receipt and binary hash. Before starting a profile, configure
 `monitor aprof native <text-low> <text-high> <native-rte> <c-rte> <user-rts>`
 using verified loaded ELF addresses. The three distinct, aligned return sites
 must contain RTE, RTE and RTS respectively. Invalid configurations and changes
-while profiling are rejected. No guest instructions or cycles are added. The scoped counter freezes the executed
-PC/opcode before dispatch because RTS can change `regs.instruction_pc`. The
-legacy flat-PC observer retains its existing attribution and can charge RTS
-cycles to the return target; do not infer exact return-instruction placement
-from those legacy flat records.
+while profiling are rejected. No guest instructions or cycles are added. The instrument freezes executed
+PC/opcode before dispatch for both flat-PC records and service scopes: RTS
+can change `regs.instruction_pc`. It emits `executed_pc_frozen 1`. Consumers
+should verify live known-return instruction counts against independent scope
+endings, including the explicitly counted pre-window service tail. Legacy
+variants without this marker can charge RTS cycles to the return target;
+retain their captures but remeasure affected function-level attribution.
+
 
 Choose boundaries that finish the service before original game callbacks.
 A deliberate intermediate return into a user-mode bridge is not the service
@@ -438,6 +441,12 @@ instruction unit between service work, interrupted service work and unscoped
 work. It is independent of the heuristic call tree. It is not automatically a
 valid boundary for another port: that port must verify its return instructions,
 callback boundary, loaded text extent and independently counted Line-A calls.
+
+Per-PC `linea_*_units/calls` records retain CPU Line-A entry explicitly.
+`amigaxdev.native_service_scope.linea_entries` requires exact flat-PC charges
+and matching exception-event counts. When a dispatch budget includes CPU trap
+entry, add these charges for PCs outside the dispatch bucket; do not count
+cached native veneers twice. Attribution correction is not a speedup.
 
 `amigaxdev.native_service_scope.validate` rejects faults, missing counters,
 changed boundaries, lost scope/interrupt continuity and incomplete accounting.

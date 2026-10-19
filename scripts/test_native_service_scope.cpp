@@ -2,7 +2,7 @@
 #include <assert.h>
 int main(){
  NativeServiceScope s;s.configure(0x100,0x200,0x300);
- s.charge(7);s.after(0x300,0x4e75,0x400,true);assert(!s.faults); // pre-window tail
+ s.charge(7);s.after(0x300,0x4e75,0x400,true);assert(!s.faults && s.prefixReturns==1); // pre-window tail
  s.exception(10,0x400,0xa055,true);s.charge(11);
  s.exception(27,0x150,0,true);s.charge(13);
  s.exception(26,0x160,0,true);s.charge(17);
