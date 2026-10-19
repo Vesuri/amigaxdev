@@ -1,5 +1,9 @@
 # Playbook: porting a game from another platform to the Amiga
 
+For an existing project, read only the section needed for the current task. Use the
+[task index](../index.md) for focused references and shared helpers. Read §0 when
+starting a new project; follow the complete workflow only when setting one up.
+
 > `$PROJECTS` below is the directory that holds the project checkouts (AmigaXDev's parent) and
 > `$ORIGINALS` the directory with the original game files the user supplies. Neither is ever
 > written into a repo.

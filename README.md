@@ -3,13 +3,8 @@
 The shared development environment for the Amiga game projects: game ports, WHDLoad slave
 improvements, and branches of JOTD's and StingRay's slave repositories. `make setup` installs
 the cross toolchain, emulators, WHDLoad, Kickstarts and everything else the projects take from
-`~/.local`, the same on every Mac. The repo also holds the documentation the projects share:
-the playbooks in `docs/playbooks/`, including the
-[hardware debugging guide](docs/playbooks/new-game-playbook-hardware.md) for WHDLoad dumps
-and CPU cache failures and the [porting playbook](docs/playbooks/new-port-playbook.md) for
-bringing a game from another platform, and the reference docs in `docs/reference/` that
-merge what the projects learned about 68000 code, the hardware, measuring, validating,
-headless FS-UAE and the toolchain.
+`~/.local`, the same on every Mac. For agents, [the task index](docs/index.md) routes questions to the relevant playbook,
+reference or shared helper. Read only the sections needed for the current task.
 
 ## Setting up a Mac
 

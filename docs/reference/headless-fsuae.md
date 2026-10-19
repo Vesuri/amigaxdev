@@ -95,7 +95,8 @@ CPU core. The 68030/040/060 presets also enable data-cache emulation
 caches with directory hard drives. The 68020 has no data cache. `uae_cachesize=0` refers
 to the disabled JIT translation cache, not the emulated CPU caches. Guest software still
 controls its cache registers; WHDLoad games need the game's `CACHE` option when appropriate.
-Use `EXTRA_ARGS='--uae_cpu_data_cache=false'` for an explicit data-cache comparison.
+For a data-cache comparison, request the override through `EXTRA_ARGS` and verify the
+effective runtime setting; see the override limitation below.
 
 The full 030 has its MMU; the 040 and 060 have their integrated MMU and FPU. The 040/060
 presets use the non-cycle-exact MMU core: their nominal clock is configured, but that core
@@ -109,6 +110,13 @@ ahead of project machine arguments, including hardcoded models, RAM and MMU sett
 An unknown nonempty name fails before launch. With `AMIGA_SETUP` unset or empty, existing
 behaviour is unchanged. A preset wins over individual machine variables; use `EXTRA_ARGS`
 for a deliberate exception, for example `EXTRA_ARGS='--fast_memory=4096'`.
+
+**Known override limitation:** conflicting high-level and raw `uae_*` options can be
+applied again by FS-UAE despite a duplicate being logged as ignored. Argument order
+alone does not establish the effective MMU, JIT, RAM or cache configuration. Verify
+the emulator's effective configuration and runtime report before measuring. The
+[open fix](../open-work.md#fs-uae-overrides-and-effective-configuration) tracks this;
+the argument-capture tests below do not cover it.
 
 Install with `make share`; projects sourcing the installed shared launcher pick it up on
 their next run without repository edits. This does not change scripts that launch FS-UAE
@@ -233,8 +241,10 @@ after `make setup` rebuilds it.
   prints instruction bytes, not 0 (Revs read `painted=1223110688`). Keep the probe list in the
   Makefile as `--undefined=` roots and audit it on every link
   ([port toolchain](port-toolchain.md#link-audits)).
-- **The SR in the stub is stale** (UAE updates it lazily): tell supervisor from user code by
-  which stack SP is in.
+- **Older builds can report stale SR flags.** Current native build recipes apply the
+  [register observer fix](register-observer.md); verify the selected binary was rebuilt.
+  After monitor-driven execution, also flush GDB’s register cache. For cache-backed
+  memory discrepancies, see the optional [cache observer](cache-observer.md).
 - `until` blocks the server until its address is reached. Prefer `break *A`,
   `ignore $bpnum N`, `continue`.
 - The stub stops on CPU exceptions: an address error or illegal instruction stops with a usable

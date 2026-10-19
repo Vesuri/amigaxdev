@@ -1,35 +1,23 @@
 # Playbook: profiling another WHDLoad-installed Amiga game
 
+For an existing project, read only the section needed for the current task. Use the
+[task index](../index.md) for focused references and shared helpers. Read §0 when
+starting a new project; follow the complete workflow only when setting one up.
+
 > `$PROJECTS` below is the directory that holds the project checkouts (AmigaXDev's parent) and
 > `$ARCHIVES` the directory with the game archives the user supplies. Neither is ever written
 > into a repo.
 
-> **For an agent starting from an empty directory and one `.lha`.** Follow the steps in order.
-> Each step ends with a check; do not move on until it passes. Everything here was learned on
-> Test Drive II (`$PROJECTS/Test Drive 2`, "TD2" below, 2026-10) and then applied to Indianapolis 500
-> (`$PROJECTS/Indianapolis 500`, 2026-10-05) and Battlehawks 1942 (`$PROJECTS/Battlehawks 1942`,
-> 2026-10-07), then Their Finest Hour (`$PROJECTS/Their Finest Hour`, 2026-10-08) and Legends of Valour
-> (`$PROJECTS/Legends of Valour`, 2026-10-08). Reuse the harness: copy it, don't rewrite it.
-> Where a step says "TD2:", "I500:", "BH:", "TFH:" or "LoV:", that is the value that game needed.
-> Yours will differ. TFH is an OS game like BH (Aztec C, KickEmu, no slave source) that was carried
-> through to a release: its repo is the reference for the current doc layout, shared-file
-> variables, model checks of replaced routines (§10) and release archives (§13). LoV (an OS game,
-> Lattice C plus a hand-written renderer, KickEmu 1.3, no slave source, mouse-driven, no demo) is
-> the reference for game-state tape waits (§6), native arm64 captures (§5), the A/B driver (§11)
-> and CPU-selected renderer patches with a Kalms c2p (§10).
-> Later WHDLoad projects added: Powerdrome (fast-RAM staged renderer, self-modifying-code audit,
-> loader equivalence: §10), Stellar 7 (choosing a tick rate, NTSC timing: §9), and three games in
-> the JOTD fork: Red Baron (memory pool, instruction cache, game-speed acceptance, validation
-> budget: §8–§11), Hard Drivin' (rendering ceiling, cache audit: §7–§8) and 4D Sports Driving
-> (a clock shared with sound, blitter latency: §8–§9).
-> TD2 is an OS game (kickemu, compiled C); I500 is a direct game (no OS, hand-written asm); BH is
-> an OS game that boots from its own floppy images, had **no slave source** and **no attract
-> demo**. If your game is a direct one, copy from the Indianapolis 500 repo instead: its tools
-> already handle a disk-stored executable, asm naming, and the single-attach lldb fix (§5). If it
-> has no demo or no slave source, take the Battlehawks tools (`tape.s`, `compare_traces.py`, the
-> tape-polling `fixed_window.sh`). The trace parser, gdb server, disassembly, disk and patch-list
-> tools are AmigaXDev's shared `amigaxdev` package (`docs/environment.md`, "Shared tools"):
-> import them, don't copy them.
+> **For a new standalone WHDLoad project.** Follow the setup steps in order and pass
+> each check before moving on. For an existing project, use its own task and state;
+> consult only the relevant section below. Fork projects use the
+> [JOTD](new-game-playbook-jotd.md) or [StingRay](new-game-playbook-stingray.md) variant.
+
+Reuse the shared `amigaxdev` tools ([environment](../environment.md#shared-tools)).
+For game-specific harnesses, choose a relevant donor: Test Drive 2 (OS game),
+Indianapolis 500 (direct hardware), Battlehawks 1942 (no demo or slave source),
+Their Finest Hour (routine models and release packaging), or Legends of Valour
+(state waits and A/B automation). Read that donor's current docs before copying.
 
 The end state ("ready to improve") is defined in §12. Getting there means:
 1. a reproducible, cycle-exact trace of real gameplay;
@@ -81,7 +69,7 @@ shared `~/.local/share/amiga/env.sh` and then sets only what the project changes
 | WHDLoad 20.1 (binary, includes, kickemu sources) | `~/.local/share/amiga/WHDLoad/` (env `WHDLOAD` = the directory, for `Include/` and `Src/`; `WHDLOAD_BINARY` defaults to `$WHDLOAD/C/WHDLoad`); only the latest developer package is installed | `C/WHDLoad` exists |
 | Shared kill/port helper | `~/.local/share/amiga/fsuae_common.sh` | sourced by `run.sh` |
 | Host Kickstart 3.1 | `~/.local/share/amiga/Kickstarts/kick40063.A600` (env `KICKSTART`) | |
-| Kick images for kickemu slaves | `~/.local/share/amiga/Kickstarts/`: `kick34005.A500` + `.RTB` (env `KICK13`, `RTB`), `kick40068.A1200` (env `KICKSTART_A1200`, the 68020 capture machine) + `.RTB` | |
+| Kick images for kickemu slaves | `~/.local/share/amiga/Kickstarts/`: `kick34005.A500` + `.RTB` (env `KICK13` / `KICKSTART13`, `RTB`), `kick40068.A1200` (env `KICKSTART_A1200`, the 68020 capture machine) + `.RTB` | |
 | Workbench 2.04 floppy (gives `C:` and `Libs:`) | `~/.local/share/amiga/Workbenchv2.04rev37.67Workbench.adf` (env `WORKBENCH_ADF`) | |
 | LHa for UNIX (creates archives, §13) | `~/.local/share/amiga/lha-compressor/src/lha` (env `LHA`) | runs and prints usage |
 | `lha` (extract), `unar`, `lldb` | Homebrew / Xcode | |
@@ -106,6 +94,8 @@ find tmp/archive -type f | sort ; shasum -a 256 $(find tmp/archive -type f) > tm
 ```
 
 There are two kinds of archive. Work out which one you have:
+
+### Archive types
 
 - **Pre-installed** (Retroplay style: `Game/Game.slave`, `Game/data/...`, `.info` files). This
   is everything you need. TD2: `TestDrive2_v1.5_0588.lha`.
@@ -133,6 +123,30 @@ WHDLoad 20 KickEmu sources** (the user's requirement): `Src/slave-examples/kick1
 WHDLoad 17 unless it needs a v20 feature (§10).
 
 Put the playable tree at `tmp/game/<Name>/`, exactly as `run.sh` will mount it on `DH1:`.
+
+### Archive layout and runtime state
+
+For a harness that keeps immutable inputs and disposable launch copies:
+
+| Path relative to the harness | Purpose |
+|---|---|
+| `tmp/archives/<archive>.lha` | retained, unmodified download |
+| `tmp/archives/<archive>.lha.sha256` | input archive checksum |
+| `tmp/archives/<archive-stem>.files.json` | extracted-file SHA-256 manifest, keyed by relative path |
+| `tmp/game/<archive-stem>/` | pristine extraction of the entire archive |
+| `tmp/game/<archive-stem>/<installed-drawer>/` | `GAME`: directory containing the slave and its data |
+| `tmp/build/` | rebuilt normal and VERIFY slaves, separate from the shipped slave |
+| `amiga/.run/dh1/` | disposable writable copy mounted as `DH1:` for this harness |
+
+Save games, preferences and mission tapes written during a run belong to disposable `dh1`.
+Each launch starts from the same baseline. For a required saved scenario, copy selected files
+out before restart and apply them to a **separate**, documented fixture tree or the runtime
+copy; never silently promote a previous run’s state into the baseline. Keep fixtures ignored.
+For A/B captures, use the same archive hash and fixture manifest, retain the exact selected
+slave beside the trace, and check the pristine-file manifest has not changed. Capture one
+run at a time per harness; distinct worktrees have distinct runtime directories and ports.
+
+### Identify the slave and game code
 
 **Read the slave before booting anything.** From the source, or the header at the start of the
 `.slave`, record these in `docs/internals.md` (the doc on how the game and the slave work, §3):
@@ -198,6 +212,8 @@ command-line ones are `python3 -m amigaxdev.disasm|adf|patchlist` after `. amiga
 variables and repo-relative `tmp/` paths as you copy, and grep before the first commit
 (`git grep -nE '/Users/|~/Documents|RetroPie|amiberry|/tmp/|Projects/'`).
 
+### Harness tools to reuse and adapt
+
 What is generic and what has to be adapted:
 
 | File | Generic | Adapt |
@@ -212,7 +228,7 @@ What is generic and what has to be adapted:
 | `state_fields.py`, `state_writers.py` | per-field snapshots at the VBL entry; finding `d16(a4)` stores | what to snapshot: TD2 and TFH dump the data hunk; I500 keeps its variables at absolute addresses inside the code hunk, so it dumps hunk 0. `state_writers.py` only finds `d16(a4)` stores (Aztec C), so an asm game needs an `abs.l` variant. `task_state.py` and `state_watch.py` are TD2-specific: don't copy them |
 | `compare_state.py` (TFH's) | compares the whole data hunk; a longword pointing into the code or data hunk at the same offset in both runs counts as equal, so builds that load the game elsewhere still compare | hunk sizes, `a4` bias. **TD2's version compares TD2's variable table and reports "identical" on any other game**: TFH quoted meaningless "identical state" results from it for a day. Before trusting any compare, check that two runs of the same build compare equal and two different scenes do not |
 
-Write `AGENTS.md` (the rules from §0 plus a read-first table of docs) and a `CLAUDE.md` that
+Write `AGENTS.md` (the rules from §0 plus a task-based index of docs) and a `CLAUDE.md` that
 holds only `@AGENTS.md` (Claude Code reads `CLAUDE.md`; other agents read `AGENTS.md`), and start the docs on TFH's
 layout, each a current-state reference (§0):
 
@@ -273,20 +289,30 @@ Facts about this stub, all verified the hard way:
   nothing. Every change to the game must go through the slave.
 - **Emulated time stops while gdb holds the CPU**, so stops and the lldb attach cost no emulated
   time.
-- **Without a trigger the profiler records no PCs.** The window `[baseText, +sizeText)` reads as
-  `[0x0100007f, +0)`. The shared server's `profile` fixes it each time by lldb-writing `0`/`0x7fffffff` at
+- **Prefer the native build (`FSUAE="$FSUAE_ARM"`) with the server's `profile_window=False`.**
+  AmigaXDev's native builds profile the whole 24-bit space without a trigger, take keyboard
+  input from gdb (`monitor key`) and run whole fields (`monitor fields`); see
+  [harness commands](../reference/headless-fsuae.md#harness-commands-native-builds). The next
+  bullet is about the x86_64 build, which has none of that.
+- **On the x86_64 build, without a trigger the profiler records no PCs.** The window
+  `[baseText, +sizeText)` reads as `[0x0100007f, +0)`. The shared server's `profile` fixes it each time by lldb-writing `0`/`0x7fffffff` at
   link-time `0x32dea04` plus the slide. For a different FS-UAE binary, re-derive that address
   from the `GDBSERVER: enabled` setup and `start_cpu_profiler` (TD2 `docs/profiling.md` §3). The
   assert fails loudly if it's wrong.
 - **Screenshots come only from traces** (`shot`). macOS denies screen capture to this process,
-  and posted key events never reach FS-UAE. A shot taken at an arbitrary checkpoint (a keyboard
-  task, a tape step) can catch a partial redraw: stop at the frame-publication instruction (§7)
-  before saving a picture you will compare (4D Sports Driving).
+  and posted host key events never reach FS-UAE (use `monitor key` instead). A shot taken at an
+  arbitrary checkpoint (a keyboard task, a tape step) can catch a partial redraw: stop at the
+  frame-publication instruction (§7) before saving a picture you will compare (4D Sports
+  Driving).
 - `gdb` splits arguments at spaces, and repo paths often contain them (`Their Finest Hour`). gdb's
-  working directory is the repo, so dump to a **repo-relative** path (`tmp/x-code.bin`), then move
+  working directory must be the harness root, so dump to a **harness-relative** path (`tmp/x-code.bin`), then move
   the file. Python 3.12's `tempfile.mkdtemp(dir='tmp')` returns an absolute path: pass it through
   `os.path.relpath` before handing it to gdb. Don't use `/tmp`: parallel jobs share it.
-- At most **100 fields** per `monitor profile`, about 5.4 MB per field.
+- At most **100 fields** per `monitor profile`, about 5.4 MB per field. For longer windows
+  capture consecutive chunks and reduce each with `amigaxdev.callprofile` before deleting it:
+  Prince of Persia's 990-field route reduces to 3 MB in 25 s. The reduction rebuilds call stacks
+  from JSR/BSR and the SP (the stub records none without a trigger) and timestamps marker PCs,
+  with a running tally of wait-loop cycles, for per-frame costs.
 - **One capture at a time per repo.** `fsuae_common.sh` gives each directory its own port, so
   two captures from the same repo collide on the debugger socket. Run them in sequence.
 - `run.sh` changes into `amiga/` before copying the slave, so resolve a relative `SLAVE` against
@@ -344,6 +370,14 @@ And a byte-vote locator needs a quorum (a third of the windows, address ≥ dump
 buffers in chip RAM held pieces of `BH` and outvoted nothing, giving a negative "base".
 
 **Driving.** Prefer the attract demo when there is one (TD2's and I500's drive themselves). Otherwise:
+- **Keyboard-controllable games: `monitor key` on the native build**, no slave changes. Stop,
+  then alternate `monitor key RAW 1|0` with `monitor fields N` (and `monitor profile` chunks in
+  the window). With `WARP=1 DETERMINISTIC=1 JOY0=none` the route repeats exactly. Find the
+  controls first: Prince of Persia starts paused (two Returns), needs Ctrl-K to select the
+  keyboard, and moves only on the keypad, not the cursor keys. Keep a joystick in port 1 if the
+  slave reads a CD32 pad there: with nothing plugged in, its reader saw Play held and paused
+  the game. Map each step with a contact sheet of `shot`s every few fields, then extend the route
+  one move at a time (Prince of Persia `tools/route.py`, `tools/spikes_route.sh`).
 - **Not** FS-UAE input recordings: in this FS-UAE build playback never works. FS-UAE emits two
   events of its own at startup (2263, 2272, whatever the ports are), and recording an event
   during playback truncates the recording at the play position, i.e. at 0. (Recording works;
@@ -516,7 +550,7 @@ CPU=68030 SLOW_KB=0 EXTRA_ARGS='--uae_cpu_speed=real --uae_cpu_multiplier=0 --ua
 Use `--base 0x200000` for fast-RAM dumps.
 
 **The machine matrix.** The projects converged on one set, all running the same build and window:
-the A500-equivalent (68000, 512 KB chip + 1.5 MB slow); a stock A1200 (68EC020, 2 MB chip, no
+the A500-equivalent (68000, 512 KB chip + 1.5 MB slow, `AMIGA_SETUP=a500-1.5m`); a stock A1200 (68EC020, 2 MB chip, no
 fast RAM), which TFH found behaves differently from an A1200 with fast RAM; an A1200 with 4–8 MB
 fast; a cycle-exact 68030/50 with and without WHDLoad's `MMU` option, whose out-of-box cache states
 differ (Red Baron); and a 68040/25 and 68060/50 as `-NOMMU` (below). Add NTSC cells only when the
@@ -682,8 +716,9 @@ experiment made each frame take 8.7 instead of ~5 fields, and the state comparis
 frame number is the coupling test (Battlehawks `STATE_ONLY=1` + `compare_state.py`). Compare
 before the first scripted input, or the input lands on different frames.
 
-Write the verdict, the evidence and the possible designs in `docs/open-work.md`. **Then stop
-and let the user choose the design.**
+Write the verdict, evidence and possible designs in local `docs/open-work.md`. Follow the
+user’s authorized scope; ask for a choice when designs materially change gameplay or intent.
+Routine setup and validation can continue while a design decision is pending.
 
 ### Before replacing a c2p, measure the change rate
 
@@ -911,12 +946,6 @@ recorded poses and returned to flight; physical-machine validation remains separ
 - [ ] A rebuilt, unmodified slave that behaves identically, with CUSTOM gating and a VERIFY
       build ready to receive patches.
 
-Effort, for planning: on I500, everything except the state map, the coupling test and the CUSTOM
-gating took one session. On BH, one session reached a reproducible-timing fixed window and an
-A500 baseline, including the slave reconstruction, the KickEmu rebase and the input tape; the
-68020 baseline and the game-time model were left for the next. BH's capture is one boot (~4
-minutes: ~4600 fields of menus in warp). A 100-field fixed-window capture takes about 2 minutes (calibration boot
-plus measurement boot) and about 520 MB.
 
 ## 13. Release archives
 

@@ -41,19 +41,14 @@ build output byte-identical, and commit that in the project's own repo with its 
 `AGENTS.md` holds them (this file), for every agent; `CLAUDE.md` only imports it, for Claude Code.
 The projects follow the same layout. Edit `AGENTS.md`, never `CLAUDE.md`.
 
-## Read first
+## Find guidance for the task
 
-| Doc | Holds |
-|---|---|
-| `README.md` | setting up a Mac, what is installed where |
-| `docs/environment.md` | the shared variables and how a project uses them |
-| `docs/projects.md` | the projects, what each uses, and how far each is migrated |
-| `docs/native-port-validation.md` | hardware crash regressions, installer updates and final archive checks |
-| `docs/playbooks/` | profiling and improving a WHDLoad game: standalone repo, JOTD fork, StingRay fork; hardware, MMU and fixed-time supplements |
-| `docs/playbooks/new-port-playbook.md` | porting a game from another platform to the Amiga |
-| `docs/reference/m68k-optimisation.md` | 68000/68020 cost model and code-generation rules |
-| `docs/reference/amiga-hardware.md` | chip bus, memory, OS takeover, copper, blitter, Paula, AGA |
-| `docs/reference/measurement-method.md` | profiling instruments, A/B discipline, pricing a change |
-| `docs/reference/validation-harness.md` | faithfulness to the original: references, differentials, sabotage |
-| `docs/reference/headless-fsuae.md` | the shared launcher, FS-UAE builds, gdb stub, diag runs |
-| `docs/reference/port-toolchain.md` | building a C/C++ port: flags, linking, audits, release images |
+Start with [docs/index.md](docs/index.md), then read only the relevant sections.
+Do not preload all playbooks, references, project status or open work. For an existing
+project, its own `AGENTS.md` and current task take precedence; a setup playbook is not
+an instruction to restart setup. Shared implementation changes also need the relevant
+source, manifest and tests.
+
+Keep this file to rules and routing. Put reusable guidance in one canonical topic and
+link it from the index; keep project-specific state in the project's own docs. Add a
+new index entry only when it helps an agent choose where to look.

@@ -20,6 +20,10 @@ help, its measured figures. Related docs:
 8. [Budgets](#8-budgets)
 9. [When to stop](#9-when-to-stop)
 10. [Reporting](#10-reporting)
+11. [Shared instruction-profile reader](#shared-instruction-profile-reader)
+12. [Explicit native-service scopes](#explicit-native-service-scopes)
+
+For short waits or startup stalls, see [clock resolution](#clock-resolution-and-loading-stalls).
 
 ## 1. Order of work
 

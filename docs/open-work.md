@@ -2,15 +2,12 @@
 
 ## Shared debugger keyboard and mouse input
 
-Provide and document a common way for game harnesses to send keyboard, mouse
-and joystick input through the emulator debugger. The current playbooks discuss
-failed posted host key events and project-specific input tapes, but do not explain
-the debugger-native input extensions already used by sibling projects.
-
-Reference implementations: 4D Sports Driving uses `monitor key` (Amiga raw key
-press/release) and `monitor fields`; Ferrari Formula One uses `monitor mouse`
-and `monitor input`. These are extensions in private emulator builds, not
-commands that can be assumed available in the installed shared build.
+The shared native build recipe already includes `monitor key` and `monitor fields`;
+see [harness commands](reference/headless-fsuae.md#harness-commands-native-builds).
+Older installed binaries and the x86_64 build may lack them. Remaining work is to
+consolidate mouse/joystick extensions, capability discovery and reusable input helpers.
+Ferrari Formula One's `monitor mouse` and `monitor input` remain private-build
+references, not commands guaranteed by the shared recipe.
 
 - Review and consolidate the extensions into a pinned shared diagnostic build;
   expose capability checks and fail clearly when a command is unavailable.

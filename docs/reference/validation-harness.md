@@ -18,7 +18,7 @@ projects. Each rule names the project where it was learned. Related docs:
 7. [What a differential cannot see](#7-what-a-differential-cannot-see)
 8. [Whole-program determinism](#8-whole-program-determinism)
 9. [Behaviour against the reference](#9-behaviour-against-the-reference)
-10. [On-target checks](#10-on-target-checks)
+10. [On-target checks](#10-on-target-checks), including [the user’s route](#exercise-the-users-route-as-well-as-isolated-fixtures)
 11. [Pictures](#11-pictures)
 12. [The faithfulness seam and deviations](#12-the-faithfulness-seam-and-deviations)
 13. [Coverage](#13-coverage)

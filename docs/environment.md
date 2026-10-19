@@ -4,6 +4,9 @@
 shared files from there, through the variables below. Nothing in a project repo names a path
 on a particular machine (playbook §0).
 
+For task-specific guidance, use the [task index](index.md). This page is a lookup
+for integration and variables, not a prerequisite for every project task.
+
 ## Using it from a project
 
 A project's `amiga/env.sh` sources the shared file, then adds only what is its own:
@@ -98,7 +101,8 @@ Run scripts using the shared launcher accept `AMIGA_SETUP` to select a complete 
 for example `AMIGA_SETUP=a1200-fast amiga/run.sh`. Available names are `a500`, `a500-1.5m`
 (the playbooks' A500-equivalent), `a500+`, `a3000`, `a1200`, `a1200-fast`, `a1200-030`, `a1200-040` and
 `a1200-060`. The preset overrides
-project machine defaults at launch; `EXTRA_ARGS` remains the explicit override. See
+project machine defaults at launch; `EXTRA_ARGS` requests explicit overrides, with
+the effective-configuration limitation documented below. See
 [named machine setups](reference/headless-fsuae.md#named-machine-setups) for RAM, ROMs,
 clocks, MMU settings and project compatibility limits. CPU cache emulation is enabled
 for 68020 and faster (instruction cache on 020; instruction and data caches on 030+).
@@ -116,6 +120,8 @@ multiple monitors are connected; ordinary interactive runs keep their usual plac
 | `amigaxdev.barto` | `load(trace)`, `Trace.instructions(field)`, `capture_part_starts()`; honours `NAME.pc-base` | `barto.py` |
 | `amigaxdev.gdbserve` | `Server(name, root, commands={...}).main(argv)`: serve / one-shot commands through the gdb stub (`stop`, `cont`, `gdb`, `shot`, `profile`, `wait`, `until`, `quit`; `commands` add or replace) | the `td2.py` skeleton |
 | `amigaxdev.callprofile` | `Reduction(marks, tally).feed(trace)` per chunk, `.tree()`, `.inclusive()`, `.dma_shares()`, `.save()`/`.load()`: chunked traces reduced to self/inclusive cycles with SP-rebuilt call stacks, per-field totals and timestamped marks | per-project trace reducers |
+| `amigaxdev.aprof` | instruction-profile accounting and call trees; [contracts](reference/measurement-method.md#shared-instruction-profile-reader) | per-project profile readers |
+| `amigaxdev.native_service_scope` | explicit return/interrupt scope records from the optional instrumented build; [contracts](reference/measurement-method.md#explicit-native-service-scopes) | per-project native-service accounting |
 | `amigaxdev.disasm` | `python3 -m amigaxdev.disasm dis\|disd\|hotspots [--label NAME] ...` | `dis.sh`, `disd.py`, `hotspots.py` |
 | `amigaxdev.adf`, `amigaxdev.patchlist` | `python3 -m amigaxdev.adf DISK`, `python3 -m amigaxdev.patchlist SLAVE OFFSET` | `adf.py`, `patchlist.py` |
 | `amigaxdev.release` | `archive(prefix, files, drawer_icon, dos_stamp(y, m, d))`, `write()`, `refuse_originals()`, `installer_icon(icons_dir, appname)` | the body of `package_release.py`, `installer_icon.py` |
@@ -144,8 +150,9 @@ All are the verified (`[!]`) dumps, the ones skick346's relocation tables are ma
 
 ## Shared Macintosh runtime sources
 
-`$AMIGA_SHARE/mac-runtime` holds the canonical C++ rectangle helpers used by
+`$AMIGA_SHARE/mac-runtime` holds canonical memory, QuickDraw, resource, clock and audio helpers used by
 Alone in the Dark and Prince of Persia 2. Consumers vendor identical source files
 and verify `manifest/shared-runtime.sha256` before compilation and host checks.
-See `share/mac-runtime/README.md` for the update workflow. Game-specific trap ABI
+Use the [runtime helper index](../share/mac-runtime/README.md) to choose a helper and
+find its contract and update workflow. Game-specific trap ABI
 and memory ownership checks remain in each port.
