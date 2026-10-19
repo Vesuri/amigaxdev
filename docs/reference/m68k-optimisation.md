@@ -288,6 +288,13 @@ the target finds them:
 - **`MOVE` sets N/Z; `EXG` sets no flags**: `tst / exg / bmi` works, `tst / move / bmi` does not.
 - A patched or replaced routine preserves every live register and **all five CCR bits including
   X** (Vette: the copy-row kernel's final N/Z and X).
+- **Avoid privileged SR reads in 020+ condition-code wrappers.** In user mode,
+  `MOVE.W SR` traps on 68010 and later; WHDLoad can emulate it at substantial cost.
+  If the contract needs only condition flags, use `MOVE.W CCR` on 020+ and restore the
+  CCR without changing supervisor or interrupt state. Preserve all five flags, including X,
+  and validate the wrapper against the original. Keep a separate 68000 path: it has no
+  `MOVE from CCR` instruction, while its `MOVE from SR` is unprivileged. Ferrari Formula
+  One found privilege-emulated SR reads consuming about a quarter of an update.
 - **Audit every address's width, then its value range.** A `.w` address sign-extends above
   `$7FFF` and writes somewhere else. A wild-write hunt in Rescue on Fractalus ended at one; what
   found it was a hardware watchpoint (prove it fires on a known write first), a checksum canary

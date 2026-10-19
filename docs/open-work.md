@@ -25,6 +25,13 @@ commands that can be assumed available in the installed shared build.
 - Update the playbooks and headless FS-UAE reference so new game projects can
   discover this route before inventing another local helper.
 
+Ferrari Formula One supplies a concrete regression case: its non-interactive demo
+passed while throttle from rest failed in the performance mode. Carry over a native-input
+example that holds the accelerator, verifies player movement, then releases it; also cover
+simultaneous buttons and their release order. Read back guest input and resulting state,
+not just command acknowledgement. Keep game addresses and expected movement thresholds in
+the game's harness, with transport, capability discovery and cleanup in shared helpers.
+
 Acceptance: keyboard press/hold/release and mouse motion/button smoke tests run
 through the shared debugger interface without host accessibility; an unsupported
 build gives an actionable error; the documented examples work in a game harness.

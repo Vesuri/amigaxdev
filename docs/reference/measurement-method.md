@@ -219,6 +219,13 @@ oversized remainders.
   level: a 50 Hz interrupt asynchronous to the main loop shifts phase when the renderer
   speeds up. Never judge gameplay or rendering from a pinned build (Rescue on Fractalus,
   Revs).
+- **Match race-entry entropy before diagnosing a loop regression.** Title/menu loops can
+  consume RNG a timing-dependent number of times. Even an extra startup capability query
+  can change the later demo. At the first simulation call, compare RNG state, countdown and
+  other relevant entry state. Use an equal-work control that executes the same query and
+  selector but discards its result, or control the RNG in both arms. Keep the exact-state
+  gate unchanged. If entry state agrees, trace the first divergence instead of attributing
+  it to startup timing (Ferrari Formula One).
 - **A behaviour-preserving change must reproduce the final-state hash exactly** under the
   fixed clock. Real-time-clock runs cannot gate fidelity (Slicks).
 - **A pinned seed pins the level, not the path.** Cross-build per-phase or per-iteration
@@ -269,6 +276,33 @@ oversized remainders.
   the baseline (Downwell: 512 KiB Chip).
 - Suspect a beam-timing race? Re-run on a faster CPU, which moves a violation into the race
   window. Quote durations, not hit counts (Revs).
+
+**Presentation targets and stopping rules**
+
+Count complete presentation-to-presentation intervals, excluding partial endpoints, after
+an explicit warm-up. Report mean, p95, maximum and the interval histogram in display fields;
+use the measured field duration rather than assuming exactly 20 ms. A useful scoped target
+is at least 285 of 300 intervals at two PAL fields, with the rest at most three fields.
+This is a 95% two-field target, not a 25 FPS average or a guarantee for every gameplay scene.
+Ferrari Formula One used it to close common-scene work while retaining a separate dense-scene
+no-regression gate. State the target before accepting the result.
+
+Use a small representative matrix tied to the change: the affected CPU/memory path, ordinary
+play and a stress scene, plus regression coverage for shared paths. Expand only when a new
+failure or dependency justifies it. Keep exact state, complete RGB, elapsed simulation time
+and native controls as separate gates. Stop adding optimizations when the agreed target
+passes; a slower optional stress fixture does not silently expand the release goal.
+
+**Capture retention**
+
+Budget disk space before long captures. Retain compact summaries, interval records, source
+and emulator identities, configuration, hashes and reproduction commands. Compress accepted
+large traces and snapshots, verify decompression against the original hash, then remove the
+redundant raw copy. Preserve evidence needed to explain rejected results; remove redundant
+intermediate builds only after checking that no active run or retained manifest depends on
+them. Clean up only task-owned files and processes. Repeated full dumps and fixture builds
+filled the disk during Ferrari Formula One's work; a larger test matrix has a storage cost
+as well as a runtime cost.
 
 ## 6. Pricing a change
 

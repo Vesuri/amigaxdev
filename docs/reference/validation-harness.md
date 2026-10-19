@@ -340,6 +340,14 @@ State each excluded region at the comparison tool, with the reason:
 - **Gameplay regression suites:** each case requires its own success record, rejects loud
   stops, and cannot pass by timing out. A fixture that places state at a decoded checkpoint
   proves that path, not uninterrupted play (Vette, Alone in the Dark).
+- **A demo is a performance workload, not proof of playable controls.** Ferrari Formula
+  One's demo and state oracles passed while ordinary throttle from rest failed. Exercise
+  real press/hold/release combinations through the emulator's native input path and verify
+  resulting player state: launch, braking, coasting, steering, manual gears and restart.
+  Do not substitute direct writes to game control variables. Log actions and release held
+  inputs on cleanup. Shared debugger input consolidation is tracked in
+  [open work](../open-work.md#shared-debugger-keyboard-and-mouse-input); the project-local
+  commands are not capabilities of every installed emulator.
 - **An early checkpoint is evidence only for that endpoint** (Alone in the Dark).
 
 ## 10. On-target checks

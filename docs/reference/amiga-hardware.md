@@ -182,6 +182,16 @@ re-inserts the system copper list after every `WaitTOF`.
 - **Mask `INTF_BLIT` during takeover** unless you use an interrupt-driven blitter queue: each
   blit-done was a useless graphics.library dispatch, ~6 × 52 µs per render iteration [000]
   (Revs). Restore `INTENA` verbatim; the OS needs it for QBlit.
+- **Treat BLIT masking as scoped ownership, not a one-time boot setting.** Trace writes
+  enabling bit 6 from boot through race entry, overlay reload, pause/resume, pits and menus.
+  Prove both graphics.library QBlit/QBSBlit queues remain empty during the owned interval
+  and audit other BLIT servers before masking it. Ferrari Formula One's 020+Fast trace had
+  BLIT disabled, while accelerated profiles enabled it and paid for empty interrupts on
+  every blit; one CPU's trace did not establish the others' state. Save the entry BLIT
+  enable state, acquire at the rendering epoch and resume, and check INTENAR at draw entry
+  for re-enables. Restore the owned bit on every exit, fault and unload, without overwriting
+  unrelated interrupt changes. INTENA uses set/clear writes: writing a saved INTENAR value
+  directly is not a restoration. Test lifecycle and injected-fault paths as well as racing.
 - **Publish objects to the interrupt handler only after they are fully built**, guarded by a flag
   set on the last line of `initialize()`, not a non-null pointer. A VBI during construction
   installed a half-built copper list and latched it: a black screen whose probes each read
