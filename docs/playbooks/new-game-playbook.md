@@ -541,10 +541,15 @@ turns it on, and the MMU loop then ignores the frequency and the chip timing. Th
 must be slower than a 25 MHz one (I500's first 68040 runs gave identical fps at 8, 25 and 40 MHz).
 `cpu_speed=max` is not a real machine: chip accesses are nearly free there, and so is an
 instant blitter, so neither is a ceiling for real hardware.
-Run a separate functional boot with the MMU on (`CPU=68040`, `68060`). FS-UAE's MMU core has no
-real cache model, so that boot tests MMU setup and game logic, not cache coherency, and its timing
-is not comparable (Powerdrome, Hard Drivin'). Real-hardware cache failures are in
-[Hardware debugging](new-game-playbook-hardware.md).
+Run a separate functional boot with the MMU on (`CPU=68040`, `68060`); its timing is not
+comparable to the fixed-clock runs. Do not assume that the MMU core has no cache behavior:
+the pinned native builds include the [MMU write-attribute correction](../reference/headless-fsuae.md#cached-040060-mmu-write-attributes)
+exposed by Wing Commander. A scoped 68040 fixture also demonstrates copyback data retained
+in cache while raw debugger reads still show old RAM; see the
+[cache observer and its validated limits](../reference/cache-observer.md). Record the build,
+CPU, MMU and actual cache state. A successful boot alone proves neither cache coherency nor
+hardware timing, and the 68040 observer result does not validate every CPU model.
+Real-hardware cache failures are in [Hardware debugging](new-game-playbook-hardware.md).
 
 **Caches on fast CPUs.** Without an MMU (a 68020, or a 68030 without WHDLoad's `MMU` option)
 WHDLoad keeps the caches off, and many old slaves switch them off themselves. Know which state a
@@ -943,3 +948,27 @@ ReadMe, and repack to `dist/` (ignored).
   ReadMe entry. The release version (`DECL_VERSION`, e.g. `1.2b`) is separate from `ws_Version`,
   which declares the WHDLoad interface version. A "b" suffix marks a beta until play-testing
   is done.
+
+### Intentional installer and icon updates
+
+The two-file replacement procedure above is the default for an unchanged installer. When
+installation behavior or defaults intentionally change, declare the additional changed or
+added members explicitly and retain byte equality for every other original member. Compare
+the extracted archive with that declared member list rather than assuming only two files
+may change.
+
+Wing Commander uses the WHDLoad developer package's `Install Template` ReadMe and Install
+script as a starting point. Pin the template inputs before adapting them. Retrofit the
+original author's supported media and language choices, disk copy filters, decompression,
+renaming, manuals, quick references and icon choices. Keep the original credits and release
+history; describe only user-visible changes in the new changelog. Match version and date
+across the built slaves, ReadMe and package metadata, and check intentional icon defaults
+against each variant's actual option semantics.
+
+Stage into a fresh ignored directory. Handle an existing destination drawer and its `.info`
+explicitly; do not silently merge or overwrite a played installation and its saves. Quote
+paths containing spaces. Static script checks should catch unbalanced expressions, strings
+and missing procedure definitions, but do not prove Amiga Installer behavior. Report that
+limit if the script has not been executed, and exercise the changed installation branches
+before claiming installer acceptance. Keep installable packages distinct from preinstalled
+archives: each has its own contents and validation needs.

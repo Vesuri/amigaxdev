@@ -149,3 +149,54 @@ fractional tables from that copy, and restore the canonical values before the na
 initializer rebuilds dependent maps. Test a second race after a nonzero fraction. A first-race
 pass can conceal cumulative table drift. Keep native duplicate-row selection rules intact
 and require exact fetched-plane equality when the added fractions are zero.
+
+## Redraw animation scripts without advancing them
+
+Wing Commander's cinematic actors combine drawing with script-cursor advancement. Calling
+such a routine on every displayed frame accelerates the animation; disabling its active flag
+can select a different interpretation of the record and cause flicker. Audit the routine's
+writes before treating it as a renderer.
+
+For a bounded replay, retain the pre-tick script state and the committed post-tick state.
+Stage the pre-tick fields needed to reproduce the current pose, draw, then restore the
+committed fields. Include counters, random state and effect creation where the replay touches
+them. Preserve background restoration and compositing order: moving actors, room labels and
+window scenery must be composed on every newly drawn image even when their logical state
+has not changed. Input polling is not a sufficient gate for drawing a persistent label.
+
+Keep world simulation, bitmap script advancement, input polling and display publication as
+separate timing owners. Wing Commander uses a 10 Hz world clock and, for selected bitmap
+sequences, one animation update every three display fields (50/3 Hz PAL, 20 Hz NTSC).
+Those are game-specific choices, not a general historical rate. Smooth transforms may still
+advance on every render between bitmap updates. Check native per-cel holds as well as the
+outer loop; one script update need not select a new bitmap.
+
+At scene exit, restore temporarily borrowed authoritative poses or tables before clearing
+prediction validity. Reset camera, object and effect histories at their actual ownership
+boundaries, including skipped cinematics; a stale angular rate can move stars in a later
+scene that does not natively rotate them. Do not erase native controls still owned by the
+next mode, and do not confuse prediction reset with draining a pending display handoff.
+Validate an early skip during motion and a second entry, not just a completed first pass.
+
+## Give newly spawned projectiles an explicit presentation interval
+
+A reused object slot is not proof of a continuous trajectory. Certify new identity at the
+native constructor, invalidate the previous occupant's history, and determine whether the
+first published position is the muzzle position or already includes a native movement step.
+Predicting forward from an already advanced position can omit the visible near-muzzle
+segment; waiting for two samples can instead hold the projectile still. Derive the first
+interval from the native spawn/update order and velocity rather than borrowing ship history.
+Apply the policy to every relevant constructor, not only the player's firing path.
+
+Prediction is not collision detection. Bound visible prediction at a known impact or scripted
+endpoint so that shots do not travel through a target before its explosion. Keep damage,
+object retirement and collision tests on committed state; never pass temporarily staged
+render positions into them. For fields such as asteroids and mines, verify which coordinate
+space and object collection the native collision path actually reads. A convincing shot
+image alone does not establish a hit on the same object.
+
+Useful focused checks cover the first visible shot, the next native update, slot reuse,
+an impact and scene exit, with prediction disabled as a control. Compare both authoritative
+state and rendered positions. Wing Commander's spawn, intro-shot and field-contact fixes
+illustrate these distinct failure modes; their offsets and record layouts belong in that
+project's documentation rather than a shared patch.

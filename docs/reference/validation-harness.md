@@ -387,6 +387,26 @@ The host harness cannot see Amiga-only code, endianness or beam timing.
 - **Assert invariants the original hardware kept for free.** For example, check that the
   emulated stack pointer stays in its window, at both ends (Revs).
 
+## Exercise the user's route as well as isolated fixtures
+
+Direct-entry fixtures are useful for a bounded routine check, but they can bypass the
+allocation history and initialization that expose a bug. Wing Commander's side-cockpit
+images failed after the ordinary campaign route because earlier scenes fragmented native
+memory pools; a fresh flight fixture did not reproduce the missing cockpit rows.
+
+For a scene or rendering fix, retain one short acceptance route through the real menus,
+briefing and mission entry. Include the reported user actions, such as Return to skip a
+moving cinematic, view changes and the cache option used at the WHDLoad splash. Record
+actual cache state when relevant. Inspect allocation failures and available contiguous
+blocks, not just total free memory. Do not silently substitute forced scene entry for this
+route; describe what each fixture bypasses.
+
+Pair the normal route with the focused native check rather than expanding every issue into
+a machine matrix. Verify persistent overlays over several frames, transitions at a nonzero
+prediction fraction and re-entry where history is retained. Native CPU checks establish
+routine behavior within their modeled boundary; they do not establish complete gameplay,
+visual acceptance or hardware performance.
+
 ## 11. Pictures
 
 - **Judge appearance only from a clean real run.** The remote debugger greys the display, so
