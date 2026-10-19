@@ -51,6 +51,22 @@ published displacement, and its next pose depends on unread input and different 
 Extrapolation removes interpolation's deliberate presentation delay; it does not increase
 input sampling or simulation frequency. Describe those limits separately from frame rate.
 
+## Keep fractional precision through projection
+
+Smoother simulation does not remove quantization later in the renderer. Grand Prix Circuit
+needed continuous camera pose across track-segment boundaries and full fractional object
+depth through horizontal projection. Rounding distance to a segment or screen row first
+made distant cars and roadside signs jump sideways when they moved to the next row.
+Use the same fractional depth for placement and perspective scale, and sample road geometry
+at each row's corresponding continuous depth rather than snapping to a segment endpoint.
+Round to pixels only after projection.
+
+Sprite changes can introduce a separate jump: bitmap size and viewing angle may change the
+image origin even when the projected position is continuous. Anchor car images to a consistent
+reference point and roadside signs to their ground contact. Check consecutive frames around
+segment crossings, row changes and sprite transitions; a higher frame rate alone does not
+establish smooth placement. Keep these presentation corrections separate from physics state.
+
 ## Control memory layout in state comparisons
 
 A bigger slave can change where WHDLoad loads the game. In I500 the option-disabled build
@@ -69,6 +85,14 @@ A layout-controlled match does not establish equivalence to the normally loaded 
 nor does an option-disabled match validate enabled patches. State the comparison's scope,
 classify renderer workspace separately, and retain the ordinary original comparison as a
 separate acceptance question. Do not label unexplained differences as random noise.
+
+Grand Prix Circuit provides a concrete address-boundary failure: native grid and opponent
+selection code used word-sized additions and subtractions on full track addresses. A carry
+or borrow across a 64 KB boundary was lost, misplacing cars or excluding them from the view.
+Changing the slave size exposed a vulnerable allocation; a larger diagnostic build hid it.
+Check address arithmetic at boundary alignments and compare corrected and original operations
+at the same layout. Reproducing a latent native bug this way does not establish that users
+encountered it with the unmodified public release; describe that distinction in release notes.
 
 ## Analyze a smaller timestep by units and writers
 

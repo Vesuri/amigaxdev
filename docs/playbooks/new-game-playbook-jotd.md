@@ -1068,10 +1068,20 @@ Use explicit paths when staging; check new files against ignore rules. Do not co
 `usr/` blindly, since it may contain locally generated files.
 
 Update `DECL_VERSION` and the game’s existing ReadMe together. Preserve JOTD’s historical
-entries; add a concise entry describing supported versions, options, requirements and measured
-behaviour. New features should have an explicit off path. If an icon enables an option, treat
+entries; add a concise entry describing user-visible changes, options and requirements.
+Performance enhancements should have an explicit off path. Keep independent correctness fixes,
+including music and input fixes, enabled when enhancements are disabled; an enhancement toggle
+is not a request to restore every original defect. If an icon enables an option, treat
 that as an intentional player-facing change and check its tooltypes (TD2 changed its
 `.exoticon` to enable `CUSTOM2=1`). Do not change every icon variant without inspecting it.
+
+Keep the upstream contribution easy to integrate: describe the player-visible result and how
+to disable enhancements, with only limitations needed to understand the change. Keep detailed
+validation reports, development notes and diagnostic fixtures in the ignored local harness;
+do not add them to the PR by default. Retain source needed to build the release. Present
+coherent commits rather than the experiment and measurement history; when consolidating an
+existing PR, preserve that history locally and coordinate any rewrite. Do not list fixes to
+our own intermediate builds as fixes to the previous public release.
 
 When release packaging is requested, adapt TD2’s `tools/package_release.py` in the local
 harness. Build from `$GAME_SOURCE`, stage below its ignored `tmp/`, and write archives to its
