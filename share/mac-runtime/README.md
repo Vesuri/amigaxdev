@@ -103,7 +103,12 @@ one callback must adjust the pass iterator without skipping its next neighbour.
 `VideoTicks.h` shares Alone in the Dark's PAL/NTSC field conversion and adds
 within-field PAL TickCount calculation. The platform must supply a coherent field
 epoch and beam position; callback scheduling and hardware sampling stay outside
-the helper. Tests include repeated five-tick deadlines that field-only ticks miss.
+the helper. Tests include repeated five-tick deadlines that field-only ticks miss. Keep direct
+low-memory Ticks reads and TickCount coherent, including the virtual time exposed to
+queued callbacks. Alone in the Dark's paired isolated waits confirm PAL quantization,
+not a reached gameplay slowdown; its production clock remains field-updated. See
+[clock resolution and loading stalls](../../docs/reference/measurement-method.md#clock-resolution-and-loading-stalls)
+for the measurement limits and pending-interrupt/rollover controls.
 
 `HeapMoveHigh.inc` supplies `MacHeap::moveHigh` for the common arena/master-block
 allocator used by Alone in the Dark and Prince of Persia 2. Include it at file

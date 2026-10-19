@@ -119,6 +119,33 @@ Instrument rules:
 - **Label a capture that covers only part of a stall** as slice time, not frame time
   (Downwell).
 
+### Clock resolution and loading stalls
+
+Keep TickCount, direct low-memory Ticks reads and queued callback timestamps on one
+coherent clock. Interpolating only TickCount can put it ahead of the low-memory shadow;
+callbacks catching up must observe their virtual pass time through both interfaces.
+Test pending interrupts, field boundaries and unsigned rollover separately. A correct
+within-field arithmetic helper does not establish a coherent hardware snapshot.
+
+Alone in the Dark's reference-68030 comparison executed the original deadline loop in
+isolation: five-tick waits settled at six ticks on PAL (100 ms versus about 83.3 ms on
+the Mac), and seven-tick waits averaged 7.2 ticks. Mac and NTSC waits reached both
+requested deadlines exactly. The first two actual book holds reached 300 ticks on
+both Mac and PAL. Five ticks was a stress control, not a reached repeating gameplay
+wait: this establishes quantization, not a gameplay slowdown or a reason to change
+original game logic. Measure a matched animation/input route before redesigning its clock.
+See Alone in the Dark `docs/testing.md`, “Tick resolution”, for fixtures and scope.
+
+For song-loading stalls, report preparation CPU work, physical read/seek calls,
+scheduler/OS-window waits and the full transition interval separately. Count logical
+resource requests separately from physical reads when testing read-ahead. Compare
+standalone AmigaOS and WHDLoad/resload explicitly, recording PRELOAD and available
+memory. A standalone wait measurement is not evidence of a PRELOAD delay: cached
+resload reads should not require an OS switch. Verify actual switches and cache
+coverage before blaming storage; resident reads still have copying and preparation
+costs. Alone in the Dark's measured 307 ms FIGHT I/O wait was standalone evidence,
+not a measurement of its PRELOAD path.
+
 ## 4. Verify the instrument
 
 A first reading proves nothing until the instrument has failed on purpose. The rules below
@@ -303,6 +330,17 @@ intermediate builds only after checking that no active run or retained manifest 
 them. Clean up only task-owned files and processes. Repeated full dumps and fixture builds
 filled the disk during Ferrari Formula One's work; a larger test matrix has a storage cost
 as well as a runtime cost.
+
+Make cleanup part of each bounded diagnostic run after collecting its verdict and
+required evidence. Remove task-owned disposable emulator logs, repeated builds and
+staged data copies once no active run or retained report needs them; retain the exact
+binary or symbols needed to interpret accepted profiles. Preserve original inputs,
+owner saves, crash reports and current release artifacts. Do not assume a scratch disk
+image contains no unique saves: preserve it with verified compression unless its
+contents are known to be disposable. Verify duplicate data against a retained source
+before deleting it. Alone in the Dark recovered about 14 GiB this way without deleting
+its original reference disk or saves. This is a diagnostic-output policy, not permission
+for setup to delete installed shared files or another task's output.
 
 ## 6. Pricing a change
 
