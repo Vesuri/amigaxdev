@@ -100,6 +100,20 @@ class Gdb(_Reader):
             self.running = False
 
 
+def require_harness(g, *commands):
+    """The build's `monitor harness` capabilities (key, fields, mouse, input); raises with the
+    fix when the build lacks the command or any of COMMANDS. A build without a harness command
+    answers it with an error, which a caller that only reads replies would miss."""
+    out = g.cmd('monitor harness', timeout=30)
+    have = set() if 'rror' in out else set(out.split())
+    missing = [c for c in commands if c not in have] if have else ['harness']
+    if missing:
+        raise RuntimeError(f'this FS-UAE lacks monitor {" ".join(missing)}; '
+                           'rebuild the native builds with `make setup` in AmigaXDev '
+                           f'(gdb said: {out!r})')
+    return have
+
+
 class Lldb(_Reader):
     """One lldb attached for the whole session: attaching to this x86_64 FS-UAE under Rosetta
     takes minutes, so it is done once, on the first capture, and the process kept running."""

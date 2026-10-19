@@ -345,9 +345,9 @@ State each excluded region at the comparison tool, with the reason:
   real press/hold/release combinations through the emulator's native input path and verify
   resulting player state: launch, braking, coasting, steering, manual gears and restart.
   Do not substitute direct writes to game control variables. Log actions and release held
-  inputs on cleanup. Shared debugger input consolidation is tracked in
-  [open work](../open-work.md#shared-debugger-keyboard-and-mouse-input); the project-local
-  commands are not capabilities of every installed emulator.
+  inputs on cleanup. The native builds' `monitor key`, `mouse` and `input` do this; see
+  [harness commands](headless-fsuae.md#harness-commands-native-builds), and check the build
+  with `require_harness` before relying on them.
 - **An early checkpoint is evidence only for that endpoint** (Alone in the Dark).
 
 ## 10. On-target checks

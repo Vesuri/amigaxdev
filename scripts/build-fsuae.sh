@@ -5,7 +5,8 @@
 # given (patches/fsuae-aprof.patch adds `monitor aprof start` / `monitor aprof stop FILE`).
 # Every build also gets patches/fsuae-mmu-write-cache.patch (the core fix),
 # patches/fsuae-cpu-frequency.patch (explicit CPU frequencies without 32-bit overflow) and
-# patches/fsuae-harness.patch (`monitor key`, `monitor fields`, whole-space profiling).
+# patches/fsuae-harness.patch (`monitor key`, `monitor fields`, `monitor mouse`,
+# `monitor input`, `monitor harness`, whole-space profiling).
 # SDL2_ttf and libmpeg2 are linked statically from pinned tarballs; glib, gettext, libpng,
 # freetype and SDL2 come from Homebrew (Brewfile), so rebuild after a major upgrade of those.
 set -euo pipefail

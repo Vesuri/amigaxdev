@@ -290,8 +290,9 @@ Facts about this stub, all verified the hard way:
 - **Emulated time stops while gdb holds the CPU**, so stops and the lldb attach cost no emulated
   time.
 - **Prefer the native build (`FSUAE="$FSUAE_ARM"`) with the server's `profile_window=False`.**
-  AmigaXDev's native builds profile the whole 24-bit space without a trigger, take keyboard
-  input from gdb (`monitor key`) and run whole fields (`monitor fields`); see
+  AmigaXDev's native builds profile the whole 24-bit space without a trigger, take keyboard,
+  mouse and joystick input from gdb (`monitor key`, `mouse`, `input`) and run whole fields
+  (`monitor fields`); see
   [harness commands](../reference/headless-fsuae.md#harness-commands-native-builds). The next
   bullet is about the x86_64 build, which has none of that.
 - **On the x86_64 build, without a trigger the profiler records no PCs.** The window
@@ -378,6 +379,11 @@ buffers in chip RAM held pieces of `BH` and outvoted nothing, giving a negative 
   slave reads a CD32 pad there: with nothing plugged in, its reader saw Play held and paused
   the game. Map each step with a contact sheet of `shot`s every few fields, then extend the route
   one move at a time (Prince of Persia `tools/route.py`, `tools/spikes_route.sh`).
+- **Mouse and joystick games: `monitor mouse DX DY` and `monitor input EVENT 1|0`** the same
+  way, for games that read the hardware, where Intuition's keyboard mouse (Amiga + cursor keys)
+  does not move their pointer. Move in steps of at most 64 counts with a couple of fields
+  between them; aim by screenshot, or close the loop on the game's pointer position (Gunship
+  `tools/flight_profile.py` clicks through four menus with `JOY0=none`).
 - **Not** FS-UAE input recordings: in this FS-UAE build playback never works. FS-UAE emits two
   events of its own at startup (2263, 2272, whatever the ports are), and recording an event
   during playback truncates the recording at the play position, i.e. at 0. (Recording works;

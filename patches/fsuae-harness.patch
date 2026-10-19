@@ -1,5 +1,5 @@
 diff --git a/src/barto_gdbserver.cpp b/src/barto_gdbserver.cpp
-index 0f3249a9..a2aef2cd 100644
+index 0f3249a9..16b25d52 100644
 --- a/src/barto_gdbserver.cpp
 +++ b/src/barto_gdbserver.cpp
 @@ -22,6 +22,7 @@
@@ -26,7 +26,7 @@ index 0f3249a9..a2aef2cd 100644
  	};
  
  	state debugger_state{ state::inited };
-@@ -690,6 +693,26 @@ namespace barto_gdbserver {
+@@ -690,6 +693,48 @@ namespace barto_gdbserver {
  										savestate_quick(1, 0); // restore state saved at process entry
  										barto_debug_resources_count = 0;
  										response += "OK";
@@ -50,10 +50,32 @@ index 0f3249a9..a2aef2cd 100644
 +											response += record_key_debug(((raw << 1) | (raw >> 7)) & 0xff) ? "OK" : "E02";
 +										} else
 +											response += "E01";
++									} else if(cmd.substr(0, strlen("mouse ")) == "mouse ") {
++										// AmigaXDev harness: relative motion (decimal counts) of the port-0 mouse,
++										// added to its counters like host mouse motion.
++										int dx = 0, dy = 0; char extra;
++										if(sscanf(cmd.c_str(), "mouse %d %d %c", &dx, &dy, &extra) == 2 && abs(dx) <= 127 && abs(dy) <= 127) {
++											if(dx) inputdevice_uaelib(_T("MOUSE1_HORIZ"), dx, 0, false);
++											if(dy) inputdevice_uaelib(_T("MOUSE1_VERT"), dy, 0, false);
++											response += "OK";
++										} else
++											response += "E01";
++									} else if(cmd.substr(0, strlen("input ")) == "input ") {
++										// AmigaXDev harness: an Amiga input event by its config name (JOY1_FIRE_BUTTON,
++										// JOY2_LEFT, ...) with a decimal state, 1 = press, 0 = release. Emulator
++										// actions (SPC_*) are refused.
++										char name[64]; int value = 0; char extra;
++										if(sscanf(cmd.c_str(), "input %63s %d %c", name, &value, &extra) == 2 && abs(value) <= 127 && strncmp(name, "SPC_", 4))
++											response += inputdevice_uaelib(name, value, 1, false) ? "OK" : "E02";
++										else
++											response += "E01";
++									} else if(cmd == "harness") {
++										// AmigaXDev harness: capability list; builds without it reply E01.
++										response += to_hex("key fields mouse input\n");
  									} else {
  										// unknown monitor command
  										response += "E01";
-@@ -972,6 +995,11 @@ namespace barto_gdbserver {
+@@ -972,6 +1017,11 @@ namespace barto_gdbserver {
  		if(!enabled) // "gdbserver"
  			return;
  
@@ -65,7 +87,7 @@ index 0f3249a9..a2aef2cd 100644
  		static uae_u32 profile_start_cycles{};
  		static size_t profile_custom_regs_size{};
  		static uae_u8* profile_custom_regs{}; // at start of profile 
-@@ -1051,7 +1079,9 @@ start_profile:
+@@ -1051,7 +1101,9 @@ start_profile:
  			}
  
  			// start profiler

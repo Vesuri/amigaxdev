@@ -1,37 +1,22 @@
 # Open work
 
-## Shared debugger keyboard and mouse input
+## Shared debugger input: remaining work
 
-The shared native build recipe already includes `monitor key` and `monitor fields`;
-see [harness commands](reference/headless-fsuae.md#harness-commands-native-builds).
-Older installed binaries and the x86_64 build may lack them. Remaining work is to
-consolidate mouse/joystick extensions, capability discovery and reusable input helpers.
-Ferrari Formula One's `monitor mouse` and `monitor input` remain private-build
-references, not commands guaranteed by the shared recipe.
+The native builds have `monitor key`, `fields`, `mouse`, `input` and `harness`, checked by
+`scripts/test_fsuae_input.py`; see
+[harness commands](reference/headless-fsuae.md#harness-commands-native-builds). The x86_64
+build has none of them. Remaining:
 
-- Review and consolidate the extensions into a pinned shared diagnostic build;
-  expose capability checks and fail clearly when a command is unavailable.
-- Document raw key codes, press/release and held-key combinations, relative mouse
-  motion, button/joystick events, bounded field advancement, and input cleanup.
-- Provide reusable harness helpers and examples that verify actual guest input
-  and resulting game state, with action logs suitable for repeatable runs.
-- Keep input on the emulator's native input path. Do not require Mac accessibility,
-  host-window focus, posted host events or direct writes to game control state.
-- Document profiler compatibility and timing limits of each supported build;
-  distinguish gameplay coverage from deterministic performance benchmarks.
-- Update the playbooks and headless FS-UAE reference so new game projects can
-  discover this route before inventing another local helper.
-
-Ferrari Formula One supplies a concrete regression case: its non-interactive demo
-passed while throttle from rest failed in the performance mode. Carry over a native-input
-example that holds the accelerator, verifies player movement, then releases it; also cover
-simultaneous buttons and their release order. Read back guest input and resulting state,
-not just command acknowledgement. Keep game addresses and expected movement thresholds in
-the game's harness, with transport, capability discovery and cleanup in shared helpers.
-
-Acceptance: keyboard press/hold/release and mouse motion/button smoke tests run
-through the shared debugger interface without host accessibility; an unsupported
-build gives an actionable error; the documented examples work in a game harness.
+- **Mouse buttons and keys are only checked for acceptance** by the smoke test: the stub
+  cannot read the CIAs and keeps POTGOR as 0. A side-effect-free read of CIA-A PRA and SDR
+  (not ICR, whose read clears it) would let the test read them back.
+- **Reusable Python input helpers**: hold and release with an action log, release of
+  everything held on cleanup, and a closed-loop pointer move. Gunship and Ferrari Formula
+  One each have their own.
+- **Ferrari Formula One's private build** (`warp`, survey profiling) should move to the
+  shared `mouse` and `input`, which keep its syntax. Carry over its throttle-from-rest
+  regression as a documented example: hold the accelerator, verify player movement, release;
+  cover simultaneous buttons and their release order.
 
 ## FS-UAE overrides and effective configuration
 

@@ -201,12 +201,30 @@ The Barto stub in both FS-UAE builds, driven by `m68k-amiga-elf-gdb`.
 |---|---|
 | `monitor key RAW 0\|1` | queues raw Amiga key code `RAW` (hex) as pressed (1) or released (0) on the emulated keyboard, exactly as a host key would arrive; works with the window in the background or with no window |
 | `monitor fields N` | runs N whole PAL/NTSC fields (1–6000) from a stop and stops again: the reply comes at the last vsync |
+| `monitor mouse DX DY` | adds DX, DY (decimal, at most ±127) to the port-0 mouse counters, as host mouse motion would; works with `JOY0=none` |
+| `monitor input EVENT N` | sends an emulator input event by its config name with state N (decimal, 1 press, 0 release): `JOY1_FIRE_BUTTON` and `JOY1_2ND_BUTTON` are the port-0 mouse buttons, `JOY2_LEFT`, `JOY2_FIRE_BUTTON` and so on the port-1 joystick. Emulator actions (`SPC_*`) are refused |
+| `monitor harness` | prints the supported commands (`key fields mouse input`) |
 | `monitor profile N "" FILE` | as before; with no `--remote_debugger_trigger` the PC window is the whole 24-bit space instead of the stub's uninitialised `[0x0100007f, +0)` |
 
-Together they replace input tapes for keyboard-controllable games: stop, `key`, `fields`,
-`key`, `fields`, with `profile` chunks between key events. The run is exactly repeatable with
+Together they replace input tapes: stop, send input, `fields`, release, `fields`, with
+`profile` chunks between input events. The run is exactly repeatable with
 `WARP=1 DETERMINISTIC=1 JOY0=none` (Prince of Persia: identical per-PC cycles, field totals
-and frame timestamps across boots). Joystick-only games still need a slave tape. Key codes:
+and frame timestamps across boots). Bad arguments, an unknown event and an unknown command
+all reply with an error, which gdb prints as `Protocol error with Rcmd`; a script that only reads
+replies misses it, so call `amigaxdev.gdbserve.require_harness(g, "mouse", ...)` first.
+It raises with the fix when the build is older. `scripts/test_fsuae_input.py [FS-UAE]` boots
+the Kickstart 1.3 ROM with no disk and reads mouse and joystick input back from JOY0DAT and
+JOY1DAT. The stub cannot read the CIAs, so the mouse buttons and keys are checked only for
+acceptance; Gunship's menu clicks and Prince of Persia's keys show them working in a game.
+
+- **Move the mouse in steps and let fields run between them.** The counters are 8 bits, so a
+  game that reads them once a field loses a larger delta; Gunship moves in steps of at most
+  64 counts with 2 fields after each. A game that reads its pointer position gives a closed
+  loop: move, run fields, read the position, repeat (Ferrari Formula One).
+- **Hold a button or key for several fields**: a game that polls once a frame misses a
+  press and release within one field. Release everything held before ending a run.
+
+Key codes:
 cursor `4c-4f`, Return `44`, Space `40`, Esc `45`, Ctrl `63`, left Shift `60`, keypad digits
 `0f 1d 1e 1f 2d 2e 2f 3d 3e 3f` (0–9).
 
