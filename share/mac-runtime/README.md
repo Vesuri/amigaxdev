@@ -53,9 +53,22 @@ The native `AMIGAXDEV_MEMORY_PRIMITIVES_ONLY` mode exposes those same instructio
 macros to legacy adapters without adding inline function nodes to their compiler
 graph; this preserves Alone in the Dark’s existing function order and executable.
 
-`CodeRangeCache.h` uses a 64-slot page-indexed cache of original CODE ranges. It rechecks
+`CodeRangeCache.h` uses a 256-slot page-indexed cache of original CODE ranges. It rechecks
 the current base and size on every hit and retains the full search on misses;
 callers supply disjoint ranges and retain their own unknown-caller handling.
+
+`AddressSpan.h` checks integer address windows after their owner validates the
+non-wrapping exclusive end once at allocation. The unsigned offset rejects
+addresses below the base as well as overlong requests; zero-length endpoint
+queries remain valid. Do not use `contains` before `valid` succeeds.
+
+`UnsignedDivide.inc` shares Alone in the Dark's exact 64-bit-to-32-bit quotient
+with the audio adapters. Include it inside their namespace. Only significant
+quotient bits are examined; division by zero and quotient overflow return false.
+Independent host division checks bit boundaries and one million input pairs.
+
+`FillRect8::fillSpan` keeps its native sixteen-byte block counter inside the
+assembly loop, with unchanged alignment prefix and exact longword/byte tails.
 
 `PcmDma.inc` shares Alone in the Dark’s signed PCM conversion with Prince of Persia 2.
 Include it inside a namespace after defining `Dma` with `layout` and `stride`.
@@ -164,8 +177,11 @@ null handles; consumers also exercise their real master-block ownership guards.
 `PinnedSlotRanges.h` retains sixteen recently validated immutable master-block
 ranges behind a caller's last-range fast path. Membership and slot alignment
 are checked on every lookup; allocation flags and pointees are never cached.
-Call `clear()` whenever the arena resets. It is unsuitable for blocks that can
-move, shrink or be freed during an arena's lifetime.
+Its optional power-of-two template parameter sizes the validated slot-address
+to flag-address hints (32 by default). Hits still read current flag bytes;
+disposal and slot reuse do not cache a live-state decision. Call `clear()` whenever
+the arena resets. It is unsuitable for blocks that can move, shrink or be freed
+during an arena's lifetime.
 
 `VideoTicks::deadlinePALBeam` inverts the nominal PAL beam-to-microsecond
 conversion for due/not-due checks. It retains the 19,999-microsecond clamp and
@@ -224,3 +240,14 @@ removal, slot reuse and storage repopulation retain the linear-lookup fallback;
 failed lookups preserve the output index. Callers still resolve their namespace
 (such as the active resource-file chain) first. The sanitizer suite compares
 100,000 mutation/resize queries with a linear oracle.
+
+`QuickOSWarm.inc` supplies C-ABI assembly bodies for guarded HGetState/HLock
+and SwapMMUMode entries. The caller must already validate the trap owner,
+register image and pending-service certificate. Handle hits require a full
+pinned-slot identity match and a currently allocated live flag; misses tail-call
+the checked implementation without modifying guest state. The slot table is
+read-only to assembly and must be cleared before its arena is reused. Mac OS
+result condition codes preserve the saved X/high bits. MMU mode accepts only
+low-byte 0/1 and preserves the current heap error; handle successes clear it.
+Prince of Persia 2 pairs the bodies with its checked, original-paired C services
+across handle flags, condition codes, invalid slots and MMU modes.

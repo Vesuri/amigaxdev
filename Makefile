@@ -87,6 +87,10 @@ test-mac-runtime: test-block-move
 	@tmp/tests/mac-memory
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_code_ranges.cpp -o tmp/tests/mac-code-ranges
 	@tmp/tests/mac-code-ranges
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_address_span.cpp -o tmp/tests/address-span
+	@tmp/tests/address-span
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_unsigned_divide.cpp -o tmp/tests/unsigned-divide
+	@tmp/tests/unsigned-divide
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_pcm.cpp -o tmp/tests/mac-pcm
 	@tmp/tests/mac-pcm
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_vbl_passes.cpp -o tmp/tests/mac-vbl-passes
