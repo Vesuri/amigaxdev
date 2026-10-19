@@ -410,3 +410,40 @@ active-work costs. Historical approximate opening reports retain their explicit
 qualification and are not promoted to exact call-tree evidence. Frame rows and
 actual publications can have different phase boundaries; consumers must state
 which denominator they use and retain it in before/after comparisons.
+
+
+### Explicit native-service scopes
+
+`fsuae-native-service-scope.patch` extends the aprof instrument with host-only
+Line-A scopes. Build it as a separate variant with `scripts/build-fsuae.sh`;
+retain the source receipt and binary hash. Before starting a profile, configure
+`monitor aprof native <text-low> <text-high> <native-rte> <c-rte> <user-rts>`
+using verified loaded ELF addresses. The three distinct, aligned return sites
+must contain RTE, RTE and RTS respectively. Invalid configurations and changes
+while profiling are rejected. No guest instructions or cycles are added. The scoped counter freezes the executed
+PC/opcode before dispatch because RTS can change `regs.instruction_pc`. The
+legacy flat-PC observer retains its existing attribution and can charge RTS
+cycles to the return target; do not infer exact return-instruction placement
+from those legacy flat records.
+
+Choose boundaries that finish the service before original game callbacks.
+A deliberate intermediate return into a user-mode bridge is not the service
+exit. Executed Exec negative vectors are admitted only at a six-byte entry whose
+current opcode is an absolute jump into ROM. The ROM Supervisor entry is
+verified through Exec; its privilege-handler work remains charged to the
+service. Other exceptions inside a service remain faults.
+The counter follows nested interrupts separately, carries open scopes
+across profile boundaries, records foreign PCs, and partitions every measured
+instruction unit between service work, interrupted service work and unscoped
+work. It is independent of the heuristic call tree. It is not automatically a
+valid boundary for another port: that port must verify its return instructions,
+callback boundary, loaded text extent and independently counted Line-A calls.
+
+`amigaxdev.native_service_scope.validate` rejects faults, missing counters,
+changed boundaries, lost scope/interrupt continuity and incomplete accounting.
+Consumers must also reject foreign PCs and partial measured services, check
+positive interrupt activity and independent call counts, and retain full-trap
+costs separately. Pin the helper and instrument. Run
+`make test-native-service-scope` for the exact embedded C++ counter under
+sanitizers and the Python reader's malformed-evidence controls. Original-paired
+callback and cadence checks remain necessary; scoped costs do not replace them.

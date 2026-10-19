@@ -103,3 +103,8 @@ test-block-move:
 	@mkdir -p tmp/tests
 	$(CXX) -std=c++17 -O2 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_block_move.cpp -o tmp/tests/block-move
 	@tmp/tests/block-move
+
+.PHONY: test-native-service-scope
+test-native-service-scope:
+	python3 scripts/test_native_service_scope.py
+	python3 scripts/test_native_service_scope_reader.py
