@@ -101,8 +101,8 @@ Run scripts using the shared launcher accept `AMIGA_SETUP` to select a complete 
 for example `AMIGA_SETUP=a1200-fast amiga/run.sh`. Available names are `a500`, `a500-1.5m`
 (the playbooks' A500-equivalent), `a500+`, `a3000`, `a1200`, `a1200-fast`, `a1200-030`, `a1200-040` and
 `a1200-060`. The preset overrides
-project machine defaults at launch; `EXTRA_ARGS` requests explicit overrides, with
-the effective-configuration limitation documented below. See
+project machine defaults at launch; `EXTRA_ARGS` supplies explicit overrides. The
+launcher resolves duplicates and machine-option aliases before starting FS-UAE. See
 [named machine setups](reference/headless-fsuae.md#named-machine-setups) for RAM, ROMs,
 clocks, MMU settings and project compatibility limits. CPU cache emulation is enabled
 for 68020 and faster (instruction cache on 020; instruction and data caches on 030+).

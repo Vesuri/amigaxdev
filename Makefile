@@ -108,3 +108,8 @@ test-block-move:
 test-native-service-scope:
 	python3 scripts/test_native_service_scope.py
 	python3 scripts/test_native_service_scope_reader.py
+
+.PHONY: test-shared-harness
+test-shared-harness:
+	python3 scripts/test_fsuae_setup.py
+	python3 scripts/test_input.py

@@ -1,0 +1,86 @@
+--- a/src/cia.cpp
++++ b/src/cia.cpp
+@@ -1679,6 +1679,17 @@
+ 	return v;
+ }
+ 
++// Latched only by guest reads: observing never samples host input,
++// advances timers or acknowledges CIA interrupts.
++static uae_u8 harness_pra;
++static unsigned harness_pra_reads;
++void amiga_harness_cia_snapshot(unsigned *pra, unsigned *sdr, unsigned *reads)
++{
++    *pra = harness_pra;
++    *sdr = cia[0].sdr;
++    *reads = harness_pra_reads;
++}
++
+ static uae_u8 ReadCIAA(uae_u32 addr, uae_u32 *flags)
+ {
+ 	struct CIA *c = &cia[0];
+@@ -1720,6 +1731,8 @@
+ 				inprec_playdebug_cia(v, 0, m68k_getpc ());
+ 		}
+ 
++		harness_pra = v;
++		++harness_pra_reads;
+ 		return v;
+ 	}
+ 	case 1:
+--- a/src/inputdevice.cpp
++++ b/src/inputdevice.cpp
+@@ -4359,6 +4359,14 @@
+ 	}
+ }
+ 
++static uae_u16 harness_potgor;
++static unsigned harness_potgor_reads;
++void amiga_harness_pot_snapshot(unsigned *value, unsigned *reads)
++{
++    *value = harness_potgor;
++    *reads = harness_potgor_reads;
++}
++
+ uae_u16 POTGOR (void)
+ {
+ 	uae_u16 v;
+@@ -4371,6 +4379,8 @@
+ #endif
+ 	if (inputdevice_logging & 16)
+ 		write_log (_T("POTGO_R: %04X %08X %d %d\n"), v, M68K_GETPC, cd32_shifter[0], cd32_shifter[1]);
++	harness_potgor = v;
++	++harness_potgor_reads;
+ 	return v;
+ }
+ 
+--- a/src/barto_gdbserver.cpp
++++ b/src/barto_gdbserver.cpp
+@@ -33,6 +33,9 @@
+ #include "fsemu-action.h"
+ #include "fsemu-video.h"
+ #include "fs/conf.h"
++
++extern void amiga_harness_cia_snapshot(unsigned *, unsigned *, unsigned *);
++extern void amiga_harness_pot_snapshot(unsigned *, unsigned *);
+ 
+ #define OPTION_REMOTE_DEBUGGER_START_TIMER "remote_debugger"
+ #define OPTION_REMOTE_DEBUGGER_TRIGGER "remote_debugger_trigger"
+@@ -734,9 +737,16 @@
+ 											response += inputdevice_uaelib(name, value, 1, false) ? "OK" : "E02";
+ 										else
+ 											response += "E01";
+-									} else if(cmd == "harness") {
++									} else if(cmd == "input-state") {
++                                        unsigned pra, sdr, pr, pot, por;
++                                        amiga_harness_cia_snapshot(&pra, &sdr, &pr);
++                                        amiga_harness_pot_snapshot(&pot, &por);
++                                        char text[160];
++                                        snprintf(text, sizeof(text), "pra=%02x sdr=%02x pra_reads=%u potgor=%04x pot_reads=%u\n", pra, sdr, pr, pot, por);
++                                        response += to_hex(text);
++                                    } else if(cmd == "harness") {
+ 										// AmigaXDev harness: capability list; builds without it reply E01.
+-										response += to_hex("key fields mouse input\n");
++										response += to_hex("key fields mouse input input-state\n");
+ 									} else {
+ 										// unknown monitor command
+ 										response += "E01";

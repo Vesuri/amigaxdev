@@ -50,7 +50,9 @@ fsuae_options || exit 1
         for line in result.stdout.splitlines():
             key, sep, value = line.partition("=")
             self.assertTrue(sep, line)
-            values.setdefault(key.removeprefix("--"), value)
+            key = key.removeprefix("--")
+            self.assertNotIn(key, values, 'duplicate option reached emulator: ' + key)
+            values[key] = value
         return values
 
     def test_presets_both_launch_paths(self):
@@ -101,10 +103,49 @@ fsuae_options || exit 1
                 extra="--uae_cpu_data_cache=false"))
             self.assertEqual(values["uae_cpu_data_cache"], "false")
 
+    def test_nommu_and_raw_memory_overrides(self):
+        for mode in ("exec", "launch"):
+            values = self.effective(self.run_launcher("a1200-040", mode,
+                extra="--cpu=68040-NOMMU --uae_z3mem_size=32 --uae_cpu_data_cache=false"))
+            self.assertEqual(values["uae_mmu_model"], "0")
+            self.assertEqual(values["uae_z3mem_size"], "32")
+            self.assertNotIn("zorro_iii_memory", values)
+            self.assertEqual(values["uae_cpu_frequency"], "25000000")
+            self.assertEqual(values["uae_cpu_data_cache"], "false")
+            values = self.effective(self.run_launcher("a1200-040", mode,
+                extra="--zorro_iii_memory=32768 --uae_z3mem_size=16 --uae_mmu_model=0"))
+            self.assertEqual(values["zorro_iii_memory"], "32768")
+            self.assertNotIn("uae_z3mem_size", values)
+            self.assertEqual(values["uae_mmu_model"], "0")
+
     def test_reapply_after_project_changes(self):
         values = self.effective(self.run_launcher("a1200-060", before="CPU=68000 FAST_KB=0"))
         self.assertEqual(values["cpu"], "68060")
         self.assertEqual(values["fast_memory"], "8192")
+
+    def test_cpu_variant_and_timing_aliases(self):
+        for mode in ('exec', 'launch'):
+            values = self.effective(self.run_launcher('a1200-040', mode,
+                extra='--cpu=68EC030 --uae_ntsc=true'))
+            self.assertEqual(values['uae_mmu_model'], '0')
+            self.assertEqual(values['uae_fpu_model'], '0')
+            self.assertEqual(values['ntsc_mode'], '1')
+            self.assertEqual(values['uae_ntsc'], 'true')
+            self.assertEqual(values['uae_cpu_frequency'], '25000000')
+
+    def test_jit_pair_and_unsupported_build(self):
+        for mode in ('exec', 'launch'):
+            values = self.effective(self.run_launcher('a1200-040', mode,
+                extra='--jit_compiler=1'))
+            self.assertEqual(values['uae_cachesize'], '8192')
+            values = self.effective(self.run_launcher('a1200-040', mode,
+                extra='--uae_cachesize=4096'))
+            self.assertEqual(values['jit_compiler'], '1')
+        (self.work / 'source-revision.txt').write_text('arm64; JIT disabled\n')
+        for mode in ('exec', 'launch'):
+            result = self.run_launcher('a1200-040', mode, extra='--jit_compiler=1')
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('JIT disabled', result.stderr)
 
     def test_ntsc_clock(self):
         values = self.effective(self.run_launcher("a1200", before="NTSC=1\nfsuae_options"))

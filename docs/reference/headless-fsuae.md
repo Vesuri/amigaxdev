@@ -41,7 +41,7 @@ drives and program options:
 | `fsuae_stop` | kills the tracked emulator; safe in `trap fsuae_stop EXIT` |
 | `fsuae_gdb_script F` | a copy of a checked-in `.gdb` with `127.0.0.1:NNNN` patched to `$DEBUG_PORT` |
 
-- **FS-UAE keeps the first value of a repeated option.** The launcher passes `$EXTRA_ARGS`
+- **The launcher resolves repeated options before starting FS-UAE.** It takes `$EXTRA_ARGS`
   first, then `AMIGA_SETUP` machine arguments (if selected), then the script's arguments,
   then `FSUAE_ARGS`, so `EXTRA_ARGS` overrides everything.
   Prefer the variables (`CHIP_KB=2048`) to `EXTRA_ARGS=--chip_memory=2048`; a script that
@@ -96,7 +96,7 @@ caches with directory hard drives. The 68020 has no data cache. `uae_cachesize=0
 to the disabled JIT translation cache, not the emulated CPU caches. Guest software still
 controls its cache registers; WHDLoad games need the game's `CACHE` option when appropriate.
 For a data-cache comparison, request the override through `EXTRA_ARGS` and verify the
-effective runtime setting; see the override limitation below.
+effective runtime setting as described below.
 
 The full 030 has its MMU; the 040 and 060 have their integrated MMU and FPU. The 040/060
 presets use the non-cycle-exact MMU core: their nominal clock is configured, but that core
@@ -111,12 +111,23 @@ An unknown nonempty name fails before launch. With `AMIGA_SETUP` unset or empty,
 behaviour is unchanged. A preset wins over individual machine variables; use `EXTRA_ARGS`
 for a deliberate exception, for example `EXTRA_ARGS='--fast_memory=4096'`.
 
-**Known override limitation:** conflicting high-level and raw `uae_*` options can be
-applied again by FS-UAE despite a duplicate being logged as ignored. Argument order
-alone does not establish the effective MMU, JIT, RAM or cache configuration. Verify
-the emulator's effective configuration and runtime report before measuring. The
-[open fix](../open-work.md#fs-uae-overrides-and-effective-configuration) tracks this;
-the argument-capture tests below do not cover it.
+**Override precedence:** `EXTRA_ARGS`, then the named preset, then caller arguments,
+then generated defaults; the first occurrence within that order wins. The launcher
+removes duplicate keys and competing RAM/FPU/CPU aliases, including raw UAE options.
+`--cpu=68040-NOMMU` also overrides a lower-priority MMU setting. JIT enablement requests
+an 8 MB translation cache unless a higher-priority explicit cache size is supplied;
+installed native builds reject JIT because they were compiled without it.
+
+Examples: `EXTRA_ARGS='--cpu=68040-NOMMU --uae_cpu_data_cache=false'` disables the MMU
+and data cache without changing the preset's clock. `EXTRA_ARGS='--zorro_iii_memory=32768'`
+(or `--uae_z3mem_size=32`) adds 32 MB Zorro III RAM while retaining other preset settings.
+High-level RAM values use FS-UAE's units; raw `*_size` options use UAE's units.
+
+Check `Cache/Logs/debug.uae` and the final `CPU=..., MMU=..., JIT=...` runtime report
+before measuring. Argument acceptance is insufficient, especially with private builds
+or config files. `python3 scripts/test_fsuae_config.py` exercises real native-emulator
+settings on both launch paths, including defaults, NOMMU, cache, Z3 and unsupported JIT.
+This establishes configuration/functionality, not timing accuracy.
 
 Install with `make share`; projects sourcing the installed shared launcher pick it up on
 their next run without repository edits. This does not change scripts that launch FS-UAE
@@ -203,7 +214,8 @@ The Barto stub in both FS-UAE builds, driven by `m68k-amiga-elf-gdb`.
 | `monitor fields N` | runs N whole PAL/NTSC fields (1–6000) from a stop and stops again: the reply comes at the last vsync |
 | `monitor mouse DX DY` | adds DX, DY (decimal, at most ±127) to the port-0 mouse counters, as host mouse motion would; works with `JOY0=none` |
 | `monitor input EVENT N` | sends an emulator input event by its config name with state N (decimal, 1 press, 0 release): `JOY1_FIRE_BUTTON` and `JOY1_2ND_BUTTON` are the port-0 mouse buttons, `JOY2_LEFT`, `JOY2_FIRE_BUTTON` and so on the port-1 joystick. Emulator actions (`SPC_*`) are refused |
-| `monitor harness` | prints the supported commands (`key fields mouse input`) |
+| `monitor harness` | prints supported commands; check capabilities before use |
+| `monitor input-state` | observes CIA-A SDR and the last guest-read PRA/POTGOR values with read counters; it neither polls host devices nor acknowledges interrupts |
 | `monitor profile N "" FILE` | as before; with no `--remote_debugger_trigger` the PC window is the whole 24-bit space instead of the stub's uninitialised `[0x0100007f, +0)` |
 
 Together they replace input tapes: stop, send input, `fields`, release, `fields`, with
@@ -214,8 +226,11 @@ all reply with an error, which gdb prints as `Protocol error with Rcmd`; a scrip
 replies misses it, so call `amigaxdev.gdbserve.require_harness(g, "mouse", ...)` first.
 It raises with the fix when the build is older. `scripts/test_fsuae_input.py [FS-UAE]` boots
 the Kickstart 1.3 ROM with no disk and reads mouse and joystick input back from JOY0DAT and
-JOY1DAT. The stub cannot read the CIAs, so the mouse buttons and keys are checked only for
-acceptance; Gunship's menu clicks and Prince of Persia's keys show them working in a game.
+JOY1DAT. The input observer verifies both mouse buttons and keyboard press/release through
+guest-visible values. PRA/POTGOR are latched by guest reads: require their read counters
+to advance after an action before trusting the value. Repeated observations while
+stopped must leave values and counters unchanged. This is an input-test instrument,
+not a general CIA register reader.
 
 - **Move the mouse in steps and let fields run between them.** The counters are 8 bits, so a
   game that reads them once a field loses a larger delta; Gunship moves in steps of at most
@@ -223,6 +238,22 @@ acceptance; Gunship's menu clicks and Prince of Persia's keys show them working 
   loop: move, run fields, read the position, repeat (Ferrari Formula One).
 - **Hold a button or key for several fields**: a game that polls once a frame misses a
   press and release within one field. Release everything held before ending a run.
+
+Use `amigaxdev.input.Input` with the CPU stopped. It checks capabilities, records
+commands/replies, rejects protocol errors and releases its held inputs in reverse order:
+
+```python
+from amigaxdev.input import Input
+with Input(g, log=write_action) as controls:
+    controls.button("JOY2_FIRE_BUTTON", True)
+    controls.fields(10)
+    controls.button("JOY2_FIRE_BUTTON", False)
+    controls.move_to((120, 80), read_game_pointer)
+```
+
+`read_game_pointer` and gameplay assertions belong to the project; motion is bounded
+and fails if the pointer does not converge. Cleanup attempts every release even when
+one fails, then reports the failure. Do not treat sending input as proof of gameplay.
 
 Key codes:
 cursor `4c-4f`, Return `44`, Space `40`, Esc `45`, Ctrl `63`, left Shift `60`, keypad digits

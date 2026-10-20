@@ -348,6 +348,13 @@ State each excluded region at the comparison tool, with the reason:
   inputs on cleanup. The native builds' `monitor key`, `mouse` and `input` do this; see
   [harness commands](headless-fsuae.md#harness-commands-native-builds), and check the build
   with `require_harness` before relying on them.
+- **Use a known broken build as an input-regression control.** Ferrari Formula One's
+  `test_drive_controls.py` now uses the shared emulator and `amigaxdev.input.Input`.
+  Its pinned RC2 passes throttle, coast, brake, restart and steering; RC1 receives
+  throttle but remains at zero speed and must fail. The clutch variant holds both
+  buttons, releases left while right remains held, then releases right. Keep the
+  slave hashes, addresses, exact thresholds and action logs in Ferrari's
+  `CONTROLS_REGRESSION.md` and local harness. Input-route success is not a timing claim.
 - **An early checkpoint is evidence only for that endpoint** (Alone in the Dark).
 
 ## 10. On-target checks

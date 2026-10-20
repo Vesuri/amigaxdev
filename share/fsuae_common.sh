@@ -31,7 +31,7 @@
 #                           calls it itself must set every variable first
 #   fsuae_launch ARGS...    start "$FSUAE" in the background with $EXTRA_ARGS, ARGS and
 #                           FSUAE_ARGS, log to $FSUAE_RUN/fsuae.log, track it, print its pid.
-#                           FS-UAE keeps the first value of a repeated option, so EXTRA_ARGS
+#                           The launcher removes lower-priority duplicates, so EXTRA_ARGS
 #                           beats AMIGA_SETUP, then the script's ARGS, then fsuae_options
 #   fsuae_exec ARGS...      the same in the foreground (exec), for interactive scripts
 # Variables (all optional; a script sets its own defaults before calling fsuae_options):
@@ -234,10 +234,11 @@ fsuae_setup() {
   esac
   export AMIGA_MODEL CPU CHIP_KB FAST_KB SLOW_KB KICKSTART
   FSUAE_SETUP_ARGS=(
-    --amiga_model="$AMIGA_MODEL" --cpu="$CPU" --kickstart_file="$KICKSTART"
+    --amiga_model="$AMIGA_MODEL" --uae_mmu_model="$mmu" --uae_fpu_model="$fpu"
+    --cpu="$CPU" --kickstart_file="$KICKSTART"
     --chip_memory="$CHIP_KB" --fast_memory="$FAST_KB" --slow_memory="$SLOW_KB"
     --zorro_iii_memory=0 --uae_mbresmem_size=0 --uae_a3000mem_size=0
-    --uae_chipset="$chipset" --uae_mmu_model="$mmu" --uae_fpu_model="$fpu"
+    --uae_chipset="$chipset"
     --jit_compiler=0 --uae_cachesize=0 --uae_cpu_speed=real
     --uae_cpu_multiplier=0 --uae_cpu_frequency="$frequency"
     --uae_cpu_data_cache="$data_cache"
@@ -349,30 +350,119 @@ fsuae_env() {
   return 0
 }
 
+# Resolve duplicates ourselves: raw UAE options are applied again by FS-UAE after
+# its ordinary parser, so relying on that parser's first-value-wins is unsafe.
+# Arguments arrive in precedence order (explicit overrides, preset, caller, defaults).
+fsuae_resolve_options() {
+  FSUAE_EFFECTIVE_ARGS=()
+  local arg key group seen='|' mmu fpu
+  for arg in "$@"; do
+    case "$arg" in
+      --*=*) key="${arg%%=*}" ;;
+      *) FSUAE_EFFECTIVE_ARGS+=("$arg"); continue ;;
+    esac
+    group="$key"
+    case "$key" in
+      --chip_memory|--uae_chipmem_size) group=chip ;;
+      --fast_memory|--uae_fastmem_size) group=fast ;;
+      --slow_memory|--uae_bogomem_size) group=slow ;;
+      --zorro_iii_memory|--uae_z3mem_size) group=z3 ;;
+      --motherboard_ram|--uae_a3000mem_size) group=motherboard ;;
+      --fpu|--uae_fpu_model) group=fpu ;;
+      --cpu|--uae_cpu_model) group=cpu ;;
+      --ntsc_mode|--uae_ntsc) group=ntsc ;;
+    esac
+    case "$seen" in *"|$group|"*) continue ;; esac
+    seen="$seen$group|"
+    FSUAE_EFFECTIVE_ARGS+=("$arg")
+    # CPU spellings imply MMU/FPU selections. Preserve earlier explicit settings,
+    # but do not let lower-priority raw options undo a CPU override.
+    case "$arg" in
+      --ntsc_mode=1) FSUAE_EFFECTIVE_ARGS+=(--uae_ntsc=true) ;;
+      --ntsc_mode=0) FSUAE_EFFECTIVE_ARGS+=(--uae_ntsc=false) ;;
+      --uae_ntsc=true|--uae_ntsc=yes|--uae_ntsc=1) FSUAE_EFFECTIVE_ARGS+=(--ntsc_mode=1) ;;
+      --uae_ntsc=false|--uae_ntsc=no|--uae_ntsc=0) FSUAE_EFFECTIVE_ARGS+=(--ntsc_mode=0) ;;
+      --cpu=*)
+        mmu= fpu=
+        case "${arg#*=}" in
+          68000|68010|68EC020|68020|68EC030) mmu=0 fpu=0 ;;
+          68030) mmu=68030 fpu=0 ;;
+          68040) mmu=68040 fpu=68040 ;;
+          68060) mmu=68060 fpu=68060 ;;
+          68040-NOMMU) mmu=0 fpu=68040 ;;
+          68060-NOMMU) mmu=0 fpu=68060 ;;
+          68EC040|68EC060) mmu=0 fpu=0 ;;
+          68LC040) mmu=68040 fpu=0 ;;
+          68LC060) mmu=68060 fpu=0 ;;
+        esac
+        case "$seen" in *'|--uae_mmu_model|'*) ;;
+          *) if [ -n "$mmu" ]; then
+               seen="$seen--uae_mmu_model|"; FSUAE_EFFECTIVE_ARGS+=(--uae_mmu_model="$mmu")
+             fi ;;
+        esac
+        case "$seen" in *'|fpu|'*) ;;
+          *) if [ -n "$fpu" ]; then
+               seen="${seen}fpu|"; FSUAE_EFFECTIVE_ARGS+=(--uae_fpu_model="$fpu")
+             fi ;;
+        esac ;;
+      --jit_compiler=1)
+        case "$seen" in *'|--uae_cachesize|'*) ;;
+          *) seen="$seen--uae_cachesize|"; FSUAE_EFFECTIVE_ARGS+=(--uae_cachesize=8192) ;;
+        esac ;;
+      --jit_compiler=0)
+        case "$seen" in *'|--uae_cachesize|'*) ;;
+          *) seen="$seen--uae_cachesize|"; FSUAE_EFFECTIVE_ARGS+=(--uae_cachesize=0) ;;
+        esac ;;
+      --uae_cachesize=*)
+        case "$seen" in *'|--jit_compiler|'*) ;;
+          *) seen="$seen--jit_compiler|"
+             if [ "${arg#*=}" = 0 ]; then FSUAE_EFFECTIVE_ARGS+=(--jit_compiler=0)
+             else FSUAE_EFFECTIVE_ARGS+=(--jit_compiler=1); fi ;;
+        esac ;;
+    esac
+  done
+}
+
+fsuae_validate_options() {
+  local arg binary revision
+  for arg in "${FSUAE_EFFECTIVE_ARGS[@]}"; do
+    [ "$arg" = --jit_compiler=1 ] || continue
+    binary=$(command -v "${FSUAE:-fs-uae}") || return 1
+    revision="$(dirname "$binary")/source-revision.txt"
+    if [ -f "$revision" ] && grep -q 'JIT disabled' "$revision"; then
+      echo 'This FS-UAE build has JIT disabled; select a JIT-capable build or remove the JIT override.' >&2
+      return 1
+    fi
+  done
+  return 0
+}
+
 fsuae_start() {
   fsuae_env "$@"
   exec "${FSUAE:-fs-uae}" "$@"
 }
 
-fsuae_launch() {
+fsuae_command() {
   [ -n "${FSUAE_ARGS+set}" ] || fsuae_options || return 1
   fsuae_setup || return 1
   # shellcheck disable=SC2086
   fsuae_monitor ${EXTRA_ARGS:-} "$@" "${FSUAE_ARGS[@]}" || return 1
+  # shellcheck disable=SC2086  # EXTRA_ARGS is word-split on purpose
+  fsuae_resolve_options ${EXTRA_ARGS:-} ${FSUAE_MONITOR_ARGS[@]+"${FSUAE_MONITOR_ARGS[@]}"} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}" || return 1
+  fsuae_validate_options
+}
+
+fsuae_launch() {
+  fsuae_command "$@" || return 1
   local log="${FSUAE_LOG:-$FSUAE_RUN/fsuae.log}"
   # The subshell execs, so $! is the emulator itself (what fsuae_stop_previous checks).
-  # shellcheck disable=SC2086  # EXTRA_ARGS is word-split on purpose
-  ( fsuae_start ${EXTRA_ARGS:-} ${FSUAE_MONITOR_ARGS[@]+"${FSUAE_MONITOR_ARGS[@]}"} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}" ) > "$log" 2>&1 &
+  ( fsuae_start "${FSUAE_EFFECTIVE_ARGS[@]}" ) > "$log" 2>&1 &
   fsuae_track $!
   echo "fs-uae pid $FSUAE_PID (log $log, port $DEBUG_PORT)"
 }
 
 fsuae_exec() {
-  [ -n "${FSUAE_ARGS+set}" ] || fsuae_options || return 1
-  fsuae_setup || return 1
-  # shellcheck disable=SC2086
-  fsuae_monitor ${EXTRA_ARGS:-} "$@" "${FSUAE_ARGS[@]}" || return 1
+  fsuae_command "$@" || return 1
   fsuae_track_self
-  # shellcheck disable=SC2086
-  fsuae_start ${EXTRA_ARGS:-} ${FSUAE_MONITOR_ARGS[@]+"${FSUAE_MONITOR_ARGS[@]}"} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}"
+  fsuae_start "${FSUAE_EFFECTIVE_ARGS[@]}"
 }

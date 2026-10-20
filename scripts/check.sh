@@ -57,6 +57,8 @@ check "FS-UAE arm64"           "$AMIGA_SHARE/fs-uae-arm/fs-uae" --version
 check "FS-UAE aprof"           "$AMIGA_SHARE/fs-uae-aprof/fs-uae" --version
 # Boots the Kickstart 1.3 ROM headless and reads the input commands' effect back.
 check "FS-UAE harness input"   "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_fsuae_input.py" "$AMIGA_SHARE/fs-uae-arm/fs-uae"
+check "FS-UAE aprof input"     "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_fsuae_input.py" "$AMIGA_SHARE/fs-uae-aprof/fs-uae"
+check "FS-UAE configuration"   "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_fsuae_config.py" "$AMIGA_SHARE/fs-uae-arm/fs-uae"
 check "LHa for UNIX"           sh -c "'$AMIGA_SHARE/lha-compressor/src/lha' --version 2>&1 | grep -q LHa"
 check "Python packages"        "$AMIGA_SHARE/python/bin/python3" -c 'import PIL, numpy, capstone, amitools'
 check "amigaxdev package"      "$AMIGA_SHARE/python/bin/python3" -I -c 'import amigaxdev.env, amigaxdev.barto, amigaxdev.gdbserve, amigaxdev.disasm, amigaxdev.adf, amigaxdev.patchlist, amigaxdev.release, amigaxdev.framework, amigaxdev.mac.resource_fork, amigaxdev.dos.mz_info'
