@@ -49,6 +49,36 @@ scope of each and close the hardware retest only when it has happened. Pokeri
 0.91 was confirmed to fix coin-in on the user's A1200 with 68040/40 MHz, MMU and
 32 MB RAM; that does not requalify every game path or memory configuration.
 
+## Macintosh logical addresses and native high pointers
+
+A Macintosh 24-bit logical address can carry tags in its top byte. A relocated
+Amiga pointer can use those same bits for real Fast RAM above 16 MB. The emulated
+Macintosh address-mode byte does not restrict the native physical address space;
+keep handle flags separately rather than embedding them in native pointers.
+
+Prince of Persia 2's `StripAddress` regression (`b474556`) truncated a native pointer
+with `$00FFFFFF`, causing missing artwork with 32 MB Zorro III RAM. Its fix follows
+Alone in the Dark: preserve the full native pointer. This needs a shared regression
+fixture, not another identity-function implementation.
+
+`mac-runtime/StripAddressChecks.h` provides 384 native cases: six zero/low/high
+pointers, all CCR inputs and both emulated modes. Adapt every real dispatch path
+(full, warm and any native entry) to its snapshot callback; check all saved
+registers, flags, trap PC advancement and both mode bytes. Its separate 192-case
+original contract masks Macintosh tags and checks the System 7.5.5 low-word N/Z
+behavior, retained X and cleared V/C. Never require the native physical result to
+match the original logical pointer numerically.
+
+Run `scripts/test_strip_address.cpp` for fixture controls: old truncation and
+corrupt register/mode/CCR/PC results must fail. That host test validates the checker;
+it does not execute a consumer's dispatch. Prince of Persia 2's original and native
+integration evidence is pinned in `manifest/release-z3.sha256`; its checker also
+requires completed integration and restoration. Preserve project-specific addresses
+and gameplay checkpoints there. Qualify both ordinary and high-memory launches with
+actual gameplay progression, clean quit, restored vectors/patches and WHDLoad return.
+The high-memory reference completes eight gameplay updates and Amiga-Q with 32 MB Z3,
+NOMMU and JIT off; this is correctness evidence, not a timing claim.
+
 ## Cache publication at dynamically installed entries
 
 A registered code pointer need not be ready to execute when it is registered.
@@ -114,3 +144,42 @@ executable is unchanged, then record the final archive size and SHA-256.
 A pushed commit or tag does not upload an ignored local release archive.
 Distinguish building and verifying the archive from publishing it as a release
 asset, and report which was actually done.
+
+## Filename limits and extracted members
+
+`amigaxdev.release.archive` validates every path component before compression.
+The default policy is ASCII names with the classic 30-byte component limit,
+including `.info`; a drawer name therefore has at most 25 bytes when it has an icon.
+Other target filesystems require an explicit, documented `component_limit`.
+The encoder remains ASCII; do not assume a character count equals a byte count for
+another encoding. Absolute paths, traversal, control characters and case-insensitive
+duplicate file names are rejected.
+
+After independent Lhasa extraction, call
+`release.check_extracted_names(directory, expected_members)` with the complete
+planned file list, including drawer and installer icons. Exact names detect
+truncation and lost drawer/icon pairing. `Prince of Persia 2 Install.info` exceeds
+the default limit; `PoP2 Install.info` fits. RAM: installation is supported within
+its filesystem's naming limits; it should not be prohibited as a workaround.
+
+## Installation verification and normal startup
+
+Verify pinned original input identities in host or installation tooling before use.
+Ordinary game startup selects a release build; whole-file hashing, traces, exhaustive
+fixtures and expensive diagnostic audits require an explicit verification option.
+Keep format, extent, ownership and unknown-operation rejection guards active in both
+builds, including named failure stops. Do not turn malformed data into success.
+
+Use `release.audit_executable` with explicit diagnostic-symbol patterns and required
+runtime-guard symbols. Release must contain none of the diagnostic symbols;
+verification must match every requested diagnostic pattern. Supply the project's
+pinned deterministic ELF-to-HUNK converter; the audit compares its output byte for
+byte with the independently extracted executable. A stale ELF, different converter
+or unintended build therefore fails, even if the requested flags look correct.
+
+This audit supplements behavioral tests: prove malformed extents and unknown services
+still fail, and installation identity checks still reject changed inputs. Prince of
+Persia 2's `tools/check_scaffold_link.py` supplies a concrete release policy. Host
+fixture tests cover both modes and reject altered executable/guard evidence. Any
+startup-speed claim needs matched workloads and measurement; removing diagnostics
+alone is not a measured result.

@@ -315,3 +315,13 @@ result condition codes preserve the saved X/high bits. MMU mode accepts only
 low-byte 0/1 and preserves the current heap error; handle successes clear it.
 Prince of Persia 2 pairs the bodies with its checked, original-paired C services
 across handle flags, condition codes, invalid slots and MMU modes.
+
+## StripAddressChecks.h
+
+A regression fixture for native high pointers, not a runtime implementation.
+`strip_address_checks::native(dispatch, report, pc)` checks 384 register/CCR/mode
+cases; adapt each production dispatch to the snapshot contract and include normal
+trap-PC advancement. `original24` checks the separate Macintosh logical tagging
+contract (192 cases). The report callback must fail the caller's test on a false
+result. See [native pointer validation](../../docs/native-port-validation.md#macintosh-logical-addresses-and-native-high-pointers)
+for original-paired evidence and low/high-memory gameplay qualification.

@@ -33,6 +33,7 @@ search for the affected option, helper or symptom before reading surrounding tex
 | Smooth rendering without advancing gameplay; projection or animation | [Simulation and presentation](playbooks/simulation-and-presentation.md) |
 | CPU instruction costs, C/assembly optimisation or copies | [m68k optimisation](reference/m68k-optimisation.md) |
 | Chip bus, copper, blitter, Paula, DMA, interrupts or OS handback | [Amiga hardware](reference/amiga-hardware.md) |
+| Macintosh pointer truncation above 16 MB | [Logical and native addresses](native-port-validation.md#macintosh-logical-addresses-and-native-high-pointers) |
 | Compiler flags, linking, HUNK conversion or release builds | [Port toolchain](reference/port-toolchain.md) |
 | Installer, icons, archives or release validation | [Native port release checks](native-port-validation.md); the selected WHDLoad playbook's §13 for slave releases |
 
