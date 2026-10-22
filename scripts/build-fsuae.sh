@@ -8,6 +8,8 @@
 # patches/fsuae-harness.patch (`monitor key`, `monitor fields`, `monitor mouse`,
 # `monitor input`, `monitor harness`, whole-space profiling).
 # patches/fsuae-input-observer.patch adds side-effect-free guest input snapshots.
+# patches/fsuae-determinism.patch initialises two upstream reads of uninitialised memory that
+# made otherwise identical runs differ (serial break detection, screenshot columns).
 # SDL2_ttf and libmpeg2 are linked statically from pinned tarballs; glib, gettext, libpng,
 # freetype and SDL2 come from Homebrew (Brewfile), so rebuild after a major upgrade of those.
 set -euo pipefail
@@ -32,6 +34,8 @@ input_patch="$REPO/patches/fsuae-input-observer.patch"
 input_sha=$(sha256 "$input_patch")
 register_patch="$REPO/patches/fsuae-register-observer.patch"
 register_sha=$(sha256 "$register_patch")
+determinism_patch="$REPO/patches/fsuae-determinism.patch"
+determinism_sha=$(sha256 "$determinism_patch")
 patch_sha=""; [ -n "$patch" ] && patch_sha=$(sha256 "$patch")
 
 # Already built from the same commit and patch: nothing to do.
@@ -42,6 +46,7 @@ if [ -x "$dest/fs-uae" ] && [ -f "$rev" ] && grep -q "$commit" "$rev" \
    && grep -q "harness $harness_sha" "$rev" \
    && grep -q "input-observer $input_sha" "$rev" \
    && grep -q "register-observer $register_sha" "$rev" \
+   && grep -q "determinism $determinism_sha" "$rev" \
    && { [ -z "$patch_sha" ] || grep -q "$patch_sha" "$rev"; } \
    && { [ -n "$patch_sha" ] || ! grep -q " + patch " "$rev"; }; then
   exit 0
@@ -78,6 +83,7 @@ git -C "$src" apply "$freq_patch"
 git -C "$src" apply "$harness_patch"
 git -C "$src" apply "$input_patch"
 git -C "$src" apply "$register_patch"
+git -C "$src" apply "$determinism_patch"
 [ -n "$patch" ] && git -C "$src" apply "$patch"
 export PKG_CONFIG_PATH="$deps/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 (cd "$src" && ./bootstrap >"$build/fs-uae.log" 2>&1 \
@@ -96,6 +102,7 @@ cp -R "$src/data" "$dest/data"
   printf '%s %s core-fix %s cpu-frequency %s harness %s' "$url" "$commit" "$core_sha" "$freq_sha" "$harness_sha"
   printf ' register-observer %s' "$register_sha"
   printf ' input-observer %s' "$input_sha"
+  printf ' determinism %s' "$determinism_sha"
   [ -n "$patch" ] && printf ' + patch %s %s' "$(basename "$patch")" "$patch_sha"
   printf '\nSDL2_ttf 2.0.15 and libmpeg2 0.5.1 static; arm64; JIT disabled\n'
 } > "$rev"

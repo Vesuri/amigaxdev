@@ -221,7 +221,17 @@ The Barto stub in both FS-UAE builds, driven by `m68k-amiga-elf-gdb`.
 Together they replace input tapes: stop, send input, `fields`, release, `fields`, with
 `profile` chunks between input events. The run is exactly repeatable with
 `WARP=1 DETERMINISTIC=1 JOY0=none` (Prince of Persia: identical per-PC cycles, field totals
-and frame timestamps across boots). Bad arguments, an unknown event and an unknown command
+and frame timestamps across boots) except for what host timing decides: a Ctrl-C lands at
+whichever vsync is current when it arrives. `patches/fsuae-determinism.patch` removes two
+reads of uninitialised host memory that made runs differ: the serial port's break detection
+(`checkreceive_serial` used an unset `breakcond`; in some runs Paula then received zeros and
+raised RBF every character period once the guest set SERPER, visible in INTREQR) and the
+chipset frame buffer (screenshots include columns the chipset never draws: the two rightmost
+of an A500 screen held leftover host memory). `scripts/test_fsuae_repeat.py [FS-UAE]` boots
+the A1200 and A500 3.1 ROMs with no disk and runs breakpoint, `fields`, chained `profile`,
+register-read and Ctrl-C stops twice; the runs must agree on registers, beam position, chip
+RAM and every trace byte, the guest's own field counter (`GfxBase->VBCounter`) must advance by
+exactly the fields each command ran, and chained chunks must match one unbroken profile. Bad arguments, an unknown event and an unknown command
 all reply with an error, which gdb prints as `Protocol error with Rcmd`; a script that only reads
 replies misses it, so call `amigaxdev.gdbserve.require_harness(g, "mouse", ...)` first.
 It raises with the fix when the build is older. `scripts/test_fsuae_input.py [FS-UAE]` boots

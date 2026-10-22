@@ -1,0 +1,36 @@
+diff --git a/src/od-fs/fsvideo.cpp b/src/od-fs/fsvideo.cpp
+index e0165258..8646d16c 100644
+--- a/src/od-fs/fsvideo.cpp
++++ b/src/od-fs/fsvideo.cpp
+@@ -770,7 +770,8 @@ int lockscr(struct vidbuffer *vb, bool fullupdate, bool first)
+ 				int max_bytes = uae_fsvideo.bytes_per_pixel * \
+ 					AMIGA_WIDTH * AMIGA_HEIGHT;
+ 				uae_fsvideo.chipset_framebuffer_bytes = max_bytes;
+-				uae_fsvideo.chipset_framebuffer =  (uae_u8 *) malloc(
++				// Zeroed: screenshots include columns the chipset never draws.
++				uae_fsvideo.chipset_framebuffer =  (uae_u8 *) calloc(1,
+ 					uae_fsvideo.chipset_framebuffer_bytes);
+ 			}
+ 			vb->bufmem = uae_fsvideo.chipset_framebuffer;
+diff --git a/src/od-win32/serial_win32.cpp b/src/od-win32/serial_win32.cpp
+index b64b8bc9..96c1d035 100644
+--- a/src/od-win32/serial_win32.cpp
++++ b/src/od-win32/serial_win32.cpp
+@@ -450,7 +450,7 @@ static void checkreceive_serial (void)
+ 		return;
+ 
+ 	if (ninebit) {
+-		bool breakcond;
++		bool breakcond = false;
+ 		int status = readseravail(&breakcond);
+ 		if (break_in_serdatr == -1 || break_in_serdatr > 0) {
+ 			serial_recv_previous = 0;
+@@ -506,7 +506,7 @@ static void checkreceive_serial (void)
+ 			}
+ 		}
+ 	} else {
+-		bool breakcond;
++		bool breakcond = false;
+ 		int status = readseravail(&breakcond);
+ 		if (break_in_serdatr == -1 || break_in_serdatr > 0) {
+ 			// break: stop bit is zero
