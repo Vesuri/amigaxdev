@@ -211,12 +211,12 @@ The Barto stub in both FS-UAE builds, driven by `m68k-amiga-elf-gdb`.
 | Command | Does |
 |---|---|
 | `monitor key RAW 0\|1` | queues raw Amiga key code `RAW` (hex) as pressed (1) or released (0) on the emulated keyboard, exactly as a host key would arrive; works with the window in the background or with no window |
-| `monitor fields N` | runs N whole PAL/NTSC fields (1–6000) and stops again at a vsync: the reply comes at the last one. From a stop left by `fields` or `profile` (already at a vsync) that is exactly N fields; from any other stop (breakpoint, interrupt, `BOOT_BREAK`) the current partial field is finished first |
+| `monitor fields N` | runs N whole PAL/NTSC fields (1–6000) from a stop and stops again: the reply comes at the last vsync |
 | `monitor mouse DX DY` | adds DX, DY (decimal, at most ±127) to the port-0 mouse counters, as host mouse motion would; works with `JOY0=none` |
 | `monitor input EVENT N` | sends an emulator input event by its config name with state N (decimal, 1 press, 0 release): `JOY1_FIRE_BUTTON` and `JOY1_2ND_BUTTON` are the port-0 mouse buttons, `JOY2_LEFT`, `JOY2_FIRE_BUTTON` and so on the port-1 joystick. Emulator actions (`SPC_*`) are refused |
 | `monitor harness` | prints supported commands; check capabilities before use |
 | `monitor input-state` | observes CIA-A SDR and the last guest-read PRA/POTGOR values with read counters; it neither polls host devices nor acknowledges interrupts |
-| `monitor profile N "" FILE` | as before; with no `--remote_debugger_trigger` the PC window is the whole 24-bit space instead of the stub's uninitialised `[0x0100007f, +0)`. Profiling starts at the next vsync, so after a `fields` or `profile` stop one whole field runs unprofiled first |
+| `monitor profile N "" FILE` | as before; with no `--remote_debugger_trigger` the PC window is the whole 24-bit space instead of the stub's uninitialised `[0x0100007f, +0)` |
 
 Together they replace input tapes: stop, send input, `fields`, release, `fields`, with
 `profile` chunks between input events. The run is exactly repeatable with

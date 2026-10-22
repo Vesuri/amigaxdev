@@ -1,5 +1,5 @@
 diff --git a/src/barto_gdbserver.cpp b/src/barto_gdbserver.cpp
-index 0f3249a9..a62707c2 100644
+index 0f3249a9..16b25d52 100644
 --- a/src/barto_gdbserver.cpp
 +++ b/src/barto_gdbserver.cpp
 @@ -22,6 +22,7 @@
@@ -18,7 +18,7 @@ index 0f3249a9..a62707c2 100644
  	std::unique_ptr<cpu_profiler_unwind[]> profile_unwind{};
  
  	enum class state {
-@@ -254,9 +256,11 @@ namespace barto_gdbserver {
+@@ -254,6 +256,7 @@ namespace barto_gdbserver {
  		debugging,
  		profile,
  		profiling,
@@ -26,20 +26,7 @@ index 0f3249a9..a62707c2 100644
  	};
  
  	state debugger_state{ state::inited };
-+	bool field_boundary{}; // stopped at a vsync by "fields" or "profile": no partial field to finish
- 
- 	bool is_enabled() {
- 		return enabled;
-@@ -526,6 +530,8 @@ namespace barto_gdbserver {
- 					ack = "+";
- 					response = "$";
- 					response += "S05"; // SIGTRAP
-+					if(debugger_state != state::debugging)
-+						field_boundary = false;
- 					debugger_state = state::debugging;
- 					activate_debugger();
- 				} else if(!request.empty() && request[0] == '$') {
-@@ -690,6 +696,49 @@ namespace barto_gdbserver {
+@@ -690,6 +693,48 @@ namespace barto_gdbserver {
  										savestate_quick(1, 0); // restore state saved at process entry
  										barto_debug_resources_count = 0;
  										response += "OK";
@@ -48,8 +35,7 @@ index 0f3249a9..a62707c2 100644
 +										unsigned n = 0; char extra;
 +										if(sscanf(cmd.c_str(), "fields %u %c", &n, &extra) == 1 && n > 0 && n <= 6000) {
 +											send_ack(ack);
-+											// From any other stop the first vsync only ends the current partial field.
-+											advance_fields = field_boundary ? n : n + 1;
++											advance_fields = n + 1; // the first vsync ends the current partial field
 +											debugger_state = state::advancing;
 +											deactivate_debugger();
 +											return; // response is sent at the last vsync
@@ -89,20 +75,19 @@ index 0f3249a9..a62707c2 100644
  									} else {
  										// unknown monitor command
  										response += "E01";
-@@ -972,6 +1021,12 @@ namespace barto_gdbserver {
+@@ -972,6 +1017,11 @@ namespace barto_gdbserver {
  		if(!enabled) // "gdbserver"
  			return;
  
 +		if(debugger_state == state::advancing && --advance_fields == 0) {
 +			send_response("$OK");
-+			field_boundary = true;
 +			debugger_state = state::debugging;
 +			activate_debugger();
 +		}
  		static uae_u32 profile_start_cycles{};
  		static size_t profile_custom_regs_size{};
  		static uae_u8* profile_custom_regs{}; // at start of profile 
-@@ -1051,7 +1106,9 @@ start_profile:
+@@ -1051,7 +1101,9 @@ start_profile:
  			}
  
  			// start profiler
@@ -113,22 +98,6 @@ index 0f3249a9..a62707c2 100644
  			debug_dma = 1;
  			profile_start_cycles = static_cast<uae_u32>(get_cycles() / cpucycleunit);
  			//barto_log("GDBSERVER: Start CPU Profiler @ %u cycles\n", get_cycles() / cpucycleunit);
-@@ -1174,6 +1231,7 @@ start_profile:
- 				fclose(profile_outfile);
- 				send_response("$OK");
- 
-+				field_boundary = true;
- 				debugger_state = state::debugging;
- 				activate_debugger();
- 			} else {
-@@ -1412,6 +1470,7 @@ start_profile:
- send_response:
- 			send_response("$" + response);
- 			trace_mode = 0;
-+			field_boundary = false;
- 			debugger_state = state::debugging;
- 		}
- 
 diff --git a/src/include/keybuf.h b/src/include/keybuf.h
 index d411ec02..2475a884 100644
 --- a/src/include/keybuf.h
