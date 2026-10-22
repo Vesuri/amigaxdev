@@ -814,6 +814,14 @@ interpreter before booting. Battlehawks `docs/c2p.md`, `tools/c2p_stats.py`.
   ownership with the matching free routine and size. Do not infer physical fast RAM merely
   from an Exec FAST flag: distinguish expansion slow RAM from uncontended fast RAM in profiles.
   LoV moves only its chunky allocation, not its whole pool, on every CPU.
+- **Follow DMA addresses through image descriptors.** A header read only by the CPU can still
+  determine a DMA source: native code may add a pixel offset to the header's own address.
+  Moving that header then redirects the blitter even if the pixel data stayed in Chip RAM.
+  Road Rash showed colored rectangles after relocation, including a separate bootstrap
+  loading image after the other screens were fixed. Trace the final hardware pointer through
+  header decoding and base-plus-offset arithmetic. Keep inseparable descriptor/pixel blocks
+  in Chip RAM, or explicitly preserve their pixel base when relocating the descriptor.
+  Check loading, intro, menus and gameplay independently; their formats and owners can differ.
 - **Draw in fast RAM, copy to chip** on a 68020+ with real fast RAM (Powerdrome): copy the
   rasterizer into fast RAM along with a staging bitmap, draw the scene there, then wait for the
   display handshake immediately before a `MOVEM` copy of the drawn rows into the chip back buffer,

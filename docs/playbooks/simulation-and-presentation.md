@@ -67,6 +67,22 @@ reference point and roadside signs to their ground contact. Check consecutive fr
 segment crossings, row changes and sprite transitions; a higher frame rate alone does not
 establish smooth placement. Keep these presentation corrections separate from physics state.
 
+Visibility needs fractional precision too. Road Rash compared separately truncated rider
+and camera positions; their segment crossings happened at different times, making a steady
+separation alternate across the distant-view and mirror cutoffs. Subtract full fixed-point
+positions before comparing visibility bounds. Keep the native segment-index difference for
+projection if it indexes road samples: visibility distance and projection index are different
+quantities. Test both sides of each cutoff while advancing both positions together.
+
+Check continuity across track intervals before blaming interpolation. Road Rash's fractional
+camera-height term used one interval while forward height accumulation began with the next.
+At each crossing that mismatch produced a vertical jump shared by the road and riders. Compare
+the same world point immediately before and after a segment boundary, including table wraps
+and section reloads. Align the fractional term with the interval being accumulated, and keep
+road, scenery, riders and clipping on that same reference. If collision code reuses these
+tables, trace the fields it actually consumes before calling the correction presentation-only;
+a shared table alone neither proves nor rules out a gameplay effect.
+
 ## Control memory layout in state comparisons
 
 A bigger slave can change where WHDLoad loads the game. In I500 the option-disabled build

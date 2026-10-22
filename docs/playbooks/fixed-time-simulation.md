@@ -57,6 +57,14 @@ to older ticks. Record input against the clock consumed by the simulation instea
   and long pauses so a test-only history limit does not become a release abort. If the
   policy discards elapsed input/time, expose that as recovery, not a successful exact match.
 
+For speed acceptance, compare after equal durations of **applied input**, separately from
+input-to-update and input-to-display latency. Road Rash's original variable-step path could
+apply a newly sampled throttle state retroactively across the preceding frame. Correcting
+that behavior changed distance at a fixed wall-clock checkpoint even when equal applied-input
+durations produced matching speed. Record when each input was sampled and which simulation
+time consumed it. Retain equal-elapsed-field checks and latency bounds as separate gates;
+matching applied-input duration must not hide delayed input, dropped time or catch-up backlog.
+
 ## Audit every kind of game time
 
 Player movement looking correct does not establish that animation, AI or combat is correct.
