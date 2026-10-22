@@ -229,6 +229,13 @@ eleven callee-saved ones.
 
 ## 7. Arithmetic
 
+- **Signed shifts encode a rounding policy.** `ASR #2` maps −1 through −3 to −1,
+  while +1 through +3 become zero. Gunship's bank-to-turn calculation therefore biased
+  small corrections left. Where symmetric truncation toward zero is intended, add 3 to
+  negative operands before shifting by two; preserve operand width and check the range.
+  This changes native behavior, so treat it as an approved handling correction rather
+  than a bit-exact optimisation. Check paired positive/negative small inputs and reversals;
+  preserve the original rounding when native equivalence is the requirement.
 - **Never emit a 32-bit software multiply or divide on a 68000.** The 68000 has only
   `MULU.W`/`MULS.W` (16×16→32) and `DIVU.W`/`DIVS.W` (32÷16→16q:16r). Each 68000 port keeps a
   `m68k_math.h` of inline-asm 16-bit helpers (plain C on the host) and an objdump audit that

@@ -26,6 +26,42 @@ I500's replay wipe needs the original wait even when ordinary drawing is uncappe
 transitions and animation state machines, and compare durations using the same emulated
 clock, not frame counts. Smooth racing alone does not validate the main-loop change.
 
+## Verify input in the rendered frame
+
+A timestamp for the first frame completion after an input event does not prove that frame
+contains the input. Distinguish input injection, sampling, consumption, camera publication,
+render completion and display exchange. Agree whether the target is the next newly drawn
+frame after sampling or the next completion, which may belong to an in-progress frame.
+
+Compare paired runs from the same pre-input state, with and without a real input event.
+Inspect both the camera used for drawing and the resulting pixels; a changed simulation
+record alone is insufficient. Gunship's PAL 020/060 checks injected right stick after camera
+publication: the in-progress frame stayed byte-identical, while the first subsequent draw
+changed camera bank and visible pixels. Its accepted target is the next newly drawn frame.
+Framebuffer evidence does not establish scanout latency, especially with a pending VBL swap.
+
+## Preserve side effects of display work being removed
+
+Before replacing a screen rebuild with bitplane-pointer swaps, inventory its other writes
+and their owners. Gunship's native rebuild also restored the normal palette; removing it
+left the final red/orange damage flash stuck. The replacement restores the selected bitmap's
+saved background colour when the hit timer expires, including fields with no pending frame.
+Do not assume the normal colour is black. Check effect activation and expiry, both buffers,
+modal handoffs and screen rebuilds; preserve active effects rather than resetting them at
+every swap.
+
+## Preserve recorded-demo ownership when changing live controls
+
+An attract demo can use a tick-indexed input tape and a separate any-key exit decoder.
+Replacing the live input path can bypass both: Gunship's enhanced mode initially left the
+demo idle and unable to exit. It now selects the entire native flight loop at demo entry,
+retaining native tape timing and exit handling; ordinary play keeps enhanced timing.
+
+Audit playback progression and exit separately from live controls, including the transition
+back to ordinary play. Native demo ownership is a compatibility option, not a requirement
+for every game; if playback is retimed, preserve its tape clock and command semantics
+explicitly. Demo progression under native timing is not evidence for enhanced world rate.
+
 ## Predict from the native update order when possible
 
 With alpha in [0, 1] measuring time since the latest completed tick:

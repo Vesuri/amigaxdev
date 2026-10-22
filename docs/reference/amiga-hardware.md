@@ -358,6 +358,11 @@ re-inserts the system copper list after every `WaitTOF`.
   D-only clear) paid (Revs [000]). On faster CPUs it can become the bottleneck.
 - **Drain before CPU access**: CPU reads of blit targets wait, and CPU writes, cache eviction,
   free and teardown all need the blitter idle (Pokeri).
+  Audit library calls as well as direct register writes: an asynchronous `BltClear` must
+  finish before the CPU reuses its buffer. Gunship's clear raced LZW dictionary use on
+  68040; waiting for completion fixed corruption with full MMU and CACHE enabled. Check
+  this ownership boundary before attributing corruption to caches or disabling the MMU.
+  Emulator success establishes that tested path, not real-hardware certification.
 - **Interleaved bitmaps multiply blit height by the plane count**; split tall blits (Pokeri: a
   4-plane 292-row clear needs two).
 - **The first/last-word masks apply to channel A only.** For a masked blit of a constant pen, put
