@@ -216,7 +216,7 @@ The Barto stub in both FS-UAE builds, driven by `m68k-amiga-elf-gdb`.
 | `monitor input EVENT N` | sends an emulator input event by its config name with state N (decimal, 1 press, 0 release): `JOY1_FIRE_BUTTON` and `JOY1_2ND_BUTTON` are the port-0 mouse buttons, `JOY2_LEFT`, `JOY2_FIRE_BUTTON` and so on the port-1 joystick. Emulator actions (`SPC_*`) are refused |
 | `monitor harness` | prints supported commands; check capabilities before use |
 | `monitor input-state` | observes CIA-A SDR and the last guest-read PRA/POTGOR values with read counters; it neither polls host devices nor acknowledges interrupts |
-| `monitor profile N "" FILE` | as before; with no `--remote_debugger_trigger` the PC window is the whole 24-bit space instead of the stub's uninitialised `[0x0100007f, +0)`. Profiling starts at the next vsync, so after a `fields` or `profile` stop one whole field runs unprofiled first |
+| `monitor profile N "" FILE` | as before; with no `--remote_debugger_trigger` the PC window is the whole 24-bit space instead of the stub's uninitialised `[0x0100007f, +0)`. After a `fields` or `profile` stop it starts at once, so consecutive chunks are contiguous; the first field then lacks the few cycles of the instruction that was running at the vsync. After any other stop it starts at the next vsync |
 
 Together they replace input tapes: stop, send input, `fields`, release, `fields`, with
 `profile` chunks between input events. The run is exactly repeatable with
