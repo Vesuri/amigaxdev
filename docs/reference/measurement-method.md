@@ -150,6 +150,21 @@ coverage before blaming storage; resident reads still have copying and preparati
 costs. Alone in the Dark's measured 307 ms FIGHT I/O wait was standalone evidence,
 not a measurement of its PRELOAD path.
 
+### Compare within one CPU model
+
+Keep the emulator binary, CPU core, MMU, cache and memory settings fixed within an
+A/B pair. TFX's tested non-cycle-exact 060 path did not charge Chip RAM writes;
+its per-PC observer worked only on the 040 NOMMU core. These are properties of
+those builds and paths, not promises about every FS-UAE version. Check observer
+availability and memory charges on the selected core before interpreting results.
+Do not rank physical accelerators from cross-preset frame counts.
+
+Even an identical input tape can draw different workloads when speed changes:
+more frames can mean more simulation steps, objects or fill calls. For small exact
+optimizations, compare routine costs on identical inputs and count calls separately;
+use flight throughput as supporting evidence. Report estimated hardware cycles as
+estimates, and leave real-hardware FPS unclaimed until measured.
+
 ## 4. Verify the instrument
 
 A first reading proves nothing until the instrument has failed on purpose. The rules below

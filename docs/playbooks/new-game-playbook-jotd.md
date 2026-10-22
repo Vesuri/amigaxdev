@@ -366,6 +366,12 @@ fork-specific build, source ownership and release rules below take precedence.
   when defines change. Update `Makefile_windows.mak` dependencies for each added module,
   following TD2, and check all include files needed by an upstream build are accounted for.
 
+For cached disk fixtures, follow [seed identity and artifact retention](../reference/validation-harness.md#cached-boot-images-are-part-of-the-fixture).
+For arithmetic ports, use [integer/FPU differentials](../reference/validation-harness.md#integer-and-fpu-replacements)
+and the [020–060 instruction audit](../reference/m68k-optimisation.md#sharing-optimized-routines-across-020030040060).
+Debugger-extension limits and hunk discovery are covered in
+[headless FS-UAE](../reference/headless-fsuae.md#project-debugger-extensions-and-memory-discovery).
+
 ## 11. Measuring an improvement
 
 Use the [shared procedure](new-game-playbook.md#11-measuring-an-improvement). Paths refer to

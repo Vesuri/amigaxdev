@@ -85,6 +85,22 @@ Some code must stay 68000-compatible while one routine wants 68020 modes: assemb
 routine for the 68020 (Vette). A game that is itself 68020 code needs no 68000 plan (Alone in
 the Dark).
 
+### Sharing optimized routines across 020/030/040/060
+
+Audit instruction forms, not just mnemonic names. The 060 does not implement the
+32-by-32 multiply form producing a 64-bit result in two registers; TFX's reciprocal
+fill therefore uses a division path there. Keep MOVE16 and other CPU-specific
+instructions behind appropriate CPU checks. Distinguish a full FPU-equipped CPU
+from LC/EC parts, and test how native replacements combine with FPSP patch lists.
+Unsupported FPU instructions must actually trap in an emulator test intended to
+exercise FPSP; permissive emulation can hide the missing native path.
+
+Gate an optimization by measured benefit, not the CPU it was first developed on.
+TFX shared its renderer and Fast RAM placement across FPU-equipped CPUs, but kept
+rotation caching on the full 040 and changed-block copying off the cacheless 020.
+Check each CPU independently; a cache-dependent win need not help a CPU without a
+data cache. See [measurement limits](measurement-method.md#compare-within-one-cpu-model).
+
 ## 3. Read what the compiler emitted
 
 The source saying `move.l` guarantees nothing. **Disassemble before designing an asm twin and

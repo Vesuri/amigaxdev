@@ -129,6 +129,16 @@ Revs).
   Count interpreter and fallback entries in production scenarios, and fail on an unexpected
   one (Slicks, Revs).
 
+### Integer and FPU replacements
+
+For native arithmetic replacements, compare complete output arrays, clipping and
+saturation, signed overflow, GPRs, CCR and preserved FPU state (FP registers,
+FPCR, FPSR and FPIAR). Include boundary operands, rounding modes and fallback
+conditions, not just operands from one flight. Mask only architecturally undefined
+storage, such as padding words in extended-precision memory values; do not waive
+numerical or control-state differences. TFX used original guest execution plus an
+independent integer oracle and deliberately corrupted outputs to check the checker.
+
 ## 4. Fixtures: what to randomise
 
 **Randomise by default.** Randomise the whole guest state, including gating bytes, and
@@ -289,6 +299,31 @@ runs captured with different amounts of output.
   reads like a real regression (Revs).
 - **Never re-record to make a failure pass.** Record baselines before changing the generator
   or CPU model, and compare all affected trajectories afterwards.
+
+### Cached boot images are part of the fixture
+
+A seed HDF contains the installed slave, startup command and WHDLoad CUSTOM options.
+Changing a host-side slave or option does not change a reused image. Key seeds by
+build and option hashes, or regenerate them whenever either changes. Verify loaded
+patch bytes as well as launch metadata. Reuse a seed only for the same configuration;
+a same-length live patch is an alternative for an isolated routine comparison, with
+cache publication handled explicitly. TFX found apparently valid A/B runs that had
+booted the same options from a shared seed.
+
+### Retaining evidence without retaining every scratch file
+
+Separate immutable inputs and useful evidence from reproducible scratch output.
+Keep build hashes, commands, tapes, summaries, screenshots, required raw captures
+and tools. Mark generated boot disks and temporary memory-discovery dumps as
+rebuildable; delete them only after checking that no active run uses them. Preserve
+any unique saves or input data before removing a disk image. Measure allocated disk
+space, since sparse image sizes can overstate physical use.
+
+Record what was removed and which checks now require a rerun. Seed loaders must
+check image existence, not just the containing directory. TFX reclaimed 34.7 GiB
+from disposable boot images and discovery dumps while retaining its other evidence.
+Do not delete traces or oracle inputs merely because a summary exists if those
+files are needed to reproduce or audit the result.
 
 ## 9. Behaviour against the reference
 

@@ -527,3 +527,20 @@ Preserve rejected captures; the first widened-only fix (unit 290 at requested
 project-local calibration passes: stock and explicit 020 settings produce
 identical complete DMA rows, 284,204 cycles per field, and driving-clock state
 across 1,000 fields. Shared installed binaries remain unchanged.
+
+## Project debugger extensions and memory discovery
+
+Private debugger extensions have limits that need checking on the exact build.
+TFX's stub accepted roughly 20 software breakpoints and required `tfxmem` writes
+below about 90 bytes; 32-byte chunks were reliable. These are observations about
+that extension, not limits guaranteed by the shared debugger. Read writes back,
+and synchronize CPU caches before execution and before comparing result memory;
+debugger memory access can bypass dirty cache lines. See the
+[cache observer](cache-observer.md).
+
+Discover executable hunks from the configured memory ranges and validate the
+complete hunk chain. Auxiliary hunks may load below the main code allocation;
+TFX's initially narrow search rejected a valid legacy executable. Derive hook
+locations from the active patch configuration: an optional frame-display hook
+cannot locate the slave when that option is off. Separate failure to discover or
+reach the gameplay checkpoint from a game crash.
