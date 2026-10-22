@@ -1,5 +1,5 @@
 diff --git a/src/barto_gdbserver.cpp b/src/barto_gdbserver.cpp
-index 0f3249a9..4701ba04 100644
+index 0f3249a9..a62707c2 100644
 --- a/src/barto_gdbserver.cpp
 +++ b/src/barto_gdbserver.cpp
 @@ -22,6 +22,7 @@
@@ -39,21 +39,7 @@ index 0f3249a9..4701ba04 100644
  					debugger_state = state::debugging;
  					activate_debugger();
  				} else if(!request.empty() && request[0] == '$') {
-@@ -683,6 +689,13 @@ namespace barto_gdbserver {
- 											send_ack(ack);
- 											profile_frame_count = 0;
- 											debugger_state = state::profile;
-+											// After a fields or profile stop the field has just begun: start
-+											// now instead of at the next vsync, a whole field later.
-+											if(field_boundary) {
-+												vsync_pre();
-+												if(debugger_state == state::debugging)
-+													return; // refused: E01 already sent
-+											}
- 											deactivate_debugger();
- 											return; // response is sent when profile is finished (vsync)
- 										}
-@@ -690,6 +703,49 @@ namespace barto_gdbserver {
+@@ -690,6 +696,49 @@ namespace barto_gdbserver {
  										savestate_quick(1, 0); // restore state saved at process entry
  										barto_debug_resources_count = 0;
  										response += "OK";
@@ -103,7 +89,7 @@ index 0f3249a9..4701ba04 100644
  									} else {
  										// unknown monitor command
  										response += "E01";
-@@ -972,6 +1028,12 @@ namespace barto_gdbserver {
+@@ -972,6 +1021,12 @@ namespace barto_gdbserver {
  		if(!enabled) // "gdbserver"
  			return;
  
@@ -116,7 +102,7 @@ index 0f3249a9..4701ba04 100644
  		static uae_u32 profile_start_cycles{};
  		static size_t profile_custom_regs_size{};
  		static uae_u8* profile_custom_regs{}; // at start of profile 
-@@ -1051,7 +1113,9 @@ start_profile:
+@@ -1051,7 +1106,9 @@ start_profile:
  			}
  
  			// start profiler
@@ -127,7 +113,7 @@ index 0f3249a9..4701ba04 100644
  			debug_dma = 1;
  			profile_start_cycles = static_cast<uae_u32>(get_cycles() / cpucycleunit);
  			//barto_log("GDBSERVER: Start CPU Profiler @ %u cycles\n", get_cycles() / cpucycleunit);
-@@ -1174,6 +1238,7 @@ start_profile:
+@@ -1174,6 +1231,7 @@ start_profile:
  				fclose(profile_outfile);
  				send_response("$OK");
  
@@ -135,7 +121,7 @@ index 0f3249a9..4701ba04 100644
  				debugger_state = state::debugging;
  				activate_debugger();
  			} else {
-@@ -1412,6 +1477,7 @@ start_profile:
+@@ -1412,6 +1470,7 @@ start_profile:
  send_response:
  			send_response("$" + response);
  			trace_mode = 0;
