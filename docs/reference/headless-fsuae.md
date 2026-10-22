@@ -211,12 +211,12 @@ The Barto stub in both FS-UAE builds, driven by `m68k-amiga-elf-gdb`.
 | Command | Does |
 |---|---|
 | `monitor key RAW 0\|1` | queues raw Amiga key code `RAW` (hex) as pressed (1) or released (0) on the emulated keyboard, exactly as a host key would arrive; works with the window in the background or with no window |
-| `monitor fields N` | runs N whole PAL/NTSC fields (1–6000) from a stop and stops again: the reply comes at the last vsync |
+| `monitor fields N` | runs N whole PAL/NTSC fields (1–6000) and stops again at the last vsync, where the reply comes. From a stop at a vsync (the end of `fields` or `profile`, a Ctrl-C) that is N vsyncs; from any other stop (breakpoint, step, the reset stop) the first vsync ends the partial field, so N + 1 |
 | `monitor mouse DX DY` | adds DX, DY (decimal, at most ±127) to the port-0 mouse counters, as host mouse motion would; works with `JOY0=none` |
 | `monitor input EVENT N` | sends an emulator input event by its config name with state N (decimal, 1 press, 0 release): `JOY1_FIRE_BUTTON` and `JOY1_2ND_BUTTON` are the port-0 mouse buttons, `JOY2_LEFT`, `JOY2_FIRE_BUTTON` and so on the port-1 joystick. Emulator actions (`SPC_*`) are refused |
-| `monitor harness` | prints supported commands; check capabilities before use |
+| `monitor harness` | prints supported commands; check capabilities before use. `exact-fields gapless-profile` mark the vsync stops below; a build without them runs N + 1 fields after every stop and leaves a field untraced between `profile` chunks |
 | `monitor input-state` | observes CIA-A SDR and the last guest-read PRA/POTGOR values with read counters; it neither polls host devices nor acknowledges interrupts |
-| `monitor profile N "" FILE` | as before; with no `--remote_debugger_trigger` the PC window is the whole 24-bit space instead of the stub's uninitialised `[0x0100007f, +0)` |
+| `monitor profile N "" FILE` | traces N whole fields, from a vsync to a vsync, and stops at the last one. After a stop at a vsync it starts there, so chained chunks leave no gap; after any other stop it starts at the next vsync. With no `--remote_debugger_trigger` the PC window is the whole 24-bit space instead of the stub's uninitialised `[0x0100007f, +0)` |
 
 Together they replace input tapes: stop, send input, `fields`, release, `fields`, with
 `profile` chunks between input events. The run is exactly repeatable with
@@ -241,6 +241,26 @@ guest-visible values. PRA/POTGOR are latched by guest reads: require their read 
 to advance after an action before trusting the value. Repeated observations while
 stopped must leave values and counters unchanged. This is an input-test instrument,
 not a general CIA register reader.
+
+**Stops at a vsync are parked.** The end of `fields` or `profile`, and a Ctrl-C while the CPU
+runs (the stub reads packets from a running CPU only at a vsync), stop the CPU inside the vsync
+handler, exactly at the field boundary, not at the next instruction. A parked stop serves
+memory reads and writes, the harness commands, queries, `monitor fields`, `monitor profile` and
+continue in place. Register reads, steps, breakpoint and watchpoint changes and other monitor
+commands first move the stop to the next instruction boundary, a few cycles into the next field
+(or line 312 when the CPU is in STOP), where a stop always used to be; the field still counts
+as begun at the vsync, so `fields N` from there is still N. A `profile` after that starts at
+the next vsync, so one field runs untraced: keep register reads out of a chain of chunks. gdb
+reads registers after a Ctrl-C and after `maintenance flush register-cache`, not after a
+`monitor` command. Parking changes no emulation: the old and new stubs give identical
+registers, traces and chip RAM at the same field.
+
+**A profiled field does not run exactly like an unprofiled one.** With the profiler and DMA
+recording on, the 68020 core runs differently: booting the A1200 ROM, d1 at the start of the
+next field held 3822148 after an unprofiled field and 3822145 after a profiled one, and the
+runs stay apart from there. Both are repeatable; but a route that profiles different fields
+reaches a different state, so compare captures only between runs that profiled the same fields.
+The 68000 core showed differences only in the recorded DMA data of the next field.
 
 - **Move the mouse in steps and let fields run between them.** The counters are 8 bits, so a
   game that reads them once a field loses a larger delta; Gunship moves in steps of at most

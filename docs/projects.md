@@ -68,6 +68,15 @@ and window for debug and warp runs. FS-UAE's own log is now under `.run/fsuae/Ca
   an explicit CPU frequency (all `AMIGA_SETUP` names) ran about 10.8% fast on a 68000 before it.
   Each rebuild changes the binaries' hashes; projects that pin them (Prince of Persia 2,
   Ferrari Formula One) re-pin and re-measure.
+- The native builds' gdb stub parks stops made at a vsync (`exact-fields gapless-profile` in
+  `monitor harness`; docs/reference/headless-fsuae.md). After the end of `fields` or `profile`
+  or a Ctrl-C, `monitor fields N` now runs N fields (it ran N + 1), and the next `monitor
+  profile` starts at that vsync (it left one field untraced). A route that counts fields, or
+  polls `profile 1` screenshots for a checkpoint, reaches its checkpoint at a different field
+  number and must be recounted; after a breakpoint or step `fields N` still runs N + 1.
+  `fsuae-determinism.patch` makes otherwise identical runs agree: before it the serial port
+  could raise RBF in INTREQR in some runs and not others, and A500 screenshots had two columns
+  of leftover host memory.
 - `WHDLoad/` contains the sole active WHDLoad 20.1 developer package (including its runtime).
   `WHDLoad-20.0/` is retired without an alias; hardcoded references must be fixed during
   project work. Shared defaults use `WHDLoad/`; older-version comments do not pin the

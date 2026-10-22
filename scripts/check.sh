@@ -59,6 +59,8 @@ check "FS-UAE aprof"           "$AMIGA_SHARE/fs-uae-aprof/fs-uae" --version
 check "FS-UAE harness input"   "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_fsuae_input.py" "$AMIGA_SHARE/fs-uae-arm/fs-uae"
 check "FS-UAE aprof input"     "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_fsuae_input.py" "$AMIGA_SHARE/fs-uae-aprof/fs-uae"
 check "FS-UAE configuration"   "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_fsuae_config.py" "$AMIGA_SHARE/fs-uae-arm/fs-uae"
+# Boots the 3.1 ROMs twice; stops, fields and profiles must repeat exactly (about 30 s).
+check "FS-UAE repeatability"   "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_fsuae_repeat.py" "$AMIGA_SHARE/fs-uae-arm/fs-uae"
 check "LHa for UNIX"           sh -c "'$AMIGA_SHARE/lha-compressor/src/lha' --version 2>&1 | grep -q LHa"
 check "Python packages"        "$AMIGA_SHARE/python/bin/python3" -c 'import PIL, numpy, capstone, amitools'
 check "amigaxdev package"      "$AMIGA_SHARE/python/bin/python3" -I -c 'import amigaxdev.env, amigaxdev.barto, amigaxdev.gdbserve, amigaxdev.disasm, amigaxdev.adf, amigaxdev.patchlist, amigaxdev.release, amigaxdev.framework, amigaxdev.mac.resource_fork, amigaxdev.dos.mz_info'

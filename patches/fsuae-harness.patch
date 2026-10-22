@@ -1,5 +1,5 @@
 diff --git a/src/barto_gdbserver.cpp b/src/barto_gdbserver.cpp
-index 0f3249a9..16b25d52 100644
+index 0f3249a9..9fd25221 100644
 --- a/src/barto_gdbserver.cpp
 +++ b/src/barto_gdbserver.cpp
 @@ -22,6 +22,7 @@
@@ -10,7 +10,16 @@ index 0f3249a9..16b25d52 100644
  #include "uae.h"
  #include "debugmem.h"
  #include "custom.h"
-@@ -246,6 +247,7 @@ namespace barto_gdbserver {
+@@ -102,6 +103,8 @@ namespace barto_gdbserver {
+ 	bool is_connected();
+ 	bool data_available();
+ 	void disconnect();
++	std::string peek_request(size_t* acks = nullptr);
++	void park();
+ 
+ 	// Options:
+ 	bool enabled = false;
+@@ -246,6 +249,7 @@ namespace barto_gdbserver {
  	std::string profile_outname;
  	int profile_num_frames{};
  	int profile_frame_count{};
@@ -18,7 +27,7 @@ index 0f3249a9..16b25d52 100644
  	std::unique_ptr<cpu_profiler_unwind[]> profile_unwind{};
  
  	enum class state {
-@@ -254,6 +256,7 @@ namespace barto_gdbserver {
+@@ -254,9 +258,16 @@ namespace barto_gdbserver {
  		debugging,
  		profile,
  		profiling,
@@ -26,7 +35,16 @@ index 0f3249a9..16b25d52 100644
  	};
  
  	state debugger_state{ state::inited };
-@@ -690,6 +693,48 @@ namespace barto_gdbserver {
++	// AmigaXDev harness: a stop made at a vsync (the end of "monitor fields" or "monitor
++	// profile", Ctrl-C while running) parks the CPU inside vsync_pre (park()), exactly at the
++	// field boundary, so the next fields or profile starts there. field_start: the stop is in
++	// the field that began at the last vsync (parked, or moved on from there to the next
++	// instruction), so "monitor fields N" ends after N vsyncs instead of N + 1.
++	bool field_start{};
+ 
+ 	bool is_enabled() {
+ 		return enabled;
+@@ -690,6 +701,49 @@ namespace barto_gdbserver {
  										savestate_quick(1, 0); // restore state saved at process entry
  										barto_debug_resources_count = 0;
  										response += "OK";
@@ -35,7 +53,8 @@ index 0f3249a9..16b25d52 100644
 +										unsigned n = 0; char extra;
 +										if(sscanf(cmd.c_str(), "fields %u %c", &n, &extra) == 1 && n > 0 && n <= 6000) {
 +											send_ack(ack);
-+											advance_fields = n + 1; // the first vsync ends the current partial field
++											// after a mid-field stop the first vsync ends the partial field
++											advance_fields = field_start ? n : n + 1;
 +											debugger_state = state::advancing;
 +											deactivate_debugger();
 +											return; // response is sent at the last vsync
@@ -71,23 +90,43 @@ index 0f3249a9..16b25d52 100644
 +											response += "E01";
 +									} else if(cmd == "harness") {
 +										// AmigaXDev harness: capability list; builds without it reply E01.
-+										response += to_hex("key fields mouse input\n");
++										response += to_hex("key fields mouse input exact-fields gapless-profile\n");
  									} else {
  										// unknown monitor command
  										response += "E01";
-@@ -972,6 +1017,11 @@ namespace barto_gdbserver {
+@@ -731,10 +785,12 @@ namespace barto_gdbserver {
+ 											trace_mode = TRACE_SKIP_INS;
+ 
+ 											exception_debugging = 1;
++											field_start = false;
+ 											debugger_state = state::connected;
+ 											send_ack(ack);
+ 											return;
+ 										} else if(action == "c") { // continue
++											field_start = false;
+ 											debugger_state = state::connected;
+ 											deactivate_debugger();
+ 											// none work...
+@@ -752,6 +808,7 @@ namespace barto_gdbserver {
+ 												trace_mode = TRACE_NRANGE_PC;
+ 												trace_param[0] = start;
+ 												trace_param[1] = end;
++												field_start = false;
+ 												debugger_state = state::connected;
+ 												send_ack(ack);
+ 												return;
+@@ -972,6 +1029,10 @@ namespace barto_gdbserver {
  		if(!enabled) // "gdbserver"
  			return;
  
 +		if(debugger_state == state::advancing && --advance_fields == 0) {
 +			send_response("$OK");
-+			debugger_state = state::debugging;
-+			activate_debugger();
++			park();
 +		}
  		static uae_u32 profile_start_cycles{};
  		static size_t profile_custom_regs_size{};
  		static uae_u8* profile_custom_regs{}; // at start of profile 
-@@ -1051,7 +1101,9 @@ start_profile:
+@@ -1051,7 +1112,9 @@ start_profile:
  			}
  
  			// start profiler
@@ -98,6 +137,126 @@ index 0f3249a9..16b25d52 100644
  			debug_dma = 1;
  			profile_start_cycles = static_cast<uae_u32>(get_cycles() / cpucycleunit);
  			//barto_log("GDBSERVER: Start CPU Profiler @ %u cycles\n", get_cycles() / cpucycleunit);
+@@ -1174,8 +1237,9 @@ start_profile:
+ 				fclose(profile_outfile);
+ 				send_response("$OK");
+ 
+-				debugger_state = state::debugging;
+-				activate_debugger();
++				park();
++				if(debugger_state == state::profile)
++					goto start_profile; // the next chunk starts at this vsync: no gap
+ 			} else {
+ 				debugger_state = state::profile;
+ 				goto start_profile;
+@@ -1183,7 +1247,106 @@ start_profile:
+ 		}
+ 
+ 		if(debugger_state == state::connected && data_available()) {
+-			handle_packet();
++			if(peek_request() == "\x03") {
++				// Ctrl-C while running: stop at this vsync like the end of fields.
++				char c;
++				while(recv(gdbconn, &c, 1, 0) == 1 && c != 0x03)
++					; // acks before it
++				send_ack("+");
++				send_response("$S05"); // SIGTRAP
++				park();
++				if(debugger_state == state::profile)
++					goto start_profile;
++			} else
++				handle_packet();
++		}
++	}
++
++	// The next request without consuming it: "\x03" for Ctrl-C, the body of a packet once
++	// all of it has arrived, empty while only acks or part of a packet are waiting. acks: the
++	// number of ack characters before it; SIZE_MAX at end of stream or on an error.
++	std::string peek_request(size_t* acks) {
++		char buf[512];
++		auto n = recv(gdbconn, buf, sizeof(buf) - 1, MSG_PEEK);
++		if(acks)
++			*acks = n <= 0 ? SIZE_MAX : 0;
++		if(n <= 0)
++			return {};
++		std::string r(buf, n);
++		auto i = r.find_first_not_of("+-");
++		if(acks)
++			*acks = i == std::string::npos ? r.size() : i;
++		if(i == std::string::npos)
++			return {};
++		if(r[i] != '$')
++			return r.substr(i, 1);
++		auto end = r.find('#', i);
++		if(end == std::string::npos || end + 2 >= r.size())
++			return {};
++		return r.substr(i + 1, end - i - 1);
++	}
++
++	// Requests a parked stop can serve: memory, harness commands, queries and continue.
++	// Registers, steps, breakpoints and anything else need the CPU at an instruction boundary.
++	bool parked_request(const std::string& r) {
++		if(r.empty())
++			return true;
++		switch(r[0]) {
++		case 'm': case 'M': case 'X': case '?': case 'H': case 'T': case 'Q': case 'k': case 'D':
++			return true;
++		case 'q':
++			if(r.substr(0, strlen("qRcmd,")) == "qRcmd,") {
++				auto cmd = from_hex(r.substr(strlen("qRcmd,")));
++				for(auto safe : { "fields ", "profile ", "key ", "mouse ", "input ", "input-state", "harness", "memory " })
++					if(cmd.substr(0, strlen(safe)) == safe)
++						return true;
++				return false;
++			}
++			return true;
++		case 'v':
++			return r == "vCont;c" || r.substr(0, strlen("vCont;c:")) == "vCont;c:" || r == "vCont?";
++		}
++		return false;
++	}
++
++	// Serve the client while stopped inside vsync_pre. Returns when a request resumes the CPU
++	// (continue, fields, profile) or needs it at an instruction boundary: then the CPU stops at
++	// the next one, where a stop without parking would have been, and debug() serves it.
++	void park() {
++		field_start = true;
++		debugger_state = state::debugging;
++		while(debugger_state == state::debugging) {
++			size_t acks = 0;
++			auto request = data_available() ? peek_request(&acks) : std::string{};
++			if(!is_connected() || acks == SIZE_MAX) {
++				handle_packet(); // reads the end of stream or error and disconnects
++			} else if(request.empty()) {
++				// Take acks alone: handle_packet() reads whatever has arrived, which could be
++				// a request this loop has not classified yet.
++				char buf[512];
++				if(acks)
++					recv(gdbconn, buf, acks < sizeof(buf) ? acks : sizeof(buf), 0);
++				else
++					Sleep(1);
++			} else if(!parked_request(request)) {
++				activate_debugger();
++				break;
++			} else {
++				handle_packet();
++			}
++		}
++		if(debugger_state != state::debugging) {
++			// Resumed without passing debug(): re-arm breakpoints as its exit does.
++			if(!trace_mode) {
++				for(auto& bpn : bpnodes) {
++					if(bpn.enabled)
++						trace_mode = TRACE_CHECKONLY;
++				}
++			}
++			if(trace_mode) {
++				set_special(SPCFLAG_BRK);
++				debugging = -1;
++			}
+ 		}
+ 	}
+ 
 diff --git a/src/include/keybuf.h b/src/include/keybuf.h
 index d411ec02..2475a884 100644
 --- a/src/include/keybuf.h

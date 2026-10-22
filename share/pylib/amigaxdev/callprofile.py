@@ -17,7 +17,9 @@ exception-entry gap (keyed `('irq', PC)`), with the SP seen there, and popped as
 rises above it. That survives tail jumps, stack fix-ups and PEA/RTS dispatch better than
 matching RTS, but it assumes one stack: code that switches between USP and SSP (an OS game's
 task and its interrupts) splits into separate roots. Feed chunks in order and without gaps;
-cycles run between chunks are not traced and the call stack carries across them.
+the call stack carries across them. Chunks captured back to back leave no field untraced on
+a build with `gapless-profile` (`monitor harness`); a register read between two leaves one
+field out, and older builds always leave one.
 
 Kept per run: self cycles and executions per PC, cycles per call stack, per-field totals
 (cycles, STOP/no-PC, exception gaps, DMA slot counts by type), and for each execution of a

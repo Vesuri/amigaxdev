@@ -79,8 +79,8 @@
 +                                        response += to_hex(text);
 +                                    } else if(cmd == "harness") {
  										// AmigaXDev harness: capability list; builds without it reply E01.
--										response += to_hex("key fields mouse input\n");
-+										response += to_hex("key fields mouse input input-state\n");
+-										response += to_hex("key fields mouse input exact-fields gapless-profile\n");
++										response += to_hex("key fields mouse input input-state exact-fields gapless-profile\n");
  									} else {
  										// unknown monitor command
  										response += "E01";
