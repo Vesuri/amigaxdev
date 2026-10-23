@@ -15,6 +15,23 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def stop(pid, p):
+    """SIGTERM, then SIGKILL after 1 s. With fsuae_exec the emulator is p itself, which
+    stays a zombie until p.poll() reaps it."""
+    def gone():
+        if pid == p.pid:
+            return p.poll() is not None
+        try: os.kill(pid, 0)
+        except ProcessLookupError: return True
+        return False
+    for sig in (15, 9):
+        try: os.kill(pid, sig)
+        except ProcessLookupError: return
+        for _ in range(4):
+            if gone(): return
+            time.sleep(.25)
+
+
 def run(binary, setup, extra, mode, common=None):
     with tempfile.TemporaryDirectory(prefix='config-smoke-', dir=ROOT / 'tmp') as temp:
         work = Path(temp)
@@ -46,12 +63,12 @@ WINDOW=none SOUND=0 WARP=1
                     time.sleep(.2)
                 raise TimeoutError('No effective CPU report: ' + (work / 'stdout').read_text())
             finally:
-                # Kill only this launch. The background launcher records its own child.
+                # Kill only this launch. The background launcher records its own child. A
+                # headless emulator ignores SIGTERM, so it gets SIGKILL after 1 s.
                 pidfile = work / '.run/fsuae.pid'
                 if pidfile.exists():
                     pid = int(pidfile.read_text().split()[0])
-                    try: os.kill(pid, 15)
-                    except ProcessLookupError: pass
+                    stop(pid, p)
                 p.terminate()
                 try: p.wait(timeout=3)
                 except subprocess.TimeoutExpired: p.kill(); p.wait()
