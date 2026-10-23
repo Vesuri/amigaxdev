@@ -22,8 +22,13 @@ Built-in commands (the emulator is left running after each unless noted):
 
 `commands` entries take precedence over the built-ins, so a project can also replace one.
 BOOT_BREAK=<addr> in the environment stops at addr before the server starts listening.
+
+`shot`, `profile` and Server.capture go through profile(): a capture that fails (gdb error,
+debugger disconnect, missing, partial or wrong-length trace) raises CaptureError and leaves
+no output file, never an older one.
 """
 import os
+from pathlib import Path
 import select
 import signal
 import socket
@@ -98,6 +103,49 @@ class Gdb(_Reader):
             self.cmd('', timeout=30)
             time.sleep(0.3)
             self.running = False
+
+
+class CaptureError(RuntimeError):
+    """A `monitor profile` that did not produce the trace it asked for."""
+
+
+# What gdb prints when a monitor command did not run: the stub's error reply, a dead or
+# closed connection, no target.
+GDB_FAILURES = ('Protocol error', 'Remote communication error', 'Remote connection closed',
+                'The program is not being run', 'Cannot execute this command', 'Remote failure reply')
+
+
+def profile(g, fields, target):
+    """`monitor profile FIELDS` into TARGET: returns (gdb's reply, the barto.Trace). TARGET
+    exists afterwards only if this capture wrote it whole: an older file is removed first, the
+    stub writes a temporary file, and gdb's reply, the trace's parse and its field count are
+    checked before that file takes TARGET's name. Raises CaptureError otherwise."""
+    fields, target = int(fields), Path(target)
+    partial = target.with_name(target.stem + '.partial' + target.suffix)
+    for path in (target, partial):
+        path.unlink(missing_ok=True)
+    try:
+        try:
+            out = g.cmd(f'monitor profile {fields} "" "{partial}"', timeout=1800)
+        except (TimeoutError, EOFError, OSError) as e:
+            raise CaptureError(f'monitor profile {fields}: no reply from gdb '
+                               f'({type(e).__name__}: {str(e)[-200:]})') from e
+        failed = [m for m in GDB_FAILURES if m in out]
+        if failed:
+            raise CaptureError(f'monitor profile {fields} failed: {out[-300:]!r}')
+        if not partial.exists():
+            raise CaptureError(f'monitor profile {fields} wrote no trace (gdb said {out[-300:]!r})')
+        try:
+            trace = barto.load(partial)
+        except Exception as e:
+            raise CaptureError(f'monitor profile {fields} left an unreadable or partial trace '
+                               f'({type(e).__name__}: {e})') from e
+        if len(trace.fields) != fields:
+            raise CaptureError(f'monitor profile {fields} traced {len(trace.fields)} fields')
+        os.replace(partial, target)
+        return out, trace
+    finally:
+        partial.unlink(missing_ok=True)
 
 
 def require_harness(g, *commands):
@@ -247,9 +295,11 @@ class Server:
             self.fix_profile_window()
         elif callable(self.profile_window):
             self.profile_window(self)
-        out = g.cmd(f'monitor profile {fields} "" "{target}"', timeout=1800)
-        if was:
-            g.cont()
+        try:
+            out, _ = profile(g, fields, target)
+        finally:
+            if was:
+                g.cont()
         return out
 
     def handle(self, g, line):
@@ -280,14 +330,21 @@ class Server:
                 g.cont()
             return out
         if op == 'shot':
-            target, png = os.path.join(self.run_dir, 'shot.bin'), os.path.abspath(rest)
+            target, png = os.path.join(self.run_dir, 'shot.bin'), Path(os.path.abspath(rest))
+            png.unlink(missing_ok=True)
             was = g.running
             g.stop()
-            out = g.cmd(f'monitor profile 1 "" "{target}"', timeout=1800)
-            if was:
-                g.cont()
-            f = barto.load(target).fields[-1]
-            open(png, 'wb').write(f.shot)
+            try:
+                out, trace = profile(g, 1, target)
+            finally:
+                if was:
+                    g.cont()
+            f = trace.fields[-1]
+            if not f.shot:
+                raise CaptureError('the traced field has no screenshot')
+            partial = png.with_name(png.stem + '.partial' + png.suffix)
+            partial.write_bytes(f.shot)
+            os.replace(partial, png)
             return f'{png} kind={f.shot_kind} {len(f.shot)} bytes {out}'
         if op == 'profile':
             fields, target = rest.split(None, 1)

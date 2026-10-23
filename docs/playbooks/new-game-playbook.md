@@ -300,7 +300,9 @@ Facts about this stub, all verified the hard way:
   link-time `0x32dea04` plus the slide. For a different FS-UAE binary, re-derive that address
   from the `GDBSERVER: enabled` setup and `start_cpu_profiler` (TD2 `docs/profiling.md` §3). The
   assert fails loudly if it's wrong.
-- **Screenshots come only from traces** (`shot`). macOS denies screen capture to this process,
+- **Screenshots come only from traces** (`shot`). A failed `shot` replies `ERROR ...` and leaves
+  no PNG, not the previous one; a route must stop on that reply or on a missing file, never
+  reuse an image from an earlier step or run. macOS denies screen capture to this process,
   and posted host key events never reach FS-UAE (use `monitor key` instead). A shot taken at an
   arbitrary checkpoint (a keyboard task, a tape step) can catch a partial redraw: stop at the
   frame-publication instruction (§7) before saving a picture you will compare (4D Sports

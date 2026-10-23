@@ -59,6 +59,8 @@ check "FS-UAE aprof"           "$AMIGA_SHARE/fs-uae-aprof/fs-uae" --version
 check "FS-UAE harness input"   "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_fsuae_input.py" "$AMIGA_SHARE/fs-uae-arm/fs-uae"
 check "FS-UAE aprof input"     "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_fsuae_input.py" "$AMIGA_SHARE/fs-uae-aprof/fs-uae"
 check "FS-UAE configuration"   "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_fsuae_config.py" "$AMIGA_SHARE/fs-uae-arm/fs-uae"
+# A failed shot or profile must leave no image or trace (fake gdb, then a killed emulator).
+check "gdbserve captures"      "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_gdbserve_capture.py" "$AMIGA_SHARE/fs-uae-arm/fs-uae"
 # Boots the 3.1 ROMs twice; stops, fields and profiles must repeat exactly, and so must a
 # directory-drive boot on each data-cache preset (about 2 minutes).
 check "FS-UAE repeatability"   "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_fsuae_repeat.py" "$AMIGA_SHARE/fs-uae-arm/fs-uae"
