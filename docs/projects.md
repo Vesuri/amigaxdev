@@ -76,7 +76,9 @@ and window for debug and warp runs. FS-UAE's own log is now under `.run/fsuae/Ca
   number and must be recounted; after a breakpoint or step `fields N` still runs N + 1.
   `fsuae-determinism.patch` makes otherwise identical runs agree: before it the serial port
   could raise RBF in INTREQR in some runs and not others, and A500 screenshots had two columns
-  of leftover host memory.
+  of leftover host memory. It also lets `DETERMINISTIC=1` boot directory drives on the
+  data-cache presets (`a1200-030`, `a1200-040`, `a1200-060`, `a3000`), which used to hang at
+  `FS: dh0 ... starting`.
 - `WHDLoad/` contains the sole active WHDLoad 20.1 developer package (including its runtime).
   `WHDLoad-20.0/` is retired without an alias; hardcoded references must be fixed during
   project work. Shared defaults use `WHDLoad/`; older-version comments do not pin the

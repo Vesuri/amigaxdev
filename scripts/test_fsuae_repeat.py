@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Repeatability test of the gdb stub's stops and harness commands on a native FS-UAE build:
     scripts/test_fsuae_repeat.py [FS-UAE] [SETUP...]   (default $AMIGA_SHARE/fs-uae-arm/fs-uae;
-                                                        setups a1200-fast and a500)
+                                                        setups a1200-fast, a500, a1200-030,
+                                                        a1200-040, a1200-060 and a3000)
 
 Boots the setup's 3.1 Kickstart with no disk (WARP=1 DETERMINISTIC=1 JOY0=none, no window, no
 sound) and drives the stub over the gdb remote protocol, without gdb. One sequence: `fields`
@@ -14,7 +15,11 @@ Ctrl-C lands at a vsync chosen by host timing, so after it only checks within on
 On a build that reports `exact-fields gapless-profile`: every command must advance the guest's
 own field counter (GfxBase->VBCounter) by the fields it should run, every stop at a vsync must
 read the same beam position, and a third emulator, with `fields 2` split in two, profiles the
-chained chunks' fields in one `profile`; each field must match. Reads no game bytes.
+chained chunks' fields in one `profile`; each field must match.
+The data-cache setups (a1200-030/040/060, a3000: indirect UAE board) instead boot a directory
+drive twice and stop every 25 fields until its startup-sequence has written a file: the runs must
+agree on registers, chip RAM and the file at every stop and on Fast RAM at the end, and must not
+hang. Reads no game bytes.
 """
 import concurrent.futures
 import hashlib
@@ -36,23 +41,34 @@ LAUNCH = '''set -eu
 . "$COMMON"
 DEBUG=1 WARP=1 DETERMINISTIC=1 JOY0=none WINDOW=none SOUND=0 AMIGA_MONITOR=
 fsuae_claim_port >/dev/null
-fsuae_launch
+fsuae_launch "$@"
 '''
-CHIP = {"a1200-fast": 0x200000, "a500": 0x80000}
+CHIP = {"a1200-fast": 0x200000, "a500": 0x80000,
+        "a1200-030": 0x200000, "a1200-040": 0x200000, "a1200-060": 0x200000, "a3000": 0x200000}
+# Setups with an emulated data cache, so with the indirect UAE board: the directory-drive boot.
+DRIVE_SETUPS = ("a1200-030", "a1200-040", "a1200-060", "a3000")
 
 
 class Stub:
     """One fresh emulator and a raw gdb remote protocol connection to its stub."""
 
-    def __init__(self, fsuae, setup):
+    def __init__(self, fsuae, setup, drive=None, timeout=900):
+        """drive: {name: text} booted as directory drive DH0."""
         share = os.environ.get("AMIGA_SHARE") or os.path.expanduser("~/.local/share/amiga")
         (ROOT / "tmp").mkdir(exist_ok=True)
         self.work = Path(tempfile.mkdtemp(prefix="repeat-", dir=ROOT / "tmp"))
+        args = []
+        if drive is not None:
+            self.dh0 = self.work / "dh0"
+            for name, text in drive.items():
+                (self.dh0 / name).parent.mkdir(parents=True, exist_ok=True)
+                (self.dh0 / name).write_text(text)
+            args.append(f"--hard_drive_0={self.dh0}")
         env = dict(os.environ, AMIGA_SHARE=share, FSUAE=fsuae, AMIGA_SETUP=setup,
                    COMMON=str(ROOT / "share/fsuae_common.sh"), FSUAE_RUN=".run",
                    FSUAE_LOG=".run/fsuae.log", DEBUG_PORT="", EXTRA_ARGS="", NTSC="0", JOY1="none")
-        out = subprocess.run(["/bin/bash", "-c", LAUNCH], cwd=self.work, env=env, capture_output=True,
-                             text=True, check=True).stdout
+        out = subprocess.run(["/bin/bash", "-c", LAUNCH, "launch", *args], cwd=self.work, env=env,
+                             capture_output=True, text=True, check=True).stdout
         port = int(out.rsplit("port ", 1)[1].split(")")[0])
         for _ in range(80):
             try:
@@ -63,7 +79,7 @@ class Stub:
         else:
             self.close()
             raise RuntimeError(f"no gdb stub on port {port}")
-        self.s.settimeout(900)
+        self.s.settimeout(timeout)
         self.buf = b""
 
     def reply(self):
@@ -244,6 +260,61 @@ def sequence(fsuae, setup):
         e.close()
 
 
+DRIVE_LINES = 200
+DRIVE_LOG = "start\n" + "".join(f"line {i}\n" for i in range(DRIVE_LINES))
+DRIVE_FIELDS, DRIVE_STEPS = 25, 40
+
+
+def drive_sequence(fsuae, setup):
+    """A directory-drive boot on a data-cache setup (indirect UAE board): the startup-sequence
+    writes DH0:log a line at a time, then DH0:ok. `fields 25` until DH0:ok exists, then two
+    more; a stop that never comes (deadlock) fails after 120 s."""
+    startup = ['Echo >DH0:log "start"'] + [f'Echo >>DH0:log "line {i}"' for i in range(DRIVE_LINES)]
+    startup += ["If EXISTS DH0:log", '  Echo >DH0:ok "booted"', "EndIf"]
+    e = Stub(fsuae, setup, drive={"s/startup-sequence": "\n".join(startup) + "\n"}, timeout=120)
+    try:
+        run = Run(e, CHIP[setup])
+        run.failures, after = [], None
+        for i in range(DRIVE_STEPS):
+            try:
+                reply = e.mon(f"fields {DRIVE_FIELDS}")
+            except TimeoutError:
+                run.failures.append(f"no stop {e.s.gettimeout():.0f} s after fields {DRIVE_FIELDS} "
+                                    f"(step {i + 1}): the emulation is stuck")
+                break
+            rec = run.snap(f"fields {DRIVE_FIELDS} (step {i + 1})", reply, regs=True, chip=True)
+            rec["ok"] = (e.dh0 / "ok").exists()
+            rec["log"] = digest((e.dh0 / "log").read_bytes()) if (e.dh0 / "log").exists() else None
+            after = after if after is not None or not rec["ok"] else i + 2
+            if after is not None and i == after:
+                rec["fast"] = digest(e.mem(0x200000, 0x800000))
+                break
+        else:
+            run.failures.append(f"DH0:ok missing after {DRIVE_STEPS * DRIVE_FIELDS} fields")
+        log = (e.dh0 / "log").read_text() if (e.dh0 / "log").exists() else ""
+        if after is not None and log != DRIVE_LOG:
+            run.failures.append(f"DH0:log holds {len(log)} bytes, not the {len(DRIVE_LOG)} written")
+        emulator_log = e.work / ".run/fsuae/Cache/Logs/fs-uae.log.txt"
+        text = emulator_log.read_text(errors="replace") if emulator_log.exists() else ""
+        if "Data cache emulation requires" in text:
+            run.failures.append("the emulator turned data-cache emulation off")
+        return run
+    finally:
+        e.close()
+
+
+def check_drive(runs):
+    a, b = runs
+    failures = a.failures + [f for f in b.failures if f not in a.failures]
+    if len(a.steps) != len(b.steps):
+        failures.append(f"the runs stopped after {len(a.steps)} and {len(b.steps)} steps")
+    for x, y in zip(a.steps, b.steps):
+        for k in x:
+            if x[k] != y.get(k):
+                failures.append(f"{x['step']}: {k} differs between runs: {x[k]!r} vs {y.get(k)!r}")
+    return failures
+
+
 def reference(fsuae, setup):
     """The chained chunks' fields from one profile, after fields 2 split in two."""
     e = Stub(fsuae, setup)
@@ -288,9 +359,20 @@ def check(runs, ref):
 def main(argv):
     share = os.environ.get("AMIGA_SHARE") or os.path.expanduser("~/.local/share/amiga")
     fsuae = os.path.abspath(argv[1] if len(argv) > 1 else os.path.join(share, "fs-uae-arm/fs-uae"))
-    setups = argv[2:] or ["a1200-fast", "a500"]
+    setups = argv[2:] or ["a1200-fast", "a500", "a1200-030", "a1200-040", "a1200-060", "a3000"]
     failed = False
     for setup in setups:
+        if setup in DRIVE_SETUPS:
+            with concurrent.futures.ThreadPoolExecutor(2) as pool:
+                runs = [j.result() for j in [pool.submit(drive_sequence, fsuae, setup) for _ in range(2)]]
+            failures = check_drive(runs)
+            booted = next((i + 1 for i, s in enumerate(runs[0].steps) if s["ok"]), None)
+            print(f"{setup}: directory-drive boot, {len(runs[0].steps)} steps of {DRIVE_FIELDS} fields, "
+                  f"DH0:ok after step {booted}")
+            for f in failures:
+                print("  FAIL", f)
+            failed |= bool(failures)
+            continue
         with concurrent.futures.ThreadPoolExecutor(3) as pool:
             jobs = [pool.submit(sequence, fsuae, setup) for _ in range(2)]
             ref_job = pool.submit(reference, fsuae, setup)

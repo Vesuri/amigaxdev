@@ -9,7 +9,8 @@
 # `monitor input`, `monitor harness`, whole-space profiling).
 # patches/fsuae-input-observer.patch adds side-effect-free guest input snapshots.
 # patches/fsuae-determinism.patch initialises two upstream reads of uninitialised memory that
-# made otherwise identical runs differ (serial break detection, screenshot columns).
+# made otherwise identical runs differ (serial break detection, screenshot columns), and runs
+# the indirect UAE board's host threads in lockstep with deterministic mode.
 # SDL2_ttf and libmpeg2 are linked statically from pinned tarballs; glib, gettext, libpng,
 # freetype and SDL2 come from Homebrew (Brewfile), so rebuild after a major upgrade of those.
 set -euo pipefail

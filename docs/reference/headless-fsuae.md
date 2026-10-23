@@ -92,7 +92,9 @@ a user-supplied A3000 ROM to override its ROM selection.
 All 68020-and-faster presets enable instruction-cache emulation through the compatible
 CPU core. The 68030/040/060 presets also enable data-cache emulation
 (`uae_cpu_data_cache=true`) and use `uae_uaeboard=full+indirect`, required to retain data
-caches with directory hard drives. The 68020 has no data cache. `uae_cachesize=0` refers
+caches with directory hard drives. They work with `DETERMINISTIC=1`: the indirect board runs
+traps and directory-drive packets on host threads, and `fsuae-determinism.patch` runs those in
+lockstep with the emulation (below). The 68020 has no data cache. `uae_cachesize=0` refers
 to the disabled JIT translation cache, not the emulated CPU caches. Guest software still
 controls its cache registers; WHDLoad games need the game's `CACHE` option when appropriate.
 For a data-cache comparison, request the override through `EXTRA_ARGS` and verify the
@@ -227,11 +229,22 @@ reads of uninitialised host memory that made runs differ: the serial port's brea
 (`checkreceive_serial` used an unset `breakcond`; in some runs Paula then received zeros and
 raised RBF every character period once the guest set SERPER, visible in INTREQR) and the
 chipset frame buffer (screenshots include columns the chipset never draws: the two rightmost
-of an A500 screen held leftover host memory). `scripts/test_fsuae_repeat.py [FS-UAE]` boots
-the A1200 and A500 3.1 ROMs with no disk and runs breakpoint, `fields`, chained `profile`,
-register-read and Ctrl-C stops twice; the runs must agree on registers, beam position, chip
-RAM and every trace byte, the guest's own field counter (`GfxBase->VBCounter`) must advance by
-exactly the fields each command ran, and chained chunks must match one unbroken profile. Bad arguments, an unknown event and an unknown command
+of an A500 screen held leftover host memory). The same patch fixes deterministic mode with the
+indirect UAE board, which every data-cache preset uses. Upstream deterministic mode handles
+directory-drive packets on the emulation thread, but with that board each guest memory access
+waits for the 68k, which runs on the same thread, so the boot hung at `FS: dh0 ... starting`.
+Now the host trap and filesystem threads run in lockstep: after each handoff the emulation
+thread waits until no host thread runs, so their effects land at the emulated instant of the
+handoff (`trap_lockstep_*` in `src/traps.cpp`). Without deterministic mode nothing changes.
+`scripts/test_fsuae_repeat.py [FS-UAE] [SETUP...]` boots the A1200 and A500 3.1 ROMs with no
+disk and runs breakpoint, `fields`, chained `profile`, register-read and Ctrl-C stops twice; the
+runs must agree on registers, beam position, chip RAM and every trace byte, the guest's own field
+counter (`GfxBase->VBCounter`) must advance by exactly the fields each command ran, and chained
+chunks must match one unbroken profile. On `a1200-030`, `a1200-040`, `a1200-060` and `a3000` it
+boots a directory drive whose startup-sequence writes a file line by line, twice, stopping every
+25 fields: the runs must agree on registers, chip RAM and the file at every stop and on Fast RAM
+at the end, the file must be complete, and the emulator log must not say it turned data-cache
+emulation off. Bad arguments, an unknown event and an unknown command
 all reply with an error, which gdb prints as `Protocol error with Rcmd`; a script that only reads
 replies misses it, so call `amigaxdev.gdbserve.require_harness(g, "mouse", ...)` first.
 It raises with the fix when the build is older. `scripts/test_fsuae_input.py [FS-UAE]` boots
@@ -452,8 +465,8 @@ are audible and in front. `SOUND=1|0` (`SILENT=1`) and `WINDOW=front|back|none` 
 - Fixed-clock CPU settings and their pitfalls (`68040-NOMMU`, `cpu_speed=max` is not a real
   machine) are in playbook §8; audit the FS-UAE log for overrides before trusting a speed
   figure (Pokeri).
-- `DETERMINISTIC=1` and `RECORD=FILE` (which implies it) give repeatable runs for replay;
-  see [validation harness](validation-harness.md).
+- `DETERMINISTIC=1` and `RECORD=FILE` (which implies it) give repeatable runs for replay,
+  on every preset including the data-cache ones; see [validation harness](validation-harness.md).
 
 ## Sharing the machine
 
