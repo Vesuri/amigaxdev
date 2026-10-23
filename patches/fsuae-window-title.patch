@@ -1,0 +1,15 @@
+diff --git a/src/fsuae/fsuae-main.c b/src/fsuae/fsuae-main.c
+index d043355c..6f6474ec 100644
+--- a/src/fsuae/fsuae-main.c
++++ b/src/fsuae/fsuae-main.c
+@@ -1831,7 +1831,9 @@ int main(int argc, char *argv[])
+ #endif
+ 
+     fsemu_set_emulator_name("FS-UAE");
+-    fsemu_window_set_title("FS-UAE");
++    // AmigaXDev: --title names the window (the launcher passes the project); else "FS-UAE".
++    const char *window_title = fs_config_get_const_string(OPTION_TITLE);
++    fsemu_window_set_title(window_title && window_title[0] ? window_title : "FS-UAE");
+     // fsemu_video_set_renderer(renderer);
+     // fsemu_startupinfo_set_emulator_name("FS-UAE");
+     // fsemu_startupinfo_set_emulator_fork_info("Mednafen");

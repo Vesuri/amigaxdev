@@ -53,6 +53,12 @@ drives and program options:
   taking the port.
 - FS-UAE's own log goes to `.run/fsuae/Cache/Logs/fs-uae.log.txt` (`--base_dir`), separate per
   directory, instead of the default FS-UAE directory's log that every project shares.
+- The window title says whose window it is: `PROJECT · DIRECTORY · gdb PORT`, for example
+  `F1GP · amiga · gdb 2565`. PROJECT is the outermost checkout's directory name (a clone or
+  worktree in a checkout's `tmp/` counts as that checkout), DIRECTORY the working directory
+  below it, and the port appears for `DEBUG=1`. `FSUAE_TITLE=TEXT` or an explicit `--title`
+  replaces it. The native builds show it (`patches/fsuae-window-title.patch`; upstream ignores
+  `--title` and always says FS-UAE); the bundled x86_64 build still shows FS-UAE.
 - Parallel runs from one checkout need distinct `FSUAE_RUN` and `DEBUG_PORT`
   (Slicks `pc_profile.sh`: `FSUAE_RUN=.run/pcprof-$LABEL`).
 

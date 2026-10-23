@@ -143,6 +143,18 @@ fsuae_options || exit 1
             values = self.effective(self.run_launcher('a1200-040', mode, extra='--cpu=68040nommu'))
             self.assertEqual((values['uae_mmu_model'], values['uae_fpu_model']), ('0', '68040'))
 
+    def test_window_title(self):
+        # The work directory is tmp/setup-test-* in this checkout.
+        for mode in ('exec', 'launch'):
+            title = self.effective(self.run_launcher('a1200', mode))['title']
+            self.assertEqual(title, f'{ROOT.name} · tmp/{self.work.name}')
+            values = self.effective(self.run_launcher('a1200', mode, before='DEBUG=1 DEBUG_PORT=2999'))
+            self.assertEqual(values['title'], f'{ROOT.name} · tmp/{self.work.name} · gdb 2999')
+            values = self.effective(self.run_launcher('a1200', mode, before='FSUAE_TITLE="my run"'))
+            self.assertEqual(values['title'], 'my run')
+            values = self.effective(self.run_launcher('a1200', mode, extra='--title=override'))
+            self.assertEqual(values['title'], 'override')
+
     def test_unsupported_cpu_never_launches(self):
         for mode in ('exec', 'launch'):
             result = self.run_launcher('a1200-030', mode, extra='--cpu=68030-NOMMU --uae_mmu_model=0')

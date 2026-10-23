@@ -85,6 +85,8 @@ and window for debug and warp runs. FS-UAE's own log is now under `.run/fsuae/Ca
   `--uae_fpu_model` now beats the one a `--cpu` name implies when both come from the same
   place (`EXTRA_ARGS`, the preset, the script's arguments, `fsuae_options`), whatever their
   order; `--cpu=68030 --uae_mmu_model=0` used to keep the MMU.
+- Native emulator windows are titled `PROJECT · DIRECTORY · gdb PORT` instead of FS-UAE
+  (docs/reference/headless-fsuae.md); `FSUAE_TITLE` overrides it.
 - `amigaxdev.gdbserve`'s `shot`, `profile` and `Server.capture` remove the output file before
   capturing and raise `CaptureError` (an `ERROR ...` reply) when gdb fails, the stub
   disconnects or the trace is missing, partial or has the wrong number of fields. Before,

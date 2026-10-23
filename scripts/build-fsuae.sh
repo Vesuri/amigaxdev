@@ -11,6 +11,7 @@
 # patches/fsuae-determinism.patch initialises two upstream reads of uninitialised memory that
 # made otherwise identical runs differ (serial break detection, screenshot columns), and runs
 # the indirect UAE board's host threads in lockstep with deterministic mode.
+# patches/fsuae-window-title.patch makes --title name the window (upstream always says FS-UAE).
 # SDL2_ttf and libmpeg2 are linked statically from pinned tarballs; glib, gettext, libpng,
 # freetype and SDL2 come from Homebrew (Brewfile), so rebuild after a major upgrade of those.
 set -euo pipefail
@@ -37,6 +38,8 @@ register_patch="$REPO/patches/fsuae-register-observer.patch"
 register_sha=$(sha256 "$register_patch")
 determinism_patch="$REPO/patches/fsuae-determinism.patch"
 determinism_sha=$(sha256 "$determinism_patch")
+title_patch="$REPO/patches/fsuae-window-title.patch"
+title_sha=$(sha256 "$title_patch")
 patch_sha=""; [ -n "$patch" ] && patch_sha=$(sha256 "$patch")
 
 # Already built from the same commit and patch: nothing to do.
@@ -48,6 +51,7 @@ if [ -x "$dest/fs-uae" ] && [ -f "$rev" ] && grep -q "$commit" "$rev" \
    && grep -q "input-observer $input_sha" "$rev" \
    && grep -q "register-observer $register_sha" "$rev" \
    && grep -q "determinism $determinism_sha" "$rev" \
+   && grep -q "window-title $title_sha" "$rev" \
    && { [ -z "$patch_sha" ] || grep -q "$patch_sha" "$rev"; } \
    && { [ -n "$patch_sha" ] || ! grep -q " + patch " "$rev"; }; then
   exit 0
@@ -85,6 +89,7 @@ git -C "$src" apply "$harness_patch"
 git -C "$src" apply "$input_patch"
 git -C "$src" apply "$register_patch"
 git -C "$src" apply "$determinism_patch"
+git -C "$src" apply "$title_patch"
 [ -n "$patch" ] && git -C "$src" apply "$patch"
 export PKG_CONFIG_PATH="$deps/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 (cd "$src" && ./bootstrap >"$build/fs-uae.log" 2>&1 \
@@ -104,6 +109,7 @@ cp -R "$src/data" "$dest/data"
   printf ' register-observer %s' "$register_sha"
   printf ' input-observer %s' "$input_sha"
   printf ' determinism %s' "$determinism_sha"
+  printf ' window-title %s' "$title_sha"
   [ -n "$patch" ] && printf ' + patch %s %s' "$(basename "$patch")" "$patch_sha"
   printf '\nSDL2_ttf 2.0.15 and libmpeg2 0.5.1 static; arm64; JIT disabled\n'
 } > "$rev"
