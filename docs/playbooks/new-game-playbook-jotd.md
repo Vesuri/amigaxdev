@@ -234,9 +234,9 @@ Add `/tmp/` to the repository’s local exclude file (resolve it with
 `git rev-parse --git-path info/exclude`; do not assume `.git` is a directory). Preserve its
 existing entries. Check `git check-ignore tmp/dev/probe` before copying anything. This local
 exclusion is shared by the repository’s worktrees and does not change tracked `.gitignore`.
-Preserve existing `AGENTS.md`, and give it a local `CLAUDE.md` holding only `@AGENTS.md` (both
-in the local exclude file) so Claude Code reads it too. `AGENTS.md` points at the harness notes
-and AmigaXDev's docs and tools ([a project's agent instructions](../environment.md#a-projects-agent-instructions)); keep local notes local unless their inclusion in the game’s
+Preserve existing `AGENTS.md` (and an existing `CLAUDE.md` that imports it); add no new
+`CLAUDE.md`. `AGENTS.md` points at the harness notes and the installed shared index
+([a project's agent instructions](../environment.md#a-projects-agent-instructions)); keep local notes local unless their inclusion in the game’s
 source contribution is deliberate. Inspect staged paths before every commit.
 
 ```sh

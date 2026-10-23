@@ -43,30 +43,32 @@ Makefiles use `?=` with the same default, so they work with or without `env.sh`.
 
 ## A project's agent instructions
 
-Every project gives its agents the same way into the shared environment. `AGENTS.md` holds
-the instructions and `CLAUDE.md` holds only `@AGENTS.md` (Claude Code reads `CLAUDE.md`, other
-agents `AGENTS.md`). A fork worktree keeps both untracked, in the repository's local exclude
-file (the [JOTD](playbooks/new-game-playbook-jotd.md) and
-[StingRay](playbooks/new-game-playbook-stingray.md) playbooks). `AGENTS.md` holds rules and
-pointers only, because agents reread it on every turn:
+Every project gives its agents the same way into the shared environment: an `AGENTS.md` at the
+root, and no `CLAUDE.md`. Claude Code (2.1.277 and later) reads `AGENTS.md` when no `CLAUDE.md`
+exists in the working directory or above it, and other agents read it anyway. A project that
+already has a `CLAUDE.md` holding `@AGENTS.md` works too; leave it. A fork worktree keeps
+`AGENTS.md` untracked, in the repository's local exclude file (the
+[JOTD](playbooks/new-game-playbook-jotd.md) and [StingRay](playbooks/new-game-playbook-stingray.md)
+playbooks). `AGENTS.md` holds rules and pointers only, because agents reread it on every turn:
 
 1. The personal commit rules, then the selected playbook's §0 rules.
 2. The scope and where to start: `docs/open-work.md` (a fork: its harness notes) is read first.
 3. A table of the project's own docs, each with when to read it.
-4. The way into the shared knowledge, naming AmigaXDev without a path, for example:
+4. The way into the shared knowledge, as one installed path, for example:
 
-   > The shared environment comes from AmigaXDev, the repository next to this one: `make setup`
-   > there installs `~/.local` and `~/.local/share/amiga`, and `amiga/env.sh` sources
-   > `~/.local/share/amiga/env.sh`. Shared guidance starts at AmigaXDev `docs/index.md`; the
-   > method is its `docs/playbooks/new-game-playbook.md`, and the shared tools are in its
-   > `docs/environment.md` ("Shared tools"). Generic lessons go into those docs, edited in
-   > AmigaXDev; this repository keeps what is specific to this game.
+   > Shared guidance starts at `~/.local/share/amiga/docs/index.md`: read the rows that match
+   > the task. It routes to the playbooks, references and shared tools (`docs/environment.md`,
+   > "Shared tools"); this project follows `docs/playbooks/new-game-playbook.md` there. The
+   > environment comes from AmigaXDev's `make setup`, and `amiga/env.sh` sources
+   > `~/.local/share/amiga/env.sh`. Generic lessons go into AmigaXDev's docs (edit them there and
+   > run `make share`); this repository keeps what is specific to this game.
 
-Link to the shared docs instead of copying them: a copied contract goes stale with the next
-fix here. The tools come the same way: `amiga/env.sh` sources the shared `env.sh`, run scripts
-launch through `$FSUAE_COMMON`, and Python tools import `amigaxdev`, so a project gets
-`make share` updates without edits. `~/.local/share/amiga` holds copies of the playbooks, but
-not this index or `docs/reference/`, so their relative links work only in the AmigaXDev checkout.
+`make share` installs `docs/` at `~/.local/share/amiga/docs/`, so the path works from any
+checkout or worktree, its links resolve, and it describes the installed tools. Point at the index
+instead of copying it or listing its documents: a copy goes stale with the next fix here. The
+tools come the same way: `amiga/env.sh` sources the shared `env.sh`, run scripts launch through
+`$FSUAE_COMMON`, and Python tools import `amigaxdev`, so a project gets `make share` updates
+without edits.
 
 ## Variables
 

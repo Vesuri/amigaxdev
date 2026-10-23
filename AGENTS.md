@@ -38,8 +38,9 @@ build output byte-identical, and commit that in the project's own repo with its 
 
 ## Agent instructions
 
-`AGENTS.md` holds them (this file), for every agent; `CLAUDE.md` only imports it, for Claude Code.
-The projects follow the same layout. Edit `AGENTS.md`, never `CLAUDE.md`.
+`AGENTS.md` holds them (this file), for every agent; here `CLAUDE.md` only imports it. Edit
+`AGENTS.md`, never `CLAUDE.md`. New projects get an `AGENTS.md` and no `CLAUDE.md`
+([a project's agent instructions](docs/environment.md#a-projects-agent-instructions)).
 
 ## Find guidance for the task
 

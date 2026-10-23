@@ -40,10 +40,10 @@ Getting to a release means, in order:
 
 ## 0. Rules (put these in the new repo's AGENTS.md before anything else)
 
-`AGENTS.md` holds the agent instructions; `CLAUDE.md` contains only `@AGENTS.md`. Keep AGENTS.md
+`AGENTS.md` holds the agent instructions, for Claude Code too; add no `CLAUDE.md`. Keep AGENTS.md
 to rules and pointers (every agent rereads it on every turn); hard-won detail goes in `docs/`,
-with a row in AGENTS.md's doc table saying when to read it. Its contents, including the way into
-AmigaXDev's docs and tools, are in [a project's agent instructions](../environment.md#a-projects-agent-instructions).
+with a row in AGENTS.md's doc table saying when to read it. Its contents, including the path to the
+installed shared index, are in [a project's agent instructions](../environment.md#a-projects-agent-instructions).
 
 - **Never commit original or byte-derived material**: binaries, disc and ROM images, resource
   forks, unpacked data, generated disassembly and listings, generated code that embeds original
@@ -268,7 +268,7 @@ Gate: static and live evidence agree on the executable surface (a check target, 
 Layout, as the ports converged on it:
 
 ```text
-AGENTS.md  CLAUDE.md  README.md  VERSION  Makefile     host build, generation, tests, dist
+AGENTS.md  README.md  VERSION  Makefile                host build, generation, tests, dist
 docs/                 open-work.md, design/architecture (with owner decisions), toolchain,
                       reference loop, static map, faithfulness seam, testing, performance, release
 src/                  game core, generated code (src/gen/, regenerated, never hand-edited)
@@ -548,7 +548,7 @@ extraction helper; Vette for Mac-fork extraction.
 ## 14. Definition of done
 
 **Ready to port** (end of §6):
-- [ ] AGENTS.md rules, doc table and AmigaXDev pointer, CLAUDE.md import, `.gitignore` guarding every original name and extension.
+- [ ] AGENTS.md rules, doc table and shared index path (no CLAUDE.md), `.gitignore` guarding every original name and extension.
 - [ ] Owner-decision table: target machine, approach, scope.
 - [ ] Originals hashed; extraction reproducible.
 - [ ] Reference loop reaches a named state headlessly with a positive completion signal; the entry

@@ -70,8 +70,8 @@ Patches come after all of that.
   `user.signingkey` (empty), `commit.gpgsign=false`, `tag.gpgsign=false`, `push.gpgsign=false`,
   `core.hooksPath=/dev/null`. Linked worktrees share it. Upstream has no `AGENTS.md`: the user's
   personal rules are a local, untracked `AGENTS.md` (copied from the JOTD fork) in the main
-  checkout and the worktree, with a `CLAUDE.md` that holds only `@AGENTS.md`; both are listed
-  with `/tmp/` in the local exclude file.
+  checkout and the worktree (no `CLAUDE.md`: Claude Code reads `AGENTS.md`), listed with `/tmp/`
+  in the local exclude file.
   Re-check all of this after a fresh clone or a new worktree.
 - Addresses in docs are **offsets into the game's code hunk or file**, using the same numbering
   as the slave's patch lists. Never quote absolute addresses, because they move with the memory
@@ -252,9 +252,9 @@ UTF-8 replaces it with U+FFFD (the standalone copy lost it that way). Edit it by
 an editor that keeps Latin-1, and check `git diff` for a changed banner line. `grep` calls the
 file binary because of that byte: use `grep -a`.
 
-`/tmp/`, `/AGENTS.md` and `/CLAUDE.md` are in the repository's local exclude file (resolve it
+`/tmp/` and `/AGENTS.md` are in the repository's local exclude file (resolve it
 with `git rev-parse --git-path info/exclude`; do not assume `.git` is a directory). Preserve its
-existing entries. Check `git check-ignore tmp/dev/probe` before copying anything. This local
+existing entries, including a `/CLAUDE.md` from an older setup. Check `git check-ignore tmp/dev/probe` before copying anything. This local
 exclusion is shared by the repository's worktrees and does not add a tracked `.gitignore` (the
 repository has none). Keep local notes local unless their inclusion in the game's source
 contribution is deliberate. Inspect staged paths before every commit.
@@ -314,9 +314,9 @@ Indianapolis 500 (in `tmp/dev/docs/`, carried over from the standalone project):
 | `docs/simulation-feasibility.md` | the analysis of a faster simulation |
 
 The local, excluded `AGENTS.md` at the worktree root carries the rules, the doc index, the
-way into AmigaXDev's docs and tools and the current state for the next agent session, after the
-personal commit rules ([a project's agent instructions](../environment.md#a-projects-agent-instructions));
-a local `CLAUDE.md` holding only `@AGENTS.md` lets Claude Code read it.
+path to the installed shared index and the current state for the next agent session, after the
+personal commit rules ([a project's agent instructions](../environment.md#a-projects-agent-instructions)).
+Claude Code reads it directly; add no `CLAUDE.md`.
 
 Do not commit a standalone-project scaffold at the fork's root. Keep the eventual game change
 as focused as `testdrive2`: the game's source files only. Upstream-facing explanation belongs in

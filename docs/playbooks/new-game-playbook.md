@@ -228,9 +228,9 @@ What is generic and what has to be adapted:
 | `state_fields.py`, `state_writers.py` | per-field snapshots at the VBL entry; finding `d16(a4)` stores | what to snapshot: TD2 and TFH dump the data hunk; I500 keeps its variables at absolute addresses inside the code hunk, so it dumps hunk 0. `state_writers.py` only finds `d16(a4)` stores (Aztec C), so an asm game needs an `abs.l` variant. `task_state.py` and `state_watch.py` are TD2-specific: don't copy them |
 | `compare_state.py` (TFH's) | compares the whole data hunk; a longword pointing into the code or data hunk at the same offset in both runs counts as equal, so builds that load the game elsewhere still compare | hunk sizes, `a4` bias. **TD2's version compares TD2's variable table and reports "identical" on any other game**: TFH quoted meaningless "identical state" results from it for a day. Before trusting any compare, check that two runs of the same build compare equal and two different scenes do not |
 
-Write `AGENTS.md` and a `CLAUDE.md` holding only `@AGENTS.md`, as in
+Write `AGENTS.md`, and no `CLAUDE.md`, as in
 [a project's agent instructions](../environment.md#a-projects-agent-instructions): the rules
-from §0, a task-based index of the docs below and the way into AmigaXDev's docs and tools.
+from §0, a task-based index of the docs below and the path to the installed shared index.
 Start the docs on TFH's layout, each a current-state reference (§0):
 
 | Doc | Holds |
@@ -934,7 +934,7 @@ recorded poses and returned to flight; physical-machine validation remains separ
 
 ## 12. "Ready to improve": the definition of done for setup
 
-- [ ] Rules, a doc index and the AmigaXDev pointer in `AGENTS.md`, imported by a one-line `CLAUDE.md`; `tmp/` ignored; no game bytes in git (`git ls-files` reviewed).
+- [ ] Rules, a doc index and the shared index path in `AGENTS.md` (no `CLAUDE.md`); `tmp/` ignored; no game bytes in git (`git ls-files` reviewed).
 - [ ] Game, version, slave type and existing patches documented.
 - [ ] `td2_report.py` names every hot region; traces have PCs.
 - [ ] A fixed gameplay window that is reproducible across boots: same screenshots, same state.
