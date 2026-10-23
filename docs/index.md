@@ -9,7 +9,7 @@ search for the affected option, helper or symptom before reading surrounding tex
 
 | Task | Start here |
 |---|---|
-| Install or update the shared environment | [README](../README.md); [environment variables and project integration](environment.md) |
+| Install or update the shared environment | AmigaXDev's `README.md`; [environment variables and project integration](environment.md) |
 | Start a standalone WHDLoad improvement | [WHDLoad playbook](playbooks/new-game-playbook.md) |
 | Work in a JOTD or StingRay fork | [JOTD](playbooks/new-game-playbook-jotd.md) or [StingRay](playbooks/new-game-playbook-stingray.md); choose one |
 | Port a game from another platform | [Porting playbook](playbooks/new-port-playbook.md); choose the matching original CPU/runtime approach |

@@ -110,7 +110,8 @@ Other shared files have no variable of their own:
 | `ndk/` | NDK 3.2 Release 4 (`Include_I/`, `Include_H/`, Autodocs) |
 | `kalms-c2p/` | Mikael Kalms' c2p routines; vendor the ones used (playbook §10) |
 | `python/` | Python 3.12 with Pillow, numpy, capstone and amitools (`xdftool` reads and writes ADFs) |
-| `*.md` at the top level | the playbooks, from `docs/playbooks/` |
+| `docs/` | this repo's `docs/`, start at `docs/index.md`; links into `share/` point at the installed copies |
+| `*.md` at the top level | copies of the playbooks, for projects that name them there; new references use `docs/playbooks/` |
 
 ## Shared tools
 

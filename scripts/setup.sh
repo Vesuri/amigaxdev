@@ -308,16 +308,7 @@ c_aga_guide() {
   stamp aga-guide "$(sha256 "$a")"
 }
 
-# --- files tracked in this repo --------------------------------------------------------------
-
-# Hand-written shared files: installed as copies, but never over an edit made in place.
-# Everything under share/ keeps its path below $AMIGA_SHARE (share/pylib/amigaxdev/env.py ->
-# pylib/amigaxdev/env.py); the playbooks go to the top level.
-tracked_files() {
-  (cd "$REPO" && find share -type f ! -name '*.pyc' ! -path '*/__pycache__/*' ! -name .DS_Store) |
-    LC_ALL=C sort | while read -r f; do echo "$f ${f#share/}"; done
-  for f in "$REPO"/docs/playbooks/*.md; do echo "docs/playbooks/${f##*/} ${f##*/}"; done
-}
+# --- files tracked in this repo (shared_files in lib.sh) ---------------------------------------
 
 # The shared venv finds the amigaxdev package through a .pth file in its site-packages.
 pylib_pth() {
@@ -330,35 +321,55 @@ pylib_pth() {
   fi
 }
 
+# share_stamp SRC DST: the file holding what was last installed at DST, to tell a newer repo copy
+# from an edit made in place.  Stamps are per destination, because a playbook goes to two; one
+# from before that (.setup/share/SRC) still counts until the next install replaces it.
+share_stamp() {
+  if [ -f "$STAMP_DIR/installed/$2" ] || [ ! -f "$STAMP_DIR/share/$1" ]; then
+    echo "$STAMP_DIR/installed/$2"
+  else
+    echo "$STAMP_DIR/share/$1"
+  fi
+}
+
 c_share() {
-  local src dst
-  tracked_files | while read -r src dst; do
+  local src dst stamp out="$BUILD/share-rendered"
+  mkdir -p "$out"
+  shared_files | while read -r src dst; do
+    stamp=$(share_stamp "$src" "$dst")
     dst="$AMIGA_SHARE/$dst"
-    if [ -f "$dst" ] && ! cmp -s "$REPO/$src" "$dst"; then
-      if [ -f "$STAMP_DIR/share/$src" ] && cmp -s "$STAMP_DIR/share/$src" "$dst"; then
+    shared_render "$src" "$out/file"
+    if [ -f "$dst" ] && ! cmp -s "$out/file" "$dst"; then
+      if [ -f "$stamp" ] && cmp -s "$stamp" "$dst"; then
         :   # unchanged since the last install: the repo copy is newer
       else
         die "$dst was edited in place; run make pull-shared, commit, then rerun"
       fi
     fi
-    mkdir -p "$(dirname "$dst")" "$(dirname "$STAMP_DIR/share/$src")"
-    cmp -s "$REPO/$src" "$dst" 2>/dev/null || { cp "$REPO/$src" "$dst"; log "installed $dst"; }
-    cp "$REPO/$src" "$STAMP_DIR/share/$src"
+    stamp="$STAMP_DIR/installed/${dst#$AMIGA_SHARE/}"
+    mkdir -p "$(dirname "$dst")" "$(dirname "$stamp")"
+    cmp -s "$out/file" "$dst" 2>/dev/null || { cp "$out/file" "$dst"; log "installed $dst"; }
+    cp "$out/file" "$stamp"
   done
+  rm -rf "$out"
   pylib_pth
 }
 
 c_pull_shared() {
   # Copy shared files that were edited in place back into the repo, for review and commit.
-  local src dst
-  tracked_files | while read -r src dst; do
+  local src dst stamp out="$BUILD/share-rendered"
+  mkdir -p "$out"
+  shared_files | while read -r src dst; do
+    stamp="$STAMP_DIR/installed/$dst"
     dst="$AMIGA_SHARE/$dst"
-    if [ -f "$dst" ] && ! cmp -s "$REPO/$src" "$dst"; then
-      cp "$dst" "$REPO/$src"
-      mkdir -p "$(dirname "$STAMP_DIR/share/$src")"; cp "$dst" "$STAMP_DIR/share/$src"
+    shared_render "$src" "$out/file"
+    if [ -f "$dst" ] && ! cmp -s "$out/file" "$dst"; then
+      shared_unrender "$src" "$dst"
+      mkdir -p "$(dirname "$stamp")"; cp "$dst" "$stamp"
       log "pulled $dst into $src"
     fi
   done
+  rm -rf "$out"
 }
 
 for c in "$@"; do

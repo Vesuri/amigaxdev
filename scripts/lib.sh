@@ -141,3 +141,40 @@ git_checkout() {
     git -C "$2" checkout -q --detach "$commit"
   fi
 }
+
+# --- files tracked in this repo --------------------------------------------------------------
+
+# shared_files: "SRC DEST" for each hand-written shared file, SRC relative to the repo and DEST
+# to $AMIGA_SHARE.  Everything under share/ keeps its path below $AMIGA_SHARE
+# (share/pylib/amigaxdev/env.py -> pylib/amigaxdev/env.py) and docs/ goes to docs/.  The
+# playbooks also go to the top level, where projects set up before docs/ was installed find them.
+shared_files() {
+  (cd "$REPO" && find share docs -type f ! -name '*.pyc' ! -path '*/__pycache__/*' ! -name .DS_Store) |
+    LC_ALL=C sort | while read -r f; do
+      case "$f" in
+        share/*) echo "$f ${f#share/}" ;;
+        docs/*.md) echo "$f $f" ;;
+      esac
+    done
+  for f in "$REPO"/docs/playbooks/*.md; do echo "docs/playbooks/${f##*/} ${f##*/}"; done
+}
+
+# shared_render SRC OUT: write SRC as it is installed.  A doc's links into share/ lose that
+# directory, which the installed tree does not have (../share/framework/ -> ../framework/).
+shared_render() {
+  case "$1" in
+    docs/*.md) sed -E 's#\]\(((\.\./)*)share/#](\1#g' "$REPO/$1" > "$2" ;;
+    *) cp "$REPO/$1" "$2" ;;
+  esac
+}
+
+# shared_unrender SRC FILE: the reverse, for make pull-shared: put FILE back at SRC.
+shared_unrender() {
+  local names
+  case "$1" in
+    docs/*.md)
+      names=$(cd "$REPO/share" && find . -mindepth 1 -maxdepth 1 -type d | sed 's#^\./##' | paste -sd '|' -)
+      sed -E "s#\\]\\(((\\.\\./)*)($names)/#](\\1share/\\3/#g" "$2" > "$REPO/$1" ;;
+    *) cp "$2" "$REPO/$1" ;;
+  esac
+}

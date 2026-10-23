@@ -36,12 +36,12 @@ for n in kalms-c2p:kalms-c2p lha:lha-compressor; do
   want=$(rows git.tsv | awk -F'\t' -v n="${n%%:*}" '$1 == n {print $2}')
   check "${n#*:} at ${want:0:7}" test "$(git -C "$AMIGA_SHARE/${n#*:}" rev-parse HEAD 2>/dev/null)" = "$want"
 done
-while read -r f; do
-  check "${f#share/} matches this repo" cmp -s "$REPO/$f" "$AMIGA_SHARE/${f#share/}"
-done < <(cd "$REPO" && find share -type f ! -name '*.pyc' ! -path '*/__pycache__/*' ! -name .DS_Store | LC_ALL=C sort)
-for s in "$REPO"/docs/playbooks/*.md; do
-  check "$(basename "$s") matches this repo" cmp -s "$s" "$AMIGA_SHARE/$(basename "$s")"
-done
+rendered=$(mktemp)
+while read -r src dst; do
+  shared_render "$src" "$rendered"
+  check "$dst matches this repo" cmp -s "$rendered" "$AMIGA_SHARE/$dst"
+done < <(shared_files)
+rm -f "$rendered"
 
 echo "Tools run"
 check "m68k-amiga-elf-gcc"     "$PREFIX/opt/bin/m68k-amiga-elf-gcc" --version
