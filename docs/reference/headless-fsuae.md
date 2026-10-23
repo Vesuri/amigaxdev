@@ -116,7 +116,13 @@ for a deliberate exception, for example `EXTRA_ARGS='--fast_memory=4096'`.
 **Override precedence:** `EXTRA_ARGS`, then the named preset, then caller arguments,
 then generated defaults; the first occurrence within that order wins. The launcher
 removes duplicate keys and competing RAM/FPU/CPU aliases, including raw UAE options.
-`--cpu=68040-NOMMU` also overrides a lower-priority MMU setting. JIT enablement requests
+`--cpu=68040-NOMMU` also overrides a lower-priority MMU setting; an explicit MMU or FPU
+setting in the same group wins in either order, so `--cpu=68030 --uae_mmu_model=0` and
+`--uae_mmu_model=0 --cpu=68030` are both a 68030 without MMU (as is `--cpu=68EC030`, which has
+no FPU either). A CPU name FS-UAE does not know (`68030-NOMMU`) fails before launch: FS-UAE
+would only warn "Unknown CPU specified" and run the model's default CPU, a 24-bit 68020 on an
+A1200, with data-cache emulation turned off. The launcher compares names as FS-UAE does,
+ignoring case and anything but letters, digits and `+`. JIT enablement requests
 an 8 MB translation cache unless a higher-priority explicit cache size is supplied;
 installed native builds reject JIT because they were compiled without it.
 
@@ -127,8 +133,15 @@ High-level RAM values use FS-UAE's units; raw `*_size` options use UAE's units.
 
 Check `Cache/Logs/debug.uae` and the final `CPU=..., MMU=..., JIT=...` runtime report
 before measuring. Argument acceptance is insufficient, especially with private builds
-or config files. `python3 scripts/test_fsuae_config.py` exercises real native-emulator
-settings on both launch paths, including defaults, NOMMU, cache, Z3 and unsupported JIT.
+or config files. `debug.uae` records the requested values: when FS-UAE fixes up the
+configuration it keeps them, for example `cpu_data_cache=true` after "Data cache emulation
+requires Indirect UAE Boot ROM." (data-cache emulation with a directory drive but no indirect
+board) or "...68030+ only." Such fixups precede the runtime report in
+`Cache/Logs/fs-uae.log.txt`, each as `[UAE] [000] TEXT` followed by TEXT on a line of its
+own; FS-UAE's option warnings such as "Unknown CPU specified" are lines of their own too.
+`python3 scripts/test_fsuae_config.py` exercises real native-emulator settings on both launch
+paths, including defaults, NOMMU, a 68030 without MMU, cache, Z3, unsupported JIT and an
+unsupported CPU name, and fails on any fixup.
 This establishes configuration/functionality, not timing accuracy.
 
 Install with `make share`; projects sourcing the installed shared launcher pick it up on

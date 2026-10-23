@@ -79,6 +79,12 @@ and window for debug and warp runs. FS-UAE's own log is now under `.run/fsuae/Ca
   of leftover host memory. It also lets `DETERMINISTIC=1` boot directory drives on the
   data-cache presets (`a1200-030`, `a1200-040`, `a1200-060`, `a3000`), which used to hang at
   `FS: dh0 ... starting`.
+- The launcher refuses a CPU name FS-UAE does not know, such as `--cpu=68030-NOMMU`, before
+  starting anything; FS-UAE used to run a 24-bit 68020 instead. A 68030 without MMU is
+  `--cpu=68EC030` or `--cpu=68030 --uae_mmu_model=0`. An explicit `--uae_mmu_model` or
+  `--uae_fpu_model` now beats the one a `--cpu` name implies when both come from the same
+  place (`EXTRA_ARGS`, the preset, the script's arguments, `fsuae_options`), whatever their
+  order; `--cpu=68030 --uae_mmu_model=0` used to keep the MMU.
 - `WHDLoad/` contains the sole active WHDLoad 20.1 developer package (including its runtime).
   `WHDLoad-20.0/` is retired without an alias; hardcoded references must be fixed during
   project work. Shared defaults use `WHDLoad/`; older-version comments do not pin the

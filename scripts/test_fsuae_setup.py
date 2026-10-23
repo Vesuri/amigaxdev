@@ -133,6 +133,25 @@ fsuae_options || exit 1
             self.assertEqual(values['uae_ntsc'], 'true')
             self.assertEqual(values['uae_cpu_frequency'], '25000000')
 
+    def test_cpu_override_mmu_in_either_order(self):
+        for mode in ('exec', 'launch'):
+            for extra in ('--uae_mmu_model=0 --cpu=68030', '--cpu=68030 --uae_mmu_model=0'):
+                values = self.effective(self.run_launcher('a1200-030', mode, extra=extra))
+                self.assertEqual((values['cpu'], values['uae_mmu_model'], values['uae_fpu_model']),
+                                 ('68030', '0', '0'), extra)
+            # FS-UAE ignores case and punctuation in CPU names; so does the launcher.
+            values = self.effective(self.run_launcher('a1200-040', mode, extra='--cpu=68040nommu'))
+            self.assertEqual((values['uae_mmu_model'], values['uae_fpu_model']), ('0', '68040'))
+
+    def test_unsupported_cpu_never_launches(self):
+        for mode in ('exec', 'launch'):
+            result = self.run_launcher('a1200-030', mode, extra='--cpu=68030-NOMMU --uae_mmu_model=0')
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Unsupported CPU '68030-NOMMU'", result.stderr)
+            self.assertIn('68EC030', result.stderr)
+            self.assertEqual(result.stdout, '')
+            self.assertFalse((self.work / '.run/fsuae.pid').exists())
+
     def test_jit_pair_and_unsupported_build(self):
         for mode in ('exec', 'launch'):
             values = self.effective(self.run_launcher('a1200-040', mode,

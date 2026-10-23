@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Check effective native-emulator settings, not option acknowledgements.
 
+The CPU report in the emulator log and debug.uae must match each case, and the emulator log
+must hold no configuration fixups ("Unknown CPU specified", "Data cache emulation requires
+Indirect UAE Boot ROM.", after which debug.uae still says cpu_data_cache=true).
 Uses installed ROMs, no game data. Scratch output stays under tmp/. Pass a native
 FS-UAE path optionally; no JIT timing or hardware performance claims are made.
 """
@@ -13,6 +16,19 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def fixups(log):
+    """Warnings FS-UAE logged while it fixed up the configuration. error_log (UAE's prefs
+    fixups) logs "[UAE] [000] TEXT" and then TEXT alone; the FS-UAE option parser's warnings
+    are bare lines, of which these are about the CPU and FPU."""
+    out, prev = [], ''
+    for line in log.splitlines():
+        if line.strip() and (prev == '[UAE] [000] ' + line
+                             or re.fullmatch(r'Unknown CPU specified|.* must be paired with .*', line)):
+            out.append(line)
+        prev = line
+    return out
 
 
 def stop(pid, p):
@@ -55,7 +71,7 @@ WINDOW=none SOUND=0 WARP=1
                     if reports and config.exists():
                         values = dict(line.split('=', 1) for line in config.read_text().splitlines()
                                       if '=' in line and not line.startswith(';'))
-                        return values, tuple(map(int, reports[-1]))
+                        return values, tuple(map(int, reports[-1])), fixups(text)
                     if p.poll() is not None:
                         launch_log = work / '.run/fsuae.log'
                         raise RuntimeError((work / 'stdout').read_text() +
@@ -83,17 +99,35 @@ def main():
         ('a3000', '--zorro_iii_memory=32768 --uae_z3mem_size=16', (68030, 68882, 68030, 0), {'z3mem_size': '32', 'cpu_frequency': '25000000', 'cpu_data_cache': 'true'}),
         ('a1200-040', '', (68040, 68040, 68040, 0), {'z3mem_size': '0', 'cpu_data_cache': 'true'}),
         ('a1200-040', '--cpu=68040-NOMMU --uae_z3mem_size=32 --uae_cpu_data_cache=false', (68040, 68040, 0, 0), {'z3mem_size': '32', 'cpu_data_cache': 'false'}),
+        # A 68030 without MMU, the explicit MMU in either order, and the native spelling.
+        ('a1200-030', '--uae_mmu_model=0 --cpu=68030', (68030, 0, 0, 0), {'cpu_data_cache': 'true'}),
+        ('a1200-030', '--cpu=68030 --uae_mmu_model=0', (68030, 0, 0, 0), {'cpu_data_cache': 'true'}),
+        ('a1200-030', '--cpu=68EC030', (68030, 0, 0, 0), {'cpu_data_cache': 'true'}),
     ]
     for mode in ('exec', 'launch'):
         for setup, extra, cpu, expected in cases:
-            values, report = run(binary, setup, extra, mode)
+            values, report, messages = run(binary, setup, extra, mode)
             assert report == cpu, (mode, setup, extra, report, cpu)
+            assert not messages, (mode, setup, extra, messages)
             for key, value in expected.items():
                 assert values.get(key) == value, (mode, setup, key, values.get(key), value)
             assert values['chipmem_size'] == '4'
             assert values['fastmem_size'] == '8'
             assert values['cachesize'] == '0'
             print('PASS', mode, setup, extra or 'defaults')
+    # The fixup check sees what debug.uae hides: the emulator turns data-cache emulation off
+    # on a 68020 (likewise without the indirect board when a directory drive needs the boot
+    # ROM) and debug.uae still records it as on.
+    values, report, messages = run(binary, 'a1200-fast', '--uae_cpu_data_cache=true', 'launch')
+    assert values['cpu_data_cache'] == 'true', values['cpu_data_cache']
+    assert any('Data cache emulation requires' in m for m in messages), messages
+    # FS-UAE warns about a CPU name it does not know and runs the model's default CPU (a
+    # 68020 for an A1200); the launcher refuses the name before starting anything.
+    for mode in ('exec', 'launch'):
+        try: run(binary, 'a1200-030', '--cpu=68030-NOMMU --uae_mmu_model=0', mode)
+        except RuntimeError as error:
+            assert "Unsupported CPU '68030-NOMMU'" in str(error), str(error)
+        else: raise AssertionError('unsupported CPU spelling launched')
     # Native builds cannot provide JIT. The launcher must say so rather than
     # treating a zero-sized translation cache as successful enablement.
     for mode in ('exec', 'launch'):
@@ -101,7 +135,7 @@ def main():
         except RuntimeError as error:
             assert 'JIT disabled' in str(error), str(error)
         else: raise AssertionError('JIT request silently accepted by native build')
-    print('effective configuration checks passed (native JIT unavailable)')
+    print('effective configuration checks passed (native JIT unavailable, unsupported CPU refused)')
 
 
 if __name__ == '__main__':

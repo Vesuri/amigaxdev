@@ -350,13 +350,34 @@ fsuae_env() {
   return 0
 }
 
+# Separates the argument groups passed to fsuae_resolve_options; never reaches FS-UAE.
+FSUAE_GROUP_END=--amigaxdev-group-end
+
 # Resolve duplicates ourselves: raw UAE options are applied again by FS-UAE after
 # its ordinary parser, so relying on that parser's first-value-wins is unsafe.
-# Arguments arrive in precedence order (explicit overrides, preset, caller, defaults).
+# Arguments arrive in precedence order (explicit overrides, preset, caller, defaults),
+# each group ended by $FSUAE_GROUP_END. Fails on a CPU spelling FS-UAE does not know: it
+# would warn and run the model's default CPU instead.
 fsuae_resolve_options() {
   FSUAE_EFFECTIVE_ARGS=()
-  local arg key group seen='|' mmu fpu
-  for arg in "$@"; do
+  local arg key group seen='|' mmu= fpu= cpu
+  for arg in "$@" "$FSUAE_GROUP_END"; do
+    if [ "$arg" = "$FSUAE_GROUP_END" ]; then
+      # A CPU spelling's MMU/FPU, unless its own group or a higher one set them explicitly
+      # (in any order): --cpu=68030 --uae_mmu_model=0 is a 68030 without MMU.
+      case "$seen" in *'|--uae_mmu_model|'*) ;;
+        *) if [ -n "$mmu" ]; then
+             seen="$seen--uae_mmu_model|"; FSUAE_EFFECTIVE_ARGS+=(--uae_mmu_model="$mmu")
+           fi ;;
+      esac
+      case "$seen" in *'|fpu|'*) ;;
+        *) if [ -n "$fpu" ]; then
+             seen="${seen}fpu|"; FSUAE_EFFECTIVE_ARGS+=(--uae_fpu_model="$fpu")
+           fi ;;
+      esac
+      mmu= fpu=
+      continue
+    fi
     case "$arg" in
       --*=*) key="${arg%%=*}" ;;
       *) FSUAE_EFFECTIVE_ARGS+=("$arg"); continue ;;
@@ -375,35 +396,33 @@ fsuae_resolve_options() {
     case "$seen" in *"|$group|"*) continue ;; esac
     seen="$seen$group|"
     FSUAE_EFFECTIVE_ARGS+=("$arg")
-    # CPU spellings imply MMU/FPU selections. Preserve earlier explicit settings,
-    # but do not let lower-priority raw options undo a CPU override.
+    # CPU spellings imply MMU/FPU selections (added at the end of the group). Preserve
+    # explicit settings, but do not let lower-priority raw options undo a CPU override.
     case "$arg" in
       --ntsc_mode=1) FSUAE_EFFECTIVE_ARGS+=(--uae_ntsc=true) ;;
       --ntsc_mode=0) FSUAE_EFFECTIVE_ARGS+=(--uae_ntsc=false) ;;
       --uae_ntsc=true|--uae_ntsc=yes|--uae_ntsc=1) FSUAE_EFFECTIVE_ARGS+=(--ntsc_mode=1) ;;
       --uae_ntsc=false|--uae_ntsc=no|--uae_ntsc=0) FSUAE_EFFECTIVE_ARGS+=(--ntsc_mode=0) ;;
       --cpu=*)
-        mmu= fpu=
-        case "${arg#*=}" in
+        # FS-UAE compares letters, digits and + only, ignoring case.
+        cpu=$(printf '%s' "${arg#*=}" | tr -cd 'A-Za-z0-9+' | tr 'a-z' 'A-Z')
+        case "$cpu" in
+          AUTO) ;;
           68000|68010|68EC020|68020|68EC030) mmu=0 fpu=0 ;;
           68030) mmu=68030 fpu=0 ;;
           68040) mmu=68040 fpu=68040 ;;
           68060) mmu=68060 fpu=68060 ;;
-          68040-NOMMU) mmu=0 fpu=68040 ;;
-          68060-NOMMU) mmu=0 fpu=68060 ;;
+          68040NOMMU) mmu=0 fpu=68040 ;;
+          68060NOMMU) mmu=0 fpu=68060 ;;
           68EC040|68EC060) mmu=0 fpu=0 ;;
           68LC040) mmu=68040 fpu=0 ;;
           68LC060) mmu=68060 fpu=0 ;;
-        esac
-        case "$seen" in *'|--uae_mmu_model|'*) ;;
-          *) if [ -n "$mmu" ]; then
-               seen="$seen--uae_mmu_model|"; FSUAE_EFFECTIVE_ARGS+=(--uae_mmu_model="$mmu")
-             fi ;;
-        esac
-        case "$seen" in *'|fpu|'*) ;;
-          *) if [ -n "$fpu" ]; then
-               seen="${seen}fpu|"; FSUAE_EFFECTIVE_ARGS+=(--uae_fpu_model="$fpu")
-             fi ;;
+          *)
+            echo "Unsupported CPU '${arg#*=}': FS-UAE would run the model's default CPU instead." >&2
+            echo "Use 68000, 68010, 68EC020, 68020, 68EC030, 68030, 68EC040, 68LC040, 68040, 68040-NOMMU," >&2
+            echo "68EC060, 68LC060, 68060 or 68060-NOMMU. A 68030 without MMU is 68EC030 (no FPU) or" >&2
+            echo "--cpu=68030 --uae_mmu_model=0." >&2
+            return 1 ;;
         esac ;;
       --jit_compiler=1)
         case "$seen" in *'|--uae_cachesize|'*) ;;
@@ -448,7 +467,10 @@ fsuae_command() {
   # shellcheck disable=SC2086
   fsuae_monitor ${EXTRA_ARGS:-} "$@" "${FSUAE_ARGS[@]}" || return 1
   # shellcheck disable=SC2086  # EXTRA_ARGS is word-split on purpose
-  fsuae_resolve_options ${EXTRA_ARGS:-} ${FSUAE_MONITOR_ARGS[@]+"${FSUAE_MONITOR_ARGS[@]}"} ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$@" "${FSUAE_ARGS[@]}" || return 1
+  fsuae_resolve_options ${EXTRA_ARGS:-} "$FSUAE_GROUP_END" \
+    ${FSUAE_MONITOR_ARGS[@]+"${FSUAE_MONITOR_ARGS[@]}"} "$FSUAE_GROUP_END" \
+    ${FSUAE_SETUP_ARGS[@]+"${FSUAE_SETUP_ARGS[@]}"} "$FSUAE_GROUP_END" \
+    "$@" "$FSUAE_GROUP_END" "${FSUAE_ARGS[@]}" || return 1
   fsuae_validate_options
 }
 
