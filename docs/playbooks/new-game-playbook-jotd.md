@@ -235,7 +235,8 @@ Add `/tmp/` to the repository’s local exclude file (resolve it with
 existing entries. Check `git check-ignore tmp/dev/probe` before copying anything. This local
 exclusion is shared by the repository’s worktrees and does not change tracked `.gitignore`.
 Preserve existing `AGENTS.md`, and give it a local `CLAUDE.md` holding only `@AGENTS.md` (both
-in the local exclude file) so Claude Code reads it too; keep local notes local unless their inclusion in the game’s
+in the local exclude file) so Claude Code reads it too. `AGENTS.md` points at the harness notes
+and AmigaXDev's docs and tools ([a project's agent instructions](../environment.md#a-projects-agent-instructions)); keep local notes local unless their inclusion in the game’s
 source contribution is deliberate. Inspect staged paths before every commit.
 
 ```sh
@@ -358,7 +359,7 @@ fork-specific build, source ownership and release rules below take precedence.
   can prevent byte identity. Keep the dependency change distinct from game optimizations and
   validate it before relying on a new baseline. This playbook does not claim Red Baron builds
   or runs on the proposed host setup until those checks pass.
-- Use the official 20.0 headers/KickEmu for the development build, but retain Red Baron’s
+- Use the shared 20.1 headers/KickEmu for the development build, but retain Red Baron’s
   `slv_Version = 16` unless a newly used API or macro requires more. TD2 uses interface 17
   because `PL_IFCx` needs WHDLoad 17.2; that is not a reason to bump every slave to 17 or 20.
   Change the header and ReadMe requirements together when needed; test the stated minimum

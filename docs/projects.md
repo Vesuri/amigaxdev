@@ -19,7 +19,8 @@ shared environment and how far each is migrated.
    Release packaging that ships those sources (Test Drive 2 `tools/package_release.py`) takes
    them from `$WHDLOAD`. Patched copies stay.
 6. Docs: point the playbook references at AmigaXDev `docs/playbooks/`; drop paths into other
-   projects.
+   projects. `AGENTS.md` leads into AmigaXDev's docs and tools as in docs/environment.md,
+   "A project's agent instructions".
 
 ## Status
 
@@ -50,6 +51,15 @@ StingRay's slave repository (harness in the ignored `tmp/dev/`).
 | Indianapolis 500 JOTD | F | harness in `tmp/dev` migrated; uncommitted slave work untouched | — |
 | Indianapolis 500 StingRay | F | migrated (harness in `tmp/dev`) | — |
 | Prince of Persia | F | on the shared environment from the start (harness in `tmp/dev`; keyboard route driven with `monitor key`) | — |
+| F1GP | W | on the shared environment from the start | — |
+| Mercenary 3 | W | on the shared environment from the start | — |
+| Prince of Persia 2 | P | on the shared environment from the start | — |
+| Wing Commander | P | on the shared environment from the start | — |
+| Ferrari Formula One | F | on the shared environment from the start (StingRay worktree, harness in `tmp/dev`) | — |
+| Road Rash, Gunship, Grand Prix Circuit, TFX, Test Drive | F | on the shared environment from the start (JOTD worktrees, harness in `tmp/dev`) | — |
+
+The fork worktrees belong to two main checkouts, `jotd_whdload_slaves` (JOTD's repository) and
+`Stingray_WHDLoad_Patches` (StingRay's), which have no harness of their own.
 
 Not Amiga game projects, left alone: dA JoRMaS (an Amiga demo repo; it already uses
 `fsuae_common.sh`, whose old functions are unchanged), Excellence, PETSCIIRobots-SDL, Tutka,
@@ -63,53 +73,40 @@ and window for debug and warp runs. FS-UAE's own log is now under `.run/fsuae/Ca
 
 ## Changes in the shared tree that reach every project
 
-- Native FS-UAE builds (`FSUAE_ARM`, `FSUAE_APROF`, `FSUAE_MMU`) apply
-  `fsuae-cpu-frequency.patch` and `fsuae-harness.patch`. The first changes timing: presets with
-  an explicit CPU frequency (all `AMIGA_SETUP` names) ran about 10.8% fast on a 68000 before it.
-  Each rebuild changes the binaries' hashes; projects that pin them (Prince of Persia 2,
-  Ferrari Formula One) re-pin and re-measure.
-- The native builds' gdb stub parks stops made at a vsync (`exact-fields gapless-profile` in
-  `monitor harness`; docs/reference/headless-fsuae.md). After the end of `fields` or `profile`
-  or a Ctrl-C, `monitor fields N` now runs N fields (it ran N + 1), and the next `monitor
-  profile` starts at that vsync (it left one field untraced). A route that counts fields, or
-  polls `profile 1` screenshots for a checkpoint, reaches its checkpoint at a different field
-  number and must be recounted; after a breakpoint or step `fields N` still runs N + 1.
-  `fsuae-determinism.patch` makes otherwise identical runs agree: before it the serial port
-  could raise RBF in INTREQR in some runs and not others, and A500 screenshots had two columns
-  of leftover host memory. It also lets `DETERMINISTIC=1` boot directory drives on the
-  data-cache presets (`a1200-030`, `a1200-040`, `a1200-060`, `a3000`), which used to hang at
-  `FS: dh0 ... starting`.
-- The launcher refuses a CPU name FS-UAE does not know, such as `--cpu=68030-NOMMU`, before
-  starting anything; FS-UAE used to run a 24-bit 68020 instead. A 68030 without MMU is
-  `--cpu=68EC030` or `--cpu=68030 --uae_mmu_model=0`. An explicit `--uae_mmu_model` or
-  `--uae_fpu_model` now beats the one a `--cpu` name implies when both come from the same
-  place (`EXTRA_ARGS`, the preset, the script's arguments, `fsuae_options`), whatever their
-  order; `--cpu=68030 --uae_mmu_model=0` used to keep the MMU.
-- Native emulator windows are titled `PROJECT · DIRECTORY · gdb PORT` instead of FS-UAE
-  (docs/reference/headless-fsuae.md); `FSUAE_TITLE` overrides it.
-- `amigaxdev.gdbserve`'s `shot`, `profile` and `Server.capture` remove the output file before
-  capturing and raise `CaptureError` (an `ERROR ...` reply) when gdb fails, the stub
-  disconnects or the trace is missing, partial or has the wrong number of fields. Before,
-  a failed `shot` saved the previous `shot.bin`'s image under the new name and replied as if it
-  had worked, and a failed `profile` left any older file at the target. Project commands that
-  call `capture` now see the exception.
-- `WHDLoad/` contains the sole active WHDLoad 20.1 developer package (including its runtime).
-  `WHDLoad-20.0/` is retired without an alias; hardcoded references must be fixed during
-  project work. Shared defaults use `WHDLoad/`; older-version comments do not pin the
-  installed version. Existing staged
-  binaries and vendored sources remain unchanged. The migration byte-identity checks below
-  describe the path migration, not validation of a rebuild against the new developer package.
+What changed under projects that use the shared files, and what a project does about it. The
+contracts are in the linked docs; git has the details.
 
-- `kick40068.A1200` is now the TOSEC `[!]` dump. The old file was Harry Sintonen's
-  `mathieeesingbas.library` fix (revision 40.69); A1200 measurements taken before 2026-10-10
-  used it. The old file is in `~/.local/share/amiga/.replaced/`.
-- `kick37175.A500` is now the A500+ `[!]` dump (the old one matched no TOSEC entry), with an RTB.
-- `SetPatch` is 40.16 from Workbench 3.1 (was 45.25 from AmigaOS 3.2).
-- The default gdb-stub port of every directory changed (400 values instead of 40). Scripts
-  read `$DEBUG_PORT` after sourcing `fsuae_common.sh`, and tools parse the port from the run
-  script's output, so nothing depends on the number.
-- The Python environment `~/.local/share/amiga/python` is new; it comes first on `PATH` only
-  for projects that source the shared `env.sh`.
+- **Native FS-UAE builds** (`FSUAE_ARM`, `FSUAE_APROF`) apply the frequency, harness,
+  determinism, MMU-write and window-title patches ([which FS-UAE](reference/headless-fsuae.md#which-fs-uae)).
+  Presets with an explicit CPU frequency ran about 10.8% fast on a 68000 before the frequency
+  patch. Every rebuild changes the binaries' hashes: projects that pin them (Prince of Persia 2,
+  Ferrari Formula One) re-pin and re-measure.
+- **Field counts after a vsync stop:** `monitor fields N` after the end of `fields` or `profile`
+  or a Ctrl-C now runs N fields (it ran N + 1), and the next `profile` leaves no field untraced
+  ([harness commands](reference/headless-fsuae.md#harness-commands-native-builds)). A route that
+  counts fields or polls `profile 1` screenshots for a checkpoint must be recounted.
+- **Determinism:** otherwise identical runs agree, and `DETERMINISTIC=1` boots directory drives
+  on `a1200-030`, `a1200-040`, `a1200-060` and `a3000`, where it used to hang
+  ([machines, warp and determinism](reference/headless-fsuae.md#machines-warp-and-determinism)).
+  A matrix that turned deterministic mode off for those presets can turn it back on.
+- **CPU names:** the launcher refuses names FS-UAE does not know, such as `--cpu=68030-NOMMU`
+  (FS-UAE ran a 24-bit 68020 instead), and an explicit `--uae_mmu_model` or `--uae_fpu_model`
+  beats the one a `--cpu` name implies in either order
+  ([named machine setups](reference/headless-fsuae.md#named-machine-setups)). Figures taken with
+  such a name were not the CPU they claim; a 68030 without MMU is `--cpu=68EC030` or
+  `--cpu=68030 --uae_mmu_model=0`.
+- **Window titles** name the project, directory and gdb port; `FSUAE_TITLE` overrides them
+  ([the shared launcher](reference/headless-fsuae.md#the-shared-launcher)).
+- **Captures:** `amigaxdev.gdbserve` raises `CaptureError` instead of leaving an old image or
+  trace behind ([shared tools](environment.md#shared-tools)). Project commands that call
+  `capture` see the exception.
+- **WHDLoad:** `WHDLoad/` holds the only developer package, 20.1; `WHDLoad-20.0/` is retired
+  without an alias ([shared tools](environment.md#shared-tools)). The migration byte-identity
+  checks below describe the path migration, not a rebuild against the new package.
+- **ROMs and SetPatch:** `kick40068.A1200` is the TOSEC `[!]` dump; A1200 measurements taken
+  before 2026-10-10 used Harry Sintonen's `mathieeesingbas.library` fix (revision 40.69), kept in
+  `~/.local/share/amiga/.replaced/`. `kick37175.A500` is the A500+ `[!]` dump, with an RTB.
+  `SetPatch` is 40.16 from Workbench 3.1 (was 45.25 from AmigaOS 3.2).
 
 ## Shared tools and what stays per project
 

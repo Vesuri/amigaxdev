@@ -41,6 +41,33 @@ sys.path.insert(0, os.environ.get('AMIGA_PYLIB') or os.path.expanduser('~/.local
 
 Makefiles use `?=` with the same default, so they work with or without `env.sh`.
 
+## A project's agent instructions
+
+Every project gives its agents the same way into the shared environment. `AGENTS.md` holds
+the instructions and `CLAUDE.md` holds only `@AGENTS.md` (Claude Code reads `CLAUDE.md`, other
+agents `AGENTS.md`). A fork worktree keeps both untracked, in the repository's local exclude
+file (the [JOTD](playbooks/new-game-playbook-jotd.md) and
+[StingRay](playbooks/new-game-playbook-stingray.md) playbooks). `AGENTS.md` holds rules and
+pointers only, because agents reread it on every turn:
+
+1. The personal commit rules, then the selected playbook's §0 rules.
+2. The scope and where to start: `docs/open-work.md` (a fork: its harness notes) is read first.
+3. A table of the project's own docs, each with when to read it.
+4. The way into the shared knowledge, naming AmigaXDev without a path, for example:
+
+   > The shared environment comes from AmigaXDev, the repository next to this one: `make setup`
+   > there installs `~/.local` and `~/.local/share/amiga`, and `amiga/env.sh` sources
+   > `~/.local/share/amiga/env.sh`. Shared guidance starts at AmigaXDev `docs/index.md`; the
+   > method is its `docs/playbooks/new-game-playbook.md`, and the shared tools are in its
+   > `docs/environment.md` ("Shared tools"). Generic lessons go into those docs, edited in
+   > AmigaXDev; this repository keeps what is specific to this game.
+
+Link to the shared docs instead of copying them: a copied contract goes stale with the next
+fix here. The tools come the same way: `amiga/env.sh` sources the shared `env.sh`, run scripts
+launch through `$FSUAE_COMMON`, and Python tools import `amigaxdev`, so a project gets
+`make share` updates without edits. `~/.local/share/amiga` holds copies of the playbooks, but
+not this index or `docs/reference/`, so their relative links work only in the AmigaXDev checkout.
+
 ## Variables
 
 | Variable | Default | What |
@@ -83,7 +110,7 @@ Other shared files have no variable of their own:
 | `ndk/` | NDK 3.2 Release 4 (`Include_I/`, `Include_H/`, Autodocs) |
 | `kalms-c2p/` | Mikael Kalms' c2p routines; vendor the ones used (playbook §10) |
 | `python/` | Python 3.12 with Pillow, numpy, capstone and amitools (`xdftool` reads and writes ADFs) |
-| `new-game-playbook*.md` | the playbooks, from `docs/playbooks/` |
+| `*.md` at the top level | the playbooks, from `docs/playbooks/` |
 
 ## Shared tools
 
@@ -97,22 +124,12 @@ copied into a project's game drive or vendored sources remain unchanged until th
 normal staging/update process runs. A shared upgrade does not establish per-game compatibility
 or byte-identical rebuilds. Explicit paths outside these shared locations remain overrides.
 
-Run scripts using the shared launcher accept `AMIGA_SETUP` to select a complete machine,
-for example `AMIGA_SETUP=a1200-fast amiga/run.sh`. Available names are `a500`, `a500-1.5m`
-(the playbooks' A500-equivalent), `a500+`, `a3000`, `a1200`, `a1200-fast`, `a1200-030`, `a1200-040` and
-`a1200-060`. The preset overrides
-project machine defaults at launch; `EXTRA_ARGS` supplies explicit overrides. The
-launcher resolves duplicates and machine-option aliases before starting FS-UAE. See
-[named machine setups](reference/headless-fsuae.md#named-machine-setups) for RAM, ROMs,
-clocks, MMU settings and project compatibility limits. CPU cache emulation is enabled
-for 68020 and faster (instruction cache on 020; instruction and data caches on 030+).
-Guest software still controls cache use. Install updates with `make share`.
-
-On macOS the shared launcher defaults debug/diagnostic runs to the leftmost display when
-multiple monitors are connected; ordinary interactive runs keep their usual placement.
-`AMIGA_MONITOR=left|right|primary` selects a display explicitly for either kind of run;
-`AMIGA_MONITOR=` disables automatic positioning. See
-[window placement](reference/headless-fsuae.md#sound-window-screenshots).
+Run scripts that launch through `fsuae_common.sh` share its settings: `AMIGA_SETUP` selects a
+whole machine (`AMIGA_SETUP=a1200-fast amiga/run.sh`), `EXTRA_ARGS` overrides single options,
+`DETERMINISTIC=1` makes runs repeat, `AMIGA_MONITOR` picks the display and `FSUAE_TITLE` names
+the window. The contracts are in [the shared launcher](reference/headless-fsuae.md#the-shared-launcher),
+[named machine setups](reference/headless-fsuae.md#named-machine-setups) and
+[window options](reference/headless-fsuae.md#sound-window-screenshots). `make share` installs updates.
 
 | What | Use | Replaces the per-project |
 |---|---|---|
@@ -133,8 +150,9 @@ multiple monitors are connected; ordinary interactive runs keep their usual plac
 | `fsuae_prepare`, `FSUAE_CLAIM_STRICT=1` | in `fsuae_common.sh`: claim for DEBUG=1 else stop the previous run; a strict claim that never takes a busy port | the `run.sh` claim block, Alone in the Dark's override |
 
 Project-specific names (`KICKSTART_RTB`, `WHDLOAD_HOST_KICKSTART`, `FSUAE`, `GDB`, ...) stay
-in the projects, defined from these. `FSUAE` is deliberately not shared: most run scripts use
-the x86_64 `fs-uae` on `PATH`, because host lldb can attach to it (playbook §5).
+in the projects, defined from these. `FSUAE` is deliberately not shared: a project chooses its
+build ([which FS-UAE](reference/headless-fsuae.md#which-fs-uae)), and without one the x86_64
+`fs-uae` on `PATH` runs.
 
 ## The ROMs
 

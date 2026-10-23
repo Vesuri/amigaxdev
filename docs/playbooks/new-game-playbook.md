@@ -118,8 +118,8 @@ BH hit: absolute `$4`/`$bc` operands must be written `($4).w` or vasm picks `abs
 stores distance−2; `PL_P`/`PL_PS` store the destination relative to the list start
 (`python3 -m amigaxdev.patchlist SLAVE OFFSET` decodes a list). Keep the reconstruction as the reference
 (`whdload/original/`, `make original` = byte compare) and **build the patched slave on the
-WHDLoad 20 KickEmu sources** (the user's requirement): `Src/slave-examples/kick13.asm` from the
-20.0 dev archive, with `kick13.s` and the 20.0 headers vendored verbatim. The slave still declares
+WHDLoad 20 KickEmu sources** (the user's requirement): `Src/slave-examples/kick13.asm` and
+`kick13.s` from the shared `$WHDLOAD` tree (20.1; §10). The slave still declares
 WHDLoad 17 unless it needs a v20 feature (§10).
 
 Put the playable tree at `tmp/game/<Name>/`, exactly as `run.sh` will mount it on `DH1:`.
@@ -228,9 +228,10 @@ What is generic and what has to be adapted:
 | `state_fields.py`, `state_writers.py` | per-field snapshots at the VBL entry; finding `d16(a4)` stores | what to snapshot: TD2 and TFH dump the data hunk; I500 keeps its variables at absolute addresses inside the code hunk, so it dumps hunk 0. `state_writers.py` only finds `d16(a4)` stores (Aztec C), so an asm game needs an `abs.l` variant. `task_state.py` and `state_watch.py` are TD2-specific: don't copy them |
 | `compare_state.py` (TFH's) | compares the whole data hunk; a longword pointing into the code or data hunk at the same offset in both runs counts as equal, so builds that load the game elsewhere still compare | hunk sizes, `a4` bias. **TD2's version compares TD2's variable table and reports "identical" on any other game**: TFH quoted meaningless "identical state" results from it for a day. Before trusting any compare, check that two runs of the same build compare equal and two different scenes do not |
 
-Write `AGENTS.md` (the rules from §0 plus a task-based index of docs) and a `CLAUDE.md` that
-holds only `@AGENTS.md` (Claude Code reads `CLAUDE.md`; other agents read `AGENTS.md`), and start the docs on TFH's
-layout, each a current-state reference (§0):
+Write `AGENTS.md` and a `CLAUDE.md` holding only `@AGENTS.md`, as in
+[a project's agent instructions](../environment.md#a-projects-agent-instructions): the rules
+from §0, a task-based index of the docs below and the way into AmigaXDev's docs and tools.
+Start the docs on TFH's layout, each a current-state reference (§0):
 
 | Doc | Holds |
 |---|---|
@@ -281,25 +282,25 @@ python3 tools/game.py profile 10 "$PWD/tmp/prof/first.bin"
 python3 tools/game.py quit
 ```
 
-Facts about this stub, all verified the hard way:
+The stub's general behaviour (attach deadline, read-only memory, stopped emulated time, paths
+with spaces, `until`, watchpoints, SR on older builds) is in
+[the gdb stub](../reference/headless-fsuae.md#the-gdb-stub). What matters for WHDLoad traces:
 
-- **Attach within 20 s of launch.** `--remote_debugger=20` with no trigger stops servicing the
-  port after 20 s. `serve` connects as soon as the port listens and continues from reset.
-- **The stub is read-only.** `M`/`P`/`G` packets are silently ignored, so `set var` does
-  nothing. Every change to the game must go through the slave.
-- **Emulated time stops while gdb holds the CPU**, so stops and the lldb attach cost no emulated
-  time.
 - **Prefer the native build (`FSUAE="$FSUAE_ARM"`) with the server's `profile_window=False`.**
   AmigaXDev's native builds profile the whole 24-bit space without a trigger, take keyboard,
   mouse and joystick input from gdb (`monitor key`, `mouse`, `input`) and run whole fields
   (`monitor fields`); see
   [harness commands](../reference/headless-fsuae.md#harness-commands-native-builds). The next
-  bullet is about the x86_64 build, which has none of that.
+  two bullets are about the x86_64 build, which has none of that.
 - **On the x86_64 build, without a trigger the profiler records no PCs.** The window
   `[baseText, +sizeText)` reads as `[0x0100007f, +0)`. The shared server's `profile` fixes it each time by lldb-writing `0`/`0x7fffffff` at
   link-time `0x32dea04` plus the slide. For a different FS-UAE binary, re-derive that address
   from the `GDBSERVER: enabled` setup and `start_cpu_profiler` (TD2 `docs/profiling.md` §3). The
   assert fails loudly if it's wrong.
+- **lldb can be slow to attach** to the x86_64 build. I500: ~40 s per attach, so TD2's two
+  attaches per capture (image list, then write) overran the 60 s timeout. Use one attach that
+  computes the slide and writes the window in lldb's Python (`LLDB_FIX` in `i500.py`), with a
+  longer timeout.
 - **Screenshots come only from traces** (`shot`). A failed `shot` replies `ERROR ...` and leaves
   no PNG, not the previous one; a route must stop on that reply or on a missing file, never
   reuse an image from an earlier step or run. macOS denies screen capture to this process,
@@ -307,17 +308,12 @@ Facts about this stub, all verified the hard way:
   arbitrary checkpoint (a keyboard task, a tape step) can catch a partial redraw: stop at the
   frame-publication instruction (§7) before saving a picture you will compare (4D Sports
   Driving).
-- `gdb` splits arguments at spaces, and repo paths often contain them (`Their Finest Hour`). gdb's
-  working directory must be the harness root, so dump to a **harness-relative** path (`tmp/x-code.bin`), then move
-  the file. Python 3.12's `tempfile.mkdtemp(dir='tmp')` returns an absolute path: pass it through
-  `os.path.relpath` before handing it to gdb. Don't use `/tmp`: parallel jobs share it.
 - At most **100 fields** per `monitor profile`, about 5.4 MB per field. For longer windows
   capture consecutive chunks and reduce each with `amigaxdev.callprofile` before deleting it:
   Prince of Persia's 990-field route reduces to 3 MB in 25 s. The reduction rebuilds call stacks
   from JSR/BSR and the SP (the stub records none without a trigger) and timestamps marker PCs,
   with a running tally of wait-loop cycles, for per-frame costs.
-- **One capture at a time per repo.** `fsuae_common.sh` gives each directory its own port, so
-  two captures from the same repo collide on the debugger socket. Run them in sequence.
+- **One capture at a time per repo** ([sharing the machine](../reference/headless-fsuae.md#sharing-the-machine)).
 - `run.sh` changes into `amiga/` before copying the slave, so resolve a relative `SLAVE` against
   the caller's directory first (I500 `run.sh`).
 - The **68030 backend emits no instruction trace**. Count frames there with `SWAP_ONLY` (§7).
@@ -325,27 +321,12 @@ Facts about this stub, all verified the hard way:
   `blitter_cycle_exact=false` their traces carry no blitter DMA records although the blitter runs.
   Report those routine and blitter costs as unavailable, never as zero, and never transfer A500
   percentages to them (Hard Drivin').
-- **lldb can be slow to attach.** I500 (same FS-UAE binary, 2026-10-05): ~40 s per attach, so
-  TD2's two attaches per capture (image list, then write) overran the 60 s timeout. Use one attach
-  that computes the slide and writes the window in lldb's Python (`LLDB_FIX` in `i500.py`), with a
-  longer timeout.
-- **`until` blocks the server** until its breakpoint hits. If the address is never reached, the
-  only way out is killing your own emulator by `amiga/.run/fsuae.pid`. Hardware watchpoints
-  (`watch`) did not fire within minutes on I500. Prefer counted breakpoints: `break *A`,
-  `ignore $bpnum N`, `continue` (the breakpoint number grows each time, so use `$bpnum`). About
-  3 s per 100 fields in warp.
-- The recorded **SR is stale** (UAE updates it lazily), so tell supervisor and user code apart by
-  which stack SP is in.
-- **Native arm64 FS-UAE** (`~/.local/share/amiga/fs-uae-arm/fs-uae`, env `FSUAE`): host lldb
-  cannot attach, so the profiler window can't be written from outside. LoV's VERIFY-only
-  `PROFILER_WINDOW` fixture (`PROFILE_WINDOW=guest`) configures it from the guest at the tape
-  anchor: in VBL context it saves SR, the current process's segment-list/task-number fields and
-  some chip scratch, presents a synthetic segment, waits for the harness's `qOffsets`
-  acknowledgement, then restores everything before tracing (`profile_window_check.py` verifies
-  the restore). Barto then stores RAM PCs relative to the profiler start (ROM PCs and IRQ markers
-  stay absolute): keep the acknowledged base in a `trace.pc-base` sidecar and `amigaxdev.barto`
-  normalizes it. `until` should wait in the background with a timeout (`UNTIL_TIMEOUT`) and stop
-  the capture cleanly, so a stalled route can still be dumped and quit.
+- **Tell supervisor and user code apart by which stack SP is in** when the build may report a
+  stale SR.
+- A trace taken with a profiler window set from the guest (LoV's VERIFY-only `PROFILER_WINDOW`
+  fixture) stores RAM PCs relative to the profiler start; keep that base in a `trace.pc-base`
+  sidecar, which `amigaxdev.barto` honours. `until` should wait in the background with a timeout
+  (`UNTIL_TIMEOUT`) and stop the capture cleanly, so a stalled route can still be dumped and quit.
 
 **Check:** `barto.load()` on the trace shows instruction records **with PCs**, and the
 screenshot shows the moment you expected.
@@ -579,8 +560,11 @@ latency of many small serial blits, not bandwidth.
 **68040/68060 in FS-UAE.** Use `CPU=68040-NOMMU` (likewise for the 060) with the cycle-exact
 68030 options and the frequency changed. With plain `68040` FS-UAE emulates the MMU, WHDLoad
 turns it on, and the MMU loop then ignores the frequency and the chip timing. The generic loop
-(`cycle_exact=false`, `cpu_compatible=false`) ignores them as well. Sanity check: an 8 MHz run
-must be slower than a 25 MHz one (I500's first 68040 runs gave identical fps at 8, 25 and 40 MHz).
+(`cycle_exact=false`, `cpu_compatible=false`) ignores them as well. Even the cycle-exact
+040/060 loop is close to an instruction count, about 14 million instructions per second at any
+configured clock ([measurement method §3](../reference/measurement-method.md#3-instruments)): equal
+frame rates at different 040/060 clocks say nothing about the game, and only a real accelerator
+gives a hardware frame rate.
 `cpu_speed=max` is not a real machine: chip accesses are nearly free there, and so is an
 instant blitter, so neither is a ceiling for real hardware.
 Run a separate functional boot with the MMU on (`CPU=68040`, `68060`); its timing is not
@@ -931,9 +915,10 @@ recorded poses and returned to flight; physical-machine validation remains separ
   bound 68030, or the reverse. TD2's renderer hits a 25 fps chip-bus ceiling at any CPU speed.
 - **A faster CPU does not make chip RAM faster.** On AGA the CPU's 32-bit chip stores beat the
   16-bit blitter for fills (no reads), but the blitter wins chip-to-chip copies (I500: textured
-  rows by CPU dropped a heavy view from 24.0 to 20.4 fps). A 68040 at 25 or 40 MHz gave I500's
-  heavy views the same 25.0 fps: they are bound by chip RAM and the blitter. Red Baron's cached
-  68030 at 200 MHz still drew 12 fps, and Stellar 7's 68060/50 gained 0.3 fps over a 68040/25.
+  rows by CPU dropped a heavy view from 24.0 to 20.4 fps). Red Baron's cached 68030 at 200 MHz
+  still drew 12 fps. Equal 040/060 figures at different clocks (I500's 25.0 fps at 25 and 40 MHz,
+  Stellar 7's 0.3 fps between a 68040/25 and a 68060/50) are FS-UAE's instruction-count timing
+  (§8), not evidence of a chip-bus bound.
 - **Blitter priority (`BLTPRI`) helps when the CPU polls the blitter.** TD2 sets it while the game
   runs and restores it on exit, so the CPU's `DMACONR` polls stop taking blitter slots: A500 5.2 →
   5.4, A1200 16.1 → 16.7, 68020/100 21.1 → 25.0 fps. I500 measured no effect. It disturbs the
@@ -949,7 +934,7 @@ recorded poses and returned to flight; physical-machine validation remains separ
 
 ## 12. "Ready to improve": the definition of done for setup
 
-- [ ] Rules in `AGENTS.md`, imported by a one-line `CLAUDE.md`; `tmp/` ignored; no game bytes in git (`git ls-files` reviewed).
+- [ ] Rules, a doc index and the AmigaXDev pointer in `AGENTS.md`, imported by a one-line `CLAUDE.md`; `tmp/` ignored; no game bytes in git (`git ls-files` reviewed).
 - [ ] Game, version, slave type and existing patches documented.
 - [ ] `td2_report.py` names every hot region; traces have PCs.
 - [ ] A fixed gameplay window that is reproducible across boots: same screenshots, same state.

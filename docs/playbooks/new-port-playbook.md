@@ -42,7 +42,8 @@ Getting to a release means, in order:
 
 `AGENTS.md` holds the agent instructions; `CLAUDE.md` contains only `@AGENTS.md`. Keep AGENTS.md
 to rules and pointers (every agent rereads it on every turn); hard-won detail goes in `docs/`,
-with a row in AGENTS.md's doc table saying when to read it.
+with a row in AGENTS.md's doc table saying when to read it. Its contents, including the way into
+AmigaXDev's docs and tools, are in [a project's agent instructions](../environment.md#a-projects-agent-instructions).
 
 - **Never commit original or byte-derived material**: binaries, disc and ROM images, resource
   forks, unpacked data, generated disassembly and listings, generated code that embeds original
@@ -96,7 +97,7 @@ port-specific tools come from `Brewfile.extras`. `make check` verifies them.
 | m68k-amiga-elf gcc/g++/gdb/objdump, vasm, `elf2hunk` | the Amiga build ([port toolchain](../reference/port-toolchain.md)) |
 | FS-UAE x86_64 with the gdb stub, arm64 (`FSUAE_ARM`), arm64 aprof (`FSUAE_APROF`) | running, debugging and profiling ([headless FS-UAE](../reference/headless-fsuae.md)) |
 | Kickstarts (`KICKSTART`, `KICKSTART_A1200`, `KICK13` + `RTB`), `SETPATCH`, `WORKBENCH_ADF` | boot and the KickEmu slave |
-| WHDLoad (`WHDLOAD`; 19.2 in `WHDLoad/`), `INSTALLER43`, `LHA` | slave, installer test, release archive |
+| WHDLoad (`WHDLOAD`; 20.1 in `WHDLoad/`), `INSTALLER43`, `LHA` | slave, installer test, release archive |
 | `ADCD`, `AGA_GUIDE` | Hardware Reference Manual, RKMs, autodocs, AGA registers |
 | Ghidra (`~/.local/share/ghidra`), openjdk@21 | headless static analysis (§5) |
 | MAME, DOSBox-X, DOSBox Staging, atari800, volta (jsbeeb) | reference emulators (§4) |
@@ -547,7 +548,7 @@ extraction helper; Vette for Mac-fork extraction.
 ## 14. Definition of done
 
 **Ready to port** (end of §6):
-- [ ] AGENTS.md rules, CLAUDE.md import, `.gitignore` guarding every original name and extension.
+- [ ] AGENTS.md rules, doc table and AmigaXDev pointer, CLAUDE.md import, `.gitignore` guarding every original name and extension.
 - [ ] Owner-decision table: target machine, approach, scope.
 - [ ] Originals hashed; extraction reproducible.
 - [ ] Reference loop reaches a named state headlessly with a positive completion signal; the entry

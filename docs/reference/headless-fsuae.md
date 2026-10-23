@@ -167,7 +167,7 @@ both launch paths, every preset, conflicting project arguments and the override 
 
 | Binary | Variable | Use |
 |---|---|---|
-| x86_64 Barto build (Rosetta), `~/.local/fs-uae/fs-uae` | `fs-uae` on `PATH` | the default for run, debug and diag scripts; host lldb can attach to it, which the WHDLoad trace profiler needs |
+| x86_64 Barto build (Rosetta), `~/.local/fs-uae/fs-uae` | `fs-uae` on `PATH` | the default `fs-uae` on `PATH` for run, debug and diag scripts; host lldb can attach to it, and its trace profiler needs lldb to set the profiled window (WHDLoad playbook §5) |
 | native arm64 build | `FSUAE_ARM` | several times faster for long diagnostics and 68030 runs; drives keyboard input and whole fields from gdb (below); lldb cannot attach, but without a trigger it profiles the whole 24-bit space, so no window fix is needed |
 | arm64 with the cycle profiler | `$AMIGA_SHARE/fs-uae-aprof/fs-uae` | exact emulated cycles per PC between `monitor aprof start` and `monitor aprof stop FILE`; cycle-exact 68020–68060 loops without an MMU model (Alone in the Dark `aprof.sh`; Red Baron `aprof_flight.py` for 040/060) |
 
@@ -226,8 +226,8 @@ The Barto stub in both FS-UAE builds, driven by `m68k-amiga-elf-gdb`.
 
 ### Harness commands (native builds)
 
-`patches/fsuae-harness.patch` goes into every native build (`FSUAE_ARM`, `FSUAE_APROF`,
-`FSUAE_MMU`), not into the x86_64 one:
+`patches/fsuae-harness.patch` goes into every native build `scripts/build-fsuae.sh` makes
+(`FSUAE_ARM`, `FSUAE_APROF`), not into the x86_64 one:
 
 | Command | Does |
 |---|---|
@@ -362,7 +362,9 @@ after `make setup` rebuilds it.
   backtrace (the framework's `GCC-PORT.md`). It also accepts hardware watchpoints, but one did
   not fire in Indianapolis 500: prove a watchpoint on a known write before trusting its silence.
 - `dump binary memory FILE A B` works; a 1 MiB dump takes a few seconds. gdb splits arguments
-  at spaces and repo paths often contain them, so dump to a repo-relative path. gdb types
+  at spaces and repo paths often contain them (`Their Finest Hour`), so run gdb from the harness
+root and dump to a repo-relative path (`tmp/x-code.bin`); pass `tempfile.mkdtemp(dir='tmp')`,
+which returns an absolute path, through `os.path.relpath`. gdb types
   `a0`–`a7` as pointers; symbols without debug type need a cast.
 - An error inside a breakpoint's `commands` leaves gdb waiting at its prompt: end every
   scripted path in `quit`, and keep a deadline outside gdb.
@@ -485,7 +487,8 @@ are audible and in front. `SOUND=1|0` (`SILENT=1`) and `WINDOW=front|back|none` 
   machine) are in playbook §8; audit the FS-UAE log for overrides before trusting a speed
   figure (Pokeri).
 - `DETERMINISTIC=1` and `RECORD=FILE` (which implies it) give repeatable runs for replay,
-  on every preset including the data-cache ones; see [validation harness](validation-harness.md).
+  on every preset including the data-cache ones ([what deterministic mode covers](#harness-commands-native-builds)
+  and `scripts/test_fsuae_repeat.py`).
 
 ## Sharing the machine
 
@@ -548,17 +551,10 @@ captures and user play-testing confirmed the visible fix. No guest cache flushes
 or cache disabling were needed. These checks establish 040 correctness in those
 windows, not 060 coverage or hardware timing calibration.
 
-A separate corrected native build is available as `FSUAE_MMU`, conventionally
-`$AMIGA_SHARE/fs-uae-mmu-fixed/fs-uae`. Select it with `FSUAE="$FSUAE_MMU"`.
-To rebuild that installation with the cycle profiler:
-
-```sh
-scripts/build-fsuae.sh fs-uae-mmu-fixed "$PWD/patches/fsuae-aprof.patch"
-```
-
-The existing `FSUAE_ARM` and `FSUAE_APROF` installations need their normal rebuild
-before they gain the correction. Retained project-local debugger binaries also
-need rebuilding; changing an environment variable cannot patch an old binary.
+`FSUAE_MMU` (`$AMIGA_SHARE/fs-uae-mmu-fixed/fs-uae`) names the build that carried the
+correction before every native build did. `make setup` neither builds nor updates it, so it
+lacks the later patches; use `FSUAE_ARM` or `FSUAE_APROF`. A retained project-local debugger
+binary needs rebuilding; changing an environment variable cannot patch an old binary.
 
 
 ## Verify explicit CPU-frequency scaling

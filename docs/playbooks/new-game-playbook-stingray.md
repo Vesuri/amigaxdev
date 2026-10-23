@@ -313,9 +313,10 @@ Indianapolis 500 (in `tmp/dev/docs/`, carried over from the standalone project):
 | `docs/game.md`, `docs/slave.md` | the game's memory, time model and renderer; the slave's options, features, hooks, verification and measurements (the playbook's `internals.md`) |
 | `docs/simulation-feasibility.md` | the analysis of a faster simulation |
 
-The local, excluded `AGENTS.md` at the worktree root carries the rules, the doc index and the
-current state for the next agent session, after the personal commit rules; a local `CLAUDE.md`
-holding only `@AGENTS.md` lets Claude Code read it.
+The local, excluded `AGENTS.md` at the worktree root carries the rules, the doc index, the
+way into AmigaXDev's docs and tools and the current state for the next agent session, after the
+personal commit rules ([a project's agent instructions](../environment.md#a-projects-agent-instructions));
+a local `CLAUDE.md` holding only `@AGENTS.md` lets Claude Code read it.
 
 Do not commit a standalone-project scaffold at the fork's root. Keep the eventual game change
 as focused as `testdrive2`: the game's source files only. Upstream-facing explanation belongs in
