@@ -55,6 +55,7 @@ StingRay's slave repository (harness in the ignored `tmp/dev/`).
 | Mercenary 3 | W | on the shared environment from the start | — |
 | Prince of Persia 2 | P | on the shared environment from the start | — |
 | Wing Commander | P | on the shared environment from the start | — |
+| X-Wing | P | on the shared environment from the start | — |
 | Ferrari Formula One | F | on the shared environment from the start (StingRay worktree, harness in `tmp/dev`) | — |
 | Road Rash, Gunship, Grand Prix Circuit, TFX, Test Drive | F | on the shared environment from the start (JOTD worktrees, harness in `tmp/dev`) | — |
 
