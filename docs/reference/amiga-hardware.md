@@ -443,7 +443,8 @@ re-inserts the system copper list after every `WaitTOF`.
   WHDLoad's write cache hung in low memory (Pokeri).
 - **Handle Workbench startup yourself**: without `pr_CLI`, `WaitPort`/`GetMsg` the WBStartup
   before opening dos.library and reply last, under `Forbid`; the freestanding startup does
-  neither (Vette). Data via `PROGDIR:`, identical under Shell, Workbench and the slave (Slicks).
+  neither (Vette). Last means after the finalizers (`fini_array`) too: once Workbench has the
+  message back it may unload the code (RKM Libraries ch. 14; SWOTL `start.c`). Data via `PROGDIR:`, identical under Shell, Workbench and the slave (Slicks).
 - **Parse Shell arguments with `ReadArgs`**, not by scanning `GetArgStr`: keywords are
   case-insensitive, `?` prompts with the template, a bad line fails with `PrintFault(IoErr())`
   and result 20. From Workbench read the icon's tool types with the same keywords. `ReadArgs`
@@ -491,6 +492,9 @@ the Dark and Pokeri write their own measured windows).
 
 - **`volatile` on every custom-chip pointer and interrupt-written flag**: `-O2` turned a
   blitter-queue wait into `bra.s .` and duplicated a `BLTSIZE` store (Rescue on Fractalus).
+  CIA registers too: through a non-volatile `ciaapraPointer` (older vendored framework copies)
+  the 68020 build reads and tests `$BFE001` with `bfextu`, an access wider than the one CIA
+  byte; volatile gives byte `move.b`s (SWOTL). Check a port's copy against `share/framework`.
 - Normalise asm `Scc` results (`$FF`) with `!= 0` before using them as `bool`: `!b` gave `$FE`
   (Pokeri).
 - No function-local statics: they need `__cxa_guard_*`, which the freestanding runtime lacks

@@ -150,6 +150,9 @@ $(OUT).exe: $(OUT).elf ; elf2hunk $< $@ -s
   returns. It reads `SysBase` from `$4` and opens no library, so it is Kickstart 1.3-clean
   (checked for Rescue on Fractalus' `kick13` slave). A project with its own entry renames the
   shared one at compile time (Pokeri: `-D_start=pokeriUnusedSharedStart`).
+  The replacement must be the first byte of the first code hunk, where DOS enters: link its
+  object first and fail the build unless `objdump -t` shows `_start` at 0 in `.text` (SWOTL
+  `amiga/Makefile`).
 - Most ports build on the **dA JoRMaS C++ framework** (`AmigaHardware`, `Bitmap`, `CopperList`,
   `Sprite`, the module player), vendored per project under `src/platform/amiga/framework/`.
   Its `GCC-PORT.md` is the full guide; the points that matter for a new port:
