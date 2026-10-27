@@ -264,6 +264,9 @@ alternatives that were declined (an OS shim in the game, a fake exec in the slav
   argument string, supplies a 16 KiB stack with `StackSwap`, restores and unloads on return.
   Don't use the SDK's `kick31.s` `STACKSIZE` option: its A600 ROM patch overwrites the wrong
   opcode (Vette).
+- For a program that parses its arguments with `ReadArgs`, start it with `RunCommand` (16 KiB
+  stack) instead of `SetArgStr`, `StackSwap` and a call of the entry: DOS allocates and swaps
+  the stack and puts the line in `Input()`'s buffer, where `ReadArgs` reads it (SWOTL).
 - Each OS switch under WHDLoad is a visible pause and each write adds WHDLoad's write delay:
   write whole files, only when their bytes changed (Slicks).
 - Test under WHDLoad in FS-UAE and judge from WHDLoad's core dump, not from the screen
