@@ -435,7 +435,8 @@ Read [Amiga hardware](../reference/amiga-hardware.md) first. The rules every por
   and describe it for the sprite; change visibility only on a state held for a field (the
   guest's hide-move-show must not flicker); lead the position at the VBI by the guest's own
   motion rule, checked at every tracker exit; validate shown planes + decoded sprite words
-  against the reference frame (SWOTL `docs/pointer-plan.md`).
+  against the reference frame, and the emulator's real video too: decoded words passed while
+  the fetch window had taken the sprites' DMA slots (SWOTL `docs/pointer-plan.md`).
 - A `__chip` static initialiser is silently discarded (`.MEMF_CHIP` is a BSS hunk): fill chip
   data at runtime.
 - Simulation timing that must survive a faster renderer: [fixed-time simulation](fixed-time-simulation.md)

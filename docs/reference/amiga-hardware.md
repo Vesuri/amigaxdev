@@ -94,7 +94,9 @@ AmigaXDev installs these ([environment](../environment.md)):
   - its own `DDFSTRT`/`DDFSTOP`: the OCS formulas do not apply. Alone in the Dark's 320-pixel lores
     window moved from `$38/$d0` to `$20/$98`; Pokeri's hires window fetches `$38..$c8` on AGA
     against `$3c..$cc` on ECS. The framework's AGA branch is an unmeasured donor pair,
-    so derive the values for your width and validate the picture ([AGA display and
+    and its `$20` start costs sprites 3–7 (below); SWOTL's 320-pixel lores window shows the
+    same pixels at the same place from `$38`/`$b0` with every sprite (real video, 2026-10-28).
+    Derive the values for your width and validate the picture ([AGA display and
     palette](#aga-display-and-palette));
   - coarser hardware scrolling: at 64-bit fetch a smooth horizontal scroll needs the extra AGA
     scroll bits in `BPLCON1` and a fetch window that starts earlier;
@@ -269,7 +271,8 @@ re-inserts the system copper list after every `WaitTOF`.
   colour one register low (Revs).
 - **HSTART is `$80 + x`** for a playfield whose first pixel is at DIWSTRT's `$81`; `$81 + x` is one
   lores pixel right (measured, Revs). `HSTART = ((SPRxPOS & $FF) << 1) | (SPRxCTL & 1)`. Fit the
-  offset from a dumped plane buffer composed with the sprite words, not by eye.
+  offset from a dumped plane buffer composed with the sprite words, not by eye; then confirm
+  in the real video (below).
 - **Over a pen-0 playfield pixel a sprite wins at every `BPLCON2` value.** Priority cannot hide a
   sprite where the playfield draws nothing; blank the sprite's pen or end it.
 - Lower-numbered channels cover higher ones; assign parts front-to-back in the original painter
@@ -280,6 +283,12 @@ re-inserts the system copper list after every `WaitTOF`.
   every screen the sprite appears on, give each exact game colour its own channel (sprite 6
   colour 2 = `FE`), and steal one never-displayed entry for the rest, set only in frames that
   show the sprite (SWOTL pointer: `F9`).
+- **Bitplane DMA from `DDFSTRT` on takes the sprite slots there**: sprite n fetches at
+  `$15+4n`/`$17+4n`, so `$20` leaves sprites 0–2 and `$30` costs sprite 7. A channel without
+  its slots showed as a fixed-width block that moved only vertically (SWOTL, framework AGA
+  `$20`). Composing dumped sprite words over the planes cannot see this: check sprites in
+  the emulator's real video (a one-field `monitor profile` screenshot,
+  [headless FS-UAE](headless-fsuae.md#harness-commands-native-builds)).
 - **Put `SPRxPT` before a 256-colour AGA palette in the list**: the 24-bit palette is ~530
   MOVEs, about ten lines after the first WAIT at line 16, past the line-25 control-word fetch.
   Sprite data per display buffer, next to its list, avoids writing words DMA is reading

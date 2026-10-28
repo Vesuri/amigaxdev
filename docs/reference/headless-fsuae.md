@@ -270,7 +270,8 @@ boots a directory drive whose startup-sequence writes a file line by line, twice
 25 fields: the runs must agree on registers, chip RAM and the file at every stop and on Fast RAM
 at the end, the file must be complete, and the emulator log must not say it turned data-cache
 emulation off. Bad arguments, an unknown event and an unknown command
-all reply with an error, which gdb prints as `Protocol error with Rcmd`; a script that only reads
+all reply with an error, which gdb prints as `Protocol error with Rcmd` (an unquoted
+`profile` FILE does too, even without spaces: write `"FILE"`); a script that only reads
 replies misses it, so call `amigaxdev.gdbserve.require_harness(g, "mouse", ...)` first.
 It raises with the fix when the build is older. `scripts/test_fsuae_input.py [FS-UAE]` boots
 the Kickstart 1.3 ROM with no disk and reads mouse and joystick input back from JOY0DAT and
