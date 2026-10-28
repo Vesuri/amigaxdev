@@ -470,6 +470,10 @@ re-inserts the system copper list after every `WaitTOF`.
   reads the line from `Input()`'s buffer: a WHDLoad slave must start the program with
   `RunCommand` (`SetArgStr` never reaches that buffer), and a supplied `RDA_Source` loses the
   `?` prompt on Kickstart 3.1 (SWOTL `amiga_platform.c`, `whdload/SwotlSlave.s`).
+- **List a directory in one `Examine`/`ExNext` pass; never rescan it per entry index.** An
+  emulated DOS find-next that relocks and walks to entry N each call is quadratic: a 230-file
+  drawer took 17 s with the drive light on. Snapshot the names once, match the pattern on names,
+  then `Lock`+`Examine` only the matching files (SWOTL `dos.c`: 838 to 5 fields).
 - The shared `_start` ignores `main`'s return value; supply a start that preserves it (Pokeri).
 - **Flush caches after writing code at runtime** (`CacheClearU()` natively, `resload_FlushCache`
   under WHDLoad): see [hardware debugging](../playbooks/new-game-playbook-hardware.md#flush-after-the-final-executable-write).
