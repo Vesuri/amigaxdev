@@ -423,6 +423,10 @@ Read [Amiga hardware](../reference/amiga-hardware.md) first. The rules every por
   and bitplane/sprite pointers **first** in the VBI, before input or audio, never mid-frame.
 - Present completed frames, not individual drawing calls; pace them globally (Alone in the Dark
   D3). Keep explicit dirty rectangles; no shadow-framebuffer or tile-diff machinery.
+  A guest drawing straight into video memory has no "frame done" call, and one driver call is
+  not a frame: an erase and its redraw in separate calls flicker when a VBI falls between them.
+  Present at the guest's own last per-frame call (Secret Weapons of Luftwaffe: its mouse poll,
+  after all drawing), with the per-call rule as fallback when that call stops coming.
 - On AGA, design the screen for 64-bit bitplane fetch (`FMODE` = 3) from the start: 8-byte aligned
   bitplanes, a width that is a multiple of 64 pixels, and an FMODE 0 path for OCS/ECS. It frees
   three quarters of the display's Chip-bus slots; see [the Chip bus](../reference/amiga-hardware.md#the-chip-bus).
@@ -540,7 +544,15 @@ assembled with `-I.` and the project's `whdload/smoke_name.i`) tests the harness
   match in the executable, slave, installer and ReadMe.
 - Archive with `amigaxdev.release` (the shared `LHA`, LH5, members in the given order, a fixed
   DOS stamp, the installer and drawer icons, refusal of originals and of an existing archive);
-  the project's `package_release.py` keeps only its file map. Verify each member with Lhasa. Converged package layout, icons, ReadMe sections, Installer 43 script rules and the
+  the project's `package_release.py` keeps only its file map. Verify each member with Lhasa.
+  macOS filenames are case-insensitive: a renamed archive (`Swotl` → `SWotL`) collides with the
+  old one and trips the existing-archive refusal; move the old one aside first.
+- Publish: commit the release record (archive size, SHA-256 of archive, executable, slave and
+  helper), put a lightweight tag `X.YY` on that commit, push it, then `gh release create X.YY
+  <archive> --title X.YY --notes "- initial release"` (Alone in the Dark, Prince of Persia 2,
+  Secret Weapons of Luftwaffe). The repo README is for players (description, requirements,
+  installation, controls, building, credits; Vette, Alone in the Dark); a `docs/README.md` index
+  serves readers of the design docs. Converged package layout, icons, ReadMe sections, Installer 43 script rules and the
   Installer test traps: Secret Weapons of Luftwaffe `docs/release.md`; the WHDLoad playbook
   [§13](new-game-playbook.md#13-release-archives) for archive mechanics.
 - Hardware-only failures: [hardware debugging](new-game-playbook-hardware.md) and
@@ -578,3 +590,6 @@ extraction helper; Vette for Mac-fork extraction.
 - [ ] WHDLoad and standalone runs on the stock target, PRELOAD on and off.
 - [ ] Archive audited independently; size and SHA-256 recorded; publishing reported separately
       from building.
+- [ ] Player-facing README and docs index; tag and GitHub release as in §13.
+- [ ] Everything the build and the licence notices depend on (AmigaXDev, its installer helpers'
+      LGPL source) is public, or the README says what is needed.

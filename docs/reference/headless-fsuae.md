@@ -477,6 +477,14 @@ are audible and in front. `SOUND=1|0` (`SILENT=1`) and `WINDOW=front|back|none` 
   (Slicks `tools/verify_amiga_frame.py`); WHDLoad projects take screenshots from one-field
   traces (playbook §5). macOS denies screen capture to FS-UAE, and posted key events never
   reach it.
+- A one-field `monitor profile 1 "" FILE` screenshot shows the field **before** the traced one.
+  Compare it with the frame handed off before the trace; the second field of a two-field trace
+  differs from the shown frame even in a clean run (Secret Weapons of Luftwaffe
+  `tests/amiga_replay.py`).
+- GDB writes into Chip RAM (copper lists) report success but never reach the emulated memory;
+  a planted display fault patched in by GDB "escapes" every gate. Build plants into the binary
+  (a `-D` define per plant, own build directory) and assert the gate catches them (Secret
+  Weapons of Luftwaffe `make test-amiga-replay-plant`).
 - Keyboard joystick: `keyboard_key_*` is ignored by these builds; `--joystick_port_1=keyboard`
   gives arrows plus right Ctrl/Alt. `JOY1=none` also sets the port's mode to nothing, which
   keeps the host mouse out of a capture.

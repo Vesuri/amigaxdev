@@ -252,6 +252,15 @@ observable, and compare that with where the gate samples (Revs):
 - a screen dump misses a cell the frame repaints;
 - a picture gate over some lines says nothing about the others.
 
+**A plant needs its path exercised.** Count visits to the path a plant breaks and assert a
+floor, so a fixture change cannot silently turn the plant into a no-op (Secret Weapons of
+Luftwaffe `tests/test_display_queue.py`: a deferred-present count after one plant escaped).
+
+**A harness around production source rots with it.** A test that compiles the production file
+against a stub header breaks as soon as production gains a dependency, and nobody sees it unless
+that test is in the gate set for every change to the file (Secret Weapons of Luftwaffe: it stopped
+compiling with a pointer change and was found only by a later display change).
+
 Change an input rather than a result, and verify the control per gate. Read the gated count,
 not the printed listing. Compare summary counts before per-line listings, and never diff two
 runs captured with different amounts of output.
