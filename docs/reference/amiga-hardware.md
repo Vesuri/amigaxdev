@@ -274,6 +274,16 @@ re-inserts the system copper list after every `WaitTOF`.
   sprite where the playfield draws nothing; blank the sprite's pen or end it.
 - Lower-numbered channels cover higher ones; assign parts front-to-back in the original painter
   order (Downwell).
+- **AGA sprite colours come from a 16-entry bank** (`BPLCON4` bits 7–4 even sprites, 3–0 odd):
+  entry `bank·16 + 4·(pair & 3) + colour`, so with bank `F` pair 4/5 shows `F9`–`FB` and 6/7
+  `FD`–`FF`. In a 256-colour game no bank is free: census the entries actually displayed on
+  every screen the sprite appears on, give each exact game colour its own channel (sprite 6
+  colour 2 = `FE`), and steal one never-displayed entry for the rest, set only in frames that
+  show the sprite (SWOTL pointer: `F9`).
+- **Put `SPRxPT` before a 256-colour AGA palette in the list**: the 24-bit palette is ~530
+  MOVEs, about ten lines after the first WAIT at line 16, past the line-25 control-word fetch.
+  Sprite data per display buffer, next to its list, avoids writing words DMA is reading
+  (SWOTL).
 
 ## Dual playfield
 

@@ -532,6 +532,10 @@ Several projects run emulators at once.
   Fractalus).
 - `run.sh` scripts that change directory before copying files must resolve relative arguments
   against the caller's directory first (Indianapolis 500).
+- **A C variable named like its struct tag** (`struct rt_pointer rt_pointer`) parses as the type
+  in a C++ frame (`syntax error ... &rt_pointer`), even after `set language c`; a script that
+  stops in C code works, the same line at a C++ breakpoint fails and leaves gdb waiting on
+  stdin with FS-UAE alive. Export an address under a unique name for scripts (SWOTL).
 
 
 ### Cached 040/060 MMU write attributes

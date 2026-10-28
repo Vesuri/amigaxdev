@@ -430,6 +430,12 @@ Read [Amiga hardware](../reference/amiga-hardware.md) first. The rules every por
   Rescue on Fractalus `docs/sfx-events.md` and Pokeri `PaulaAy.cpp` are the prior art.
 - Load the user's original data through DOS before taking over the machine, validate it, and fail
   with DOS error 20 before takeover if it is wrong; restore everything on a normal quit.
+- A software mouse pointer becomes a sprite without touching guest code: at each present, if
+  the guest's pointer is complete in its framebuffer, mask it with the guest's own save buffer
+  and describe it for the sprite; change visibility only on a state held for a field (the
+  guest's hide-move-show must not flicker); lead the position at the VBI by the guest's own
+  motion rule, checked at every tracker exit; validate shown planes + decoded sprite words
+  against the reference frame (SWOTL `docs/pointer-plan.md`).
 - A `__chip` static initialiser is silently discarded (`.MEMF_CHIP` is a BSS hunk): fill chip
   data at runtime.
 - Simulation timing that must survive a faster renderer: [fixed-time simulation](fixed-time-simulation.md)
