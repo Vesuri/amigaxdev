@@ -96,7 +96,7 @@ contracts are in the linked docs; git has the details.
   ([named machine setups](reference/headless-fsuae.md#named-machine-setups)). Figures taken with
   such a name were not the CPU they claim; a 68030 without MMU is `--cpu=68EC030` or
   `--cpu=68030 --uae_mmu_model=0`.
-- **Window titles** name the project, directory and gdb port; `FSUAE_TITLE` overrides them
+- **Window titles** name the project, the machine FS-UAE runs and the gdb port; `FSUAE_TITLE` overrides them
   ([the shared launcher](reference/headless-fsuae.md#the-shared-launcher)).
 - **Captures:** `amigaxdev.gdbserve` raises `CaptureError` instead of leaving an old image or
   trace behind ([shared tools](environment.md#shared-tools)). Project commands that call

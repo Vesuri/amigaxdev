@@ -11,7 +11,8 @@
 # patches/fsuae-determinism.patch initialises two upstream reads of uninitialised memory that
 # made otherwise identical runs differ (serial break detection, screenshot columns), and runs
 # the indirect UAE board's host threads in lockstep with deterministic mode.
-# patches/fsuae-window-title.patch makes --title name the window (upstream always says FS-UAE).
+# patches/fsuae-window-title.patch makes --title name the window, with {machine} replaced by
+# the running machine (upstream always says FS-UAE).
 # SDL2_ttf and libmpeg2 are linked statically from pinned tarballs; glib, gettext, libpng,
 # freetype and SDL2 come from Homebrew (Brewfile), so rebuild after a major upgrade of those.
 set -euo pipefail

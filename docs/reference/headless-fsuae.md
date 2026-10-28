@@ -53,12 +53,18 @@ drives and program options:
   taking the port.
 - FS-UAE's own log goes to `.run/fsuae/Cache/Logs/fs-uae.log.txt` (`--base_dir`), separate per
   directory, instead of the default FS-UAE directory's log that every project shares.
-- The window title says whose window it is: `PROJECT · DIRECTORY · gdb PORT`, for example
-  `F1GP · amiga · gdb 2565`. PROJECT is the outermost checkout's directory name (a clone or
-  worktree in a checkout's `tmp/` counts as that checkout), DIRECTORY the working directory
-  below it, and the port appears for `DEBUG=1`. `FSUAE_TITLE=TEXT` or an explicit `--title`
-  replaces it. The native builds show it (`patches/fsuae-window-title.patch`; upstream ignores
-  `--title` and always says FS-UAE); the bundled x86_64 build still shows FS-UAE.
+- The window title says whose window it is and what it runs: `PROJECT · MACHINE · gdb PORT`,
+  for example `F1GP · 68030 MMU AGA 2MB CHIP 8MB FAST · gdb 2565`. PROJECT is the outermost
+  checkout's directory name (a clone or worktree in a checkout's `tmp/` counts as that
+  checkout), and the port appears for `DEBUG=1`. MACHINE is what FS-UAE built after the
+  model's defaults, checked every field: the CPU (`68EC020` for 24-bit addressing), `MMU` and
+  `FPU` when present, the chipset, `NTSC`, then chip, slow and fast RAM (fast counts Zorro II,
+  Zorro III and motherboard RAM). It reads `FS-UAE` until the first field. The launcher passes
+  `--title='PROJECT · {machine}'`; `FSUAE_TITLE=TEXT` or an explicit `--title` replaces it and
+  may use `{machine}` too. The native builds show it in FS-UAE's drawn title bar, in capitals,
+  and as the macOS window name (`patches/fsuae-window-title.patch`; upstream ignores `--title`,
+  draws FS-UAE and renames the window to an fps counter); the bundled x86_64 build still
+  shows FS-UAE.
 - Parallel runs from one checkout need distinct `FSUAE_RUN` and `DEBUG_PORT`
   (Slicks `pc_profile.sh`: `FSUAE_RUN=.run/pcprof-$LABEL`).
 

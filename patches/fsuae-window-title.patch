@@ -1,15 +1,313 @@
+diff --git a/fsemu/src/fsemu-sdlwindow.c b/fsemu/src/fsemu-sdlwindow.c
+index 981d4d8d..00e26705 100644
+--- a/fsemu/src/fsemu-sdlwindow.c
++++ b/fsemu/src/fsemu-sdlwindow.c
+@@ -248,14 +248,7 @@ void fsemu_sdlwindow_update(void)
+     }
+     fsemu_sdlwindow_set_cursor_visible(want_cursor);
+ 
+-    if (fsemu_frame_counter_mod(50) == 0 && fsemu_frame_emutime_avg_us()) {
+-        char title[512];
+-        snprintf(title,
+-                 512,
+-                 "FSEMU [%d fps max]",
+-                 1000000 / fsemu_frame_emutime_avg_us());
+-        SDL_SetWindowTitle(fsemu_sdlwindow.window, title);
+-    }
++    // AmigaXDev: no "FSEMU [N fps max]" here; the OS window name stays the title.
+ }
+ 
+ // See if mouse should interact with a special area. Factored out into a
+@@ -871,6 +864,13 @@ bool fsemu_sdlwindow_has_window(void)
+     return fsemu_sdlwindow.window != NULL;
+ }
+ 
++void fsemu_sdlwindow_set_title(const char *title)
++{
++    if (fsemu_sdlwindow.window) {
++        SDL_SetWindowTitle(fsemu_sdlwindow.window, title);
++    }
++}
++
+ static bool fsemu_sdlwindow_handle_keyboard_ctrl_shortcut(SDL_Event *event)
+ {
+     printf("fsemu_sdlwindow_handle_keyboard_ctrl_shortcut\n");
+diff --git a/fsemu/src/fsemu-sdlwindow.h b/fsemu/src/fsemu-sdlwindow.h
+index 706d96cc..19f3ac3c 100644
+--- a/fsemu/src/fsemu-sdlwindow.h
++++ b/fsemu/src/fsemu-sdlwindow.h
+@@ -47,6 +47,7 @@ SDL_Window *fsemu_sdlwindow_window(void);
+ 
+ // Check if we have a valid SDL_Window.
+ bool fsemu_sdlwindow_has_window(void);
++void fsemu_sdlwindow_set_title(const char *title);
+ 
+ bool fsemu_sdlwindow_handle_event(SDL_Event *event);
+ 
+diff --git a/fsemu/src/fsemu-titlebar.c b/fsemu/src/fsemu-titlebar.c
+index 160a54da..7e740178 100644
+--- a/fsemu/src/fsemu-titlebar.c
++++ b/fsemu/src/fsemu-titlebar.c
+@@ -84,6 +84,8 @@ static struct fsemu_titlebar {
+     // uint32_t title_color_inactive;
+     fsemu_image_t *title_image;
+     fsemu_gui_item_t title_item;
++    // AmigaXDev: the title title_image shows, redrawn when the window title changes.
++    char title_text[256];
+     int title_opacity_inactive;
+ 
+     struct {
+@@ -135,6 +137,25 @@ void fsemu_titlebar_update(void)
+     // We need to create the title image after ui scale is known, which is why
+     // we didn't initialize this in fsemu_titlebar_init. Not entirely happy
+     // with how this works now, but it's fair enough.
++    const char *title = fsemu_window_title();
++    if (fsemu_titlebar.title_item.image && ui_scale > 0 &&
++        strcmp(title, fsemu_titlebar.title_text) != 0) {
++        // AmigaXDev: a GUI snapshot on the video thread may still draw the
++        // old image, so it is not freed (one small image per title change).
++        fsemu_font_t *font = fsemu_fontcache_font(
++            "SairaCondensed-SemiBold.ttf", 19 * ui_scale);
++        char *title_upper = g_utf8_strup(title, -1);
++        fsemu_image_t *image = fsemu_font_render_text_to_image(
++            font, title_upper, fsemu_titlebar.title_color);
++        free(title_upper);
++        g_strlcpy(fsemu_titlebar.title_text, title, sizeof(fsemu_titlebar.title_text));
++        fsemu_gui_lock();
++        fsemu_titlebar.title_image = image;
++        fsemu_titlebar.title_item.image = image;
++        fsemu_titlebar.title_item.rect.w = image->width;
++        fsemu_titlebar.title_item.rect.h = image->height;
++        fsemu_gui_unlock();
++    }
+     if (!fsemu_titlebar.title_item.image && ui_scale > 0) {
+         fsemu_gui_item_t *item;
+         item = &fsemu_titlebar.title_item;
+@@ -144,11 +165,11 @@ void fsemu_titlebar_update(void)
+         // 0xcc is the same alpha value as used by the window control icons
+         // for the custom frame.
+         // char *title_upper = g_utf8_strup(fsemu_emulator_name(), -1);
+-        const char *title = fsemu_window_title();
+         char *title_upper = g_utf8_strup(title, -1);
+         fsemu_titlebar.title_image = fsemu_font_render_text_to_image(
+             font, title_upper, fsemu_titlebar.title_color);
+         free(title_upper);
++        g_strlcpy(fsemu_titlebar.title_text, title, sizeof(fsemu_titlebar.title_text));
+ #if 0
+         int y = (fsemu_titlebar.height - image->height) / 2;
+         // Hand-tuned y offset for common ui scales for better text centering.
+diff --git a/fsemu/src/fsemu-window.c b/fsemu/src/fsemu-window.c
+index 66dd0dd8..d4712732 100644
+--- a/fsemu/src/fsemu-window.c
++++ b/fsemu/src/fsemu-window.c
+@@ -3,6 +3,7 @@
+ 
+ #include "fsemu-layout.h"
+ #include "fsemu-mouse.h"
++#include "fsemu-mutex.h"
+ #include "fsemu-option.h"
+ #include "fsemu-sdlwindow.h"
+ #include "fsemu-thread.h"
+@@ -28,6 +29,11 @@ static struct fsemu_window {
+     bool fullscreen;
+     bool is_resizable;
+     char title[FSEMU_WINDOW_TITLE_MAX];
++    // AmigaXDev: after fsemu_window_init, a title set from any thread waits here
++    // until fsemu_window_work (main thread) applies it.
++    fsemu_mutex_t *title_mutex;
++    char pending_title[FSEMU_WINDOW_TITLE_MAX];
++    bool title_changed;
+     // fsemu_point_t position;
+     fsemu_size_t size;
+     fsemu_rect_t initial_fullscreen_rect;
+@@ -197,10 +203,36 @@ const char *fsemu_window_title(void)
+ 
+ void fsemu_window_set_title(const char *title)
+ {
+-    // FIXME: Also set a window title dirty flag so that we can update
+-    // the window after it is created (in fsemu_window_work for example).
+-    strncpy(fsemu_window.title, title, FSEMU_WINDOW_TITLE_MAX);
+-    fsemu_window.title[FSEMU_WINDOW_TITLE_MAX - 1] = '\0';
++    // AmigaXDev: before fsemu_window_init only the main thread runs; after it,
++    // fsemu_window_work applies the title on the main thread.
++    if (!fsemu_window.title_mutex) {
++        strncpy(fsemu_window.title, title, FSEMU_WINDOW_TITLE_MAX);
++        fsemu_window.title[FSEMU_WINDOW_TITLE_MAX - 1] = '\0';
++        return;
++    }
++    fsemu_mutex_lock(fsemu_window.title_mutex);
++    strncpy(fsemu_window.pending_title, title, FSEMU_WINDOW_TITLE_MAX);
++    fsemu_window.pending_title[FSEMU_WINDOW_TITLE_MAX - 1] = '\0';
++    fsemu_window.title_changed = true;
++    fsemu_mutex_unlock(fsemu_window.title_mutex);
++}
++
++static void fsemu_window_update_title(void)
++{
++    if (!fsemu_window.title_mutex || !fsemu_sdlwindow_has_window()) {
++        return;
++    }
++    fsemu_mutex_lock(fsemu_window.title_mutex);
++    bool changed = fsemu_window.title_changed;
++    if (changed) {
++        memcpy(fsemu_window.title, fsemu_window.pending_title, FSEMU_WINDOW_TITLE_MAX);
++        fsemu_window.title_changed = false;
++    }
++    fsemu_mutex_unlock(fsemu_window.title_mutex);
++    if (changed) {
++        // The OS window name; fsemu_titlebar_update redraws the drawn title bar.
++        fsemu_sdlwindow_set_title(fsemu_window.title);
++    }
+ }
+ 
+ // FIXME: Move/refactor
+@@ -238,6 +270,7 @@ void fsemu_window_work(int timeout)
+         // FIXME: Move to main_update via window_update? Should be sufficient
+         // to update once every frame.
+         fsemu_sdlwindow_update();
++        fsemu_window_update_title();
+     }
+ 
+     // printf("fsemu_window_work\n");
+@@ -414,6 +447,7 @@ void fsemu_window_init(void)
+ {
+     fsemu_return_if_already_initialized();
+ 
++    fsemu_window.title_mutex = fsemu_mutex_create();
+     fsemu_video_decide_driver();
+     if (fsemu_video_driver() == FSEMU_VIDEO_DRIVER_SDL) {
+         fsemu_window.driver = FSEMU_WINDOW_DRIVER_SDL;
+diff --git a/fsemu/src/fsemu-window.h b/fsemu/src/fsemu-window.h
+index e55c4eec..d2f26c51 100644
+--- a/fsemu/src/fsemu-window.h
++++ b/fsemu/src/fsemu-window.h
+@@ -14,7 +14,7 @@ typedef enum {
+     FSEMU_WINDOW_DRIVER_SDL,
+ } fsemu_window_driver_t;
+ 
+-/** This can be called before fsemu_window_init. */
++/** This can be called before fsemu_window_init, and from any thread after it. */
+ void fsemu_window_set_title(const char *title);
+ void fsemu_window_set_fullscreen(bool fullscreen);
+ 
 diff --git a/src/fsuae/fsuae-main.c b/src/fsuae/fsuae-main.c
-index d043355c..6f6474ec 100644
+index d043355c..8ad1e99f 100644
 --- a/src/fsuae/fsuae-main.c
 +++ b/src/fsuae/fsuae-main.c
-@@ -1831,7 +1831,9 @@ int main(int argc, char *argv[])
+@@ -554,6 +554,38 @@ static void pause_throttle(void)
+ }
+ #endif
+ 
++// AmigaXDev: the --title text, where {machine} becomes the running machine.
++static const char *g_window_title = "FS-UAE";
++
++static void set_window_title(const char *machine)
++{
++    char title[256];
++    const char *token = strstr(g_window_title, "{machine}");
++    if (token) {
++        snprintf(title, sizeof(title), "%.*s%s%s", (int) (token - g_window_title),
++                 g_window_title, machine, token + strlen("{machine}"));
++    } else {
++        snprintf(title, sizeof(title), "%s", g_window_title);
++    }
++    fsemu_window_set_title(title);
++}
++
++// Once per frame on the emulation thread: the prefs are final after the first reset,
++// and a configuration change (a new model, more memory) renames the window.
++static void update_window_title(void)
++{
++    static char last[128];
++    char machine[128];
++    if (!strstr(g_window_title, "{machine}")) {
++        return;
++    }
++    amiga_describe_machine(machine, sizeof(machine));
++    if (strcmp(machine, last) != 0) {
++        strcpy(last, machine);
++        set_window_title(machine);
++    }
++}
++
+ static void event_handler(int line)
+ {
+ #if 0
+@@ -597,6 +629,7 @@ static void event_handler(int line)
+     // printf("event_handler frame=%d\n", frame);
+ 
+     fs_uae_record_frame(g_fs_uae_frame);
++    update_window_title();
+ 
+     /*
+     int64_t t = fs_emu_monotonic_time();
+@@ -1831,7 +1864,10 @@ int main(int argc, char *argv[])
  #endif
  
      fsemu_set_emulator_name("FS-UAE");
 -    fsemu_window_set_title("FS-UAE");
 +    // AmigaXDev: --title names the window (the launcher passes the project); else "FS-UAE".
 +    const char *window_title = fs_config_get_const_string(OPTION_TITLE);
-+    fsemu_window_set_title(window_title && window_title[0] ? window_title : "FS-UAE");
++    g_window_title = window_title && window_title[0] ? window_title : "FS-UAE";
++    set_window_title("FS-UAE");
      // fsemu_video_set_renderer(renderer);
      // fsemu_startupinfo_set_emulator_name("FS-UAE");
      // fsemu_startupinfo_set_emulator_fork_info("Mednafen");
+diff --git a/src/od-fs/include/uae/uae.h b/src/od-fs/include/uae/uae.h
+index b8abc6ea..4a91d244 100644
+--- a/src/od-fs/include/uae/uae.h
++++ b/src/od-fs/include/uae/uae.h
+@@ -19,6 +19,8 @@ void uae_clipboard_put_text(const char *text);
+ void uae_set_uaem_write_flags_from_string(const char *flags);
+ 
+ int amiga_get_vsync_counter();
++/* AmigaXDev: the running machine, e.g. "68030 MMU AGA 2MB CHIP 8MB FAST". */
++void amiga_describe_machine(char *buffer, int size);
+ void amiga_set_vsync_counter(int vsync_counter);
+ 
+ typedef void (uae_callback_function)(void *data);
+diff --git a/src/od-fs/libamiga.cpp b/src/od-fs/libamiga.cpp
+index 164f53d3..dad98e0d 100644
+--- a/src/od-fs/libamiga.cpp
++++ b/src/od-fs/libamiga.cpp
+@@ -89,6 +89,40 @@ void amiga_set_vsync_counter(int vsync_counter)
+     g_uae_vsync_counter = vsync_counter;
+ }
+ 
++static void describe_size(char *buffer, int size, uae_u32 bytes, const char *kind)
++{
++    int len = strlen(buffer);
++    if (bytes == 0 || len >= size) {
++        return;
++    }
++    if (bytes % (1024 * 1024) == 0) {
++        snprintf(buffer + len, size - len, " %uMB %s", bytes / (1024 * 1024), kind);
++    } else {
++        snprintf(buffer + len, size - len, " %uKB %s", bytes / 1024, kind);
++    }
++}
++
++// AmigaXDev: the machine as UAE runs it (model defaults included), for the window title.
++void amiga_describe_machine(char *buffer, int size)
++{
++    const struct uae_prefs *p = &currprefs;
++    // 24-bit addressing on a 68020/68030 is the EC part (the A1200's 68EC020).
++    bool ec = p->address_space_24 && (p->cpu_model == 68020 || p->cpu_model == 68030);
++    const char *chipset = (p->chipset_mask & CSMASK_AGA) ? "AGA"
++        : (p->chipset_mask & (CSMASK_ECS_AGNUS | CSMASK_ECS_DENISE)) ? "ECS" : "OCS";
++    snprintf(buffer, size, "68%s0%d0%s%s %s%s", ec ? "EC" : "", (p->cpu_model / 10) % 10,
++             p->mmu_model ? " MMU" : "", p->fpu_model ? " FPU" : "", chipset,
++             p->ntscmode ? " NTSC" : "");
++    uae_u32 fast = p->mbresmem_low.size + p->mbresmem_high.size + p->mem25bit.size
++        + p->cpuboardmem1.size + p->cpuboardmem2.size;
++    for (int i = 0; i < MAX_RAM_BOARDS; i++) {
++        fast += p->fastmem[i].size + p->z3fastmem[i].size;
++    }
++    describe_size(buffer, size, p->chipmem.size, "CHIP");
++    describe_size(buffer, size, p->bogomem.size, "SLOW");
++    describe_size(buffer, size, fast, "FAST");
++}
++
+ void amiga_on_restore_state_finished(amiga_callback_function *function)
+ {
+     uae_on_restore_state_finished = function;

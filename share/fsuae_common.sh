@@ -51,7 +51,8 @@
 #     stalls with "Not a valid drawable size")
 #   EXTRA_ARGS (word-split, passed first, so it overrides everything; --warp_mode=1 in it
 #     makes a debug run like WARP=1)
-#   FSUAE_TITLE (the window title; default: project · directory below it · gdb port)
+#   FSUAE_TITLE (the window title; {machine} becomes the machine; default: project ·
+#     {machine} · gdb port)
 
 FSUAE_RUN="${FSUAE_RUN:-.run}"
 FSUAE_PIDFILE="$FSUAE_RUN/fsuae.pid"
@@ -351,26 +352,25 @@ fsuae_env() {
   return 0
 }
 
-# The window title, so a window shows whose it is: $FSUAE_TITLE, else the project, the
-# working directory below it, and the gdb port of a DEBUG=1 run. The project is the
-# outermost checkout's directory name (a clone or worktree in another checkout's tmp/ counts
-# as that checkout), but never a repository at or above $HOME. Native builds show the title;
+# The window title, so a window shows whose it is and what it runs: $FSUAE_TITLE, else the
+# project, the machine and the gdb port of a DEBUG=1 run. The project is the outermost
+# checkout's directory name (a clone or worktree in another checkout's tmp/ counts as that
+# checkout), but never a repository at or above $HOME. Native builds show the title and
+# replace {machine} with the machine as FS-UAE runs it ("68030 MMU AGA 2MB CHIP 8MB FAST");
 # the bundled x86_64 one shows "FS-UAE".
 fsuae_title() {
   if [ -n "${FSUAE_TITLE:-}" ]; then
     printf '%s' "$FSUAE_TITLE"
     return 0
   fi
-  local here home root dir main title
-  here=$(pwd -P)
+  local home root dir main title
   home=$(cd "$HOME" 2>/dev/null && pwd -P)
-  root=$here dir=$here
+  root=$(pwd -P) dir=$root
   while main=$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null) && [ -n "$main" ]; do
     case "$home/" in "$main"/*) break ;; esac
     root=$main dir=$(dirname "$main")
   done
-  title=$(basename "$root")
-  case "$here" in "$root"/*) title="$title · ${here#"$root"/}" ;; "$root") ;; *) title="$title · $(basename "$here")" ;; esac
+  title="$(basename "$root") · {machine}"
   [ "${DEBUG:-0}" = 1 ] && title="$title · gdb $DEBUG_PORT"
   printf '%s' "$title"
 }
