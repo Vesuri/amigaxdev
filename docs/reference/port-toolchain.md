@@ -285,6 +285,16 @@ alternatives that were declined (an OS shim in the game, a fake exec in the slav
   `CACHECHIPDATA` values on a 68020/68030 and the `CACHE` values on a 68040/68060
   (where WHDLoad uses the MMU), choosing by KickEmu's `_attnflags`. Check the
   result in the dump's `setcpu=` and `CACR=` lines.
+- The CPU type does not tell whether WHDLoad uses the MMU: a 68030 with the user's
+  `MMU` option does, a 68040/68060 under `NoMMU` does not. SWOTL defines `CACHE` and
+  in `_bootdos` reads CACR through `exec.Supervisor`; with the instruction cache off
+  (IC bit 15 on a 68040/68060, EI bit 0 on a 68020/68030: no MMU in use) it sets the
+  `CACHECHIP` values with `resload_SetCPU`. Measured CACR: 68020 `1`, 68030 `2011`,
+  68030 + `MMU` `2111`, 68040 `80008000`, 68060 `A0808000`; `CACHECHIP` alone left the
+  data cache off on a 68040/68060 (`8000`, `20808000`). Its harness requires both dump
+  lines per setup, with data-cache emulation on (compatible core, indirect UAE board:
+  [headless FS-UAE](headless-fsuae.md#named-machine-setups)) and the 68030 run with and
+  without `MMU` (SWOTL `tools/test_whdload.py`).
 - Choose a QuitKey the game doesn't use (Revs: keypad `*`, because F10 is a game key).
 - The WHDLoad playbook covers slave building and hardware failures in depth:
   [new-game playbook §10](../playbooks/new-game-playbook.md#10-building-and-gating-patches),

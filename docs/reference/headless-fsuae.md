@@ -355,6 +355,10 @@ after `make setup` rebuilds it.
 - **A gdb script aborts at the first unknown symbol**, from that line on. Deleting or renaming a
   probe global silently empties every `.gdb` that prints it; grep `*.gdb` when you do, and read
   "output stops after the header" as a stale script (Rescue on Fractalus).
+- **`$d0`–`$d7`, `$a0`–`$a6`, `$sp`, `$sr`, `$pc` and `$fp0`… are registers in m68k gdb**, not
+  free convenience variables: `set $a0 = counter` writes A0 (the stub may drop it) and later
+  arithmetic fails with "Argument to arithmetic operation not a number or boolean". Name
+  saved values `$ticks0` and the like (SWOTL `amiga/frame_pace.gdb`).
 - **`--gc-sections` drops unused probe globals**, and gdb then resolves the name into `.text` and
   prints instruction bytes, not 0 (Revs read `painted=1223110688`). Keep the probe list in the
   Makefile as `--undefined=` roots and audit it on every link
