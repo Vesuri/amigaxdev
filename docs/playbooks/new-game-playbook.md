@@ -63,7 +63,7 @@ shared `~/.local/share/amiga/env.sh` and then sets only what the project changes
 
 | What | Where | Check |
 |---|---|---|
-| FS-UAE with the Barto gdb stub (x86_64) | `~/.local/fs-uae/fs-uae` | `fs-uae --version` after `source amiga/env.sh` |
+| FS-UAE with the Barto gdb stub (native arm64, `FSUAE_ARM`) | `~/.local/share/amiga/fs-uae-arm/fs-uae` | `fs-uae --version` after `source amiga/env.sh` |
 | m68k gdb / objdump / gcc | `~/.local/opt/bin/m68k-amiga-elf-*` | `m68k-amiga-elf-gdb --version` |
 | vasm (Motorola syntax) | `~/.local/vasmm68k_mot` | runs and prints usage |
 | WHDLoad 20.1 (binary, includes, kickemu sources) | `~/.local/share/amiga/WHDLoad/` (env `WHDLOAD` = the directory, for `Include/` and `Src/`; `WHDLOAD_BINARY` defaults to `$WHDLOAD/C/WHDLoad`); only the latest developer package is installed | `C/WHDLoad` exists |
@@ -286,8 +286,8 @@ The stub's general behaviour (attach deadline, read-only memory, stopped emulate
 with spaces, `until`, watchpoints, SR on older builds) is in
 [the gdb stub](../reference/headless-fsuae.md#the-gdb-stub). What matters for WHDLoad traces:
 
-- **Prefer the native build (`FSUAE="$FSUAE_ARM"`) with the server's `profile_window=False`.**
-  AmigaXDev's native builds profile the whole 24-bit space without a trigger, take keyboard,
+- **Use the native build** (the `fs-uae` on `PATH`, `$FSUAE_ARM`). The shared server's
+  `profile` sees it answer `monitor harness` and skips the lldb window fix. AmigaXDev's native builds profile the whole 24-bit space without a trigger, take keyboard,
   mouse and joystick input from gdb (`monitor key`, `mouse`, `input`) and run whole fields
   (`monitor fields`); see
   [harness commands](../reference/headless-fsuae.md#harness-commands-native-builds). The next

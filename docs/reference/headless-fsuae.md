@@ -173,8 +173,8 @@ both launch paths, every preset, conflicting project arguments and the override 
 
 | Binary | Variable | Use |
 |---|---|---|
-| x86_64 Barto build (Rosetta), `~/.local/fs-uae/fs-uae` | `fs-uae` on `PATH` | the default `fs-uae` on `PATH` for run, debug and diag scripts; host lldb can attach to it, and its trace profiler needs lldb to set the profiled window (WHDLoad playbook §5) |
-| native arm64 build | `FSUAE_ARM` | several times faster for long diagnostics and 68030 runs; drives keyboard input and whole fields from gdb (below); lldb cannot attach, but without a trigger it profiles the whole 24-bit space, so no window fix is needed |
+| native arm64 build | `FSUAE_ARM`, the `fs-uae` on `PATH` | the default for run, debug and diag scripts; several times faster for long diagnostics and 68030 runs; drives keyboard input and whole fields from gdb (below); lldb cannot attach, but without a trigger it profiles the whole 24-bit space, so no window fix is needed |
+| x86_64 Barto build (Rosetta), `~/.local/fs-uae/fs-uae` | none; off `PATH`, a project names it in `FSUAE` | amiga-debug's build, kept for older measurements made with it; host lldb can attach to it, and its trace profiler needs lldb to set the profiled window (WHDLoad playbook §5) |
 | arm64 with the cycle profiler | `$AMIGA_SHARE/fs-uae-aprof/fs-uae` | exact emulated cycles per PC between `monitor aprof start` and `monitor aprof stop FILE`; cycle-exact 68020–68060 loops without an MMU model (Alone in the Dark `aprof.sh`; Red Baron `aprof_flight.py` for 040/060) |
 
 A project selects one with `FSUAE` (Alone in the Dark: `diag_run.sh` prefers `FSUAE_ARM` when

@@ -100,9 +100,10 @@ without edits.
 | `AMIGA_FRAMEWORK` | `framework` | the canonical dA JoRMaS framework the ports compare their copies with |
 
 Paths without a directory are under `$AMIGA_SHARE`. The shared `env.sh` also puts
-`$AMIGA_SHARE/python/bin`, `$AMIGA_TOOLCHAIN/bin`, `$AMIGA_PREFIX` and
-`$AMIGA_PREFIX/fs-uae` on `PATH`, in that order, so `python3`, `m68k-amiga-elf-gdb`,
-`vasmm68k_mot` and `fs-uae` (the x86_64 one) resolve to the shared copies.
+`$AMIGA_SHARE/python/bin`, `$AMIGA_TOOLCHAIN/bin`, `$AMIGA_PREFIX` and the directory of
+`$FSUAE_ARM` on `PATH`, in that order, so `python3`, `m68k-amiga-elf-gdb`, `vasmm68k_mot` and
+`fs-uae` (the native arm64 one) resolve to the shared copies. It takes amiga-debug's x86_64
+`$AMIGA_PREFIX/fs-uae` off `PATH`; a project that needs that build names it in `FSUAE`.
 
 Other shared files have no variable of their own:
 
@@ -154,8 +155,8 @@ the window. The contracts are in [the shared launcher](reference/headless-fsuae.
 
 Project-specific names (`KICKSTART_RTB`, `WHDLOAD_HOST_KICKSTART`, `FSUAE`, `GDB`, ...) stay
 in the projects, defined from these. `FSUAE` is deliberately not shared: a project chooses its
-build ([which FS-UAE](reference/headless-fsuae.md#which-fs-uae)), and without one the x86_64
-`fs-uae` on `PATH` runs.
+build ([which FS-UAE](reference/headless-fsuae.md#which-fs-uae)), and without one the native
+`fs-uae` on `PATH` (`$FSUAE_ARM`) runs.
 
 ## The ROMs
 

@@ -187,8 +187,9 @@ class Server:
     def __init__(self, name, root, run_script='amiga/run.sh', run_dir='amiga/.run', sock=None,
                  sentinel=None, commands=None, profile_window=True, gdb=None):
         """name: socket and sentinel stem; root: the project checkout.  profile_window: True to
-        fix the stub's profiler window through lldb before each `profile` (the x86_64 build
-        needs it), False to skip, or a callable(server) of the project's own."""
+        fix the stub's profiler window through lldb before each `profile` when the running build
+        needs it (the x86_64 one; a native build, which answers `monitor harness`, is left
+        alone), False to skip, or a callable(server) of the project's own."""
         self.name, self.root = name, root
         self.run_script = os.path.join(root, run_script)
         self.run_dir = os.path.join(root, run_dir)
@@ -198,6 +199,7 @@ class Server:
         self.profile_window = profile_window
         self.gdb_path = gdb
         self.lldb = None
+        self.native = None
         self.g = None
 
     # -- the stub's profiler window -----------------------------------------------------------
@@ -292,7 +294,11 @@ class Server:
         was = g.running
         g.stop()
         if self.profile_window is True:
-            self.fix_profile_window()
+            if self.native is None:
+                out = g.cmd('monitor harness', timeout=30)
+                self.native = 'rror' not in out and bool(out.split())
+            if not self.native:
+                self.fix_profile_window()
         elif callable(self.profile_window):
             self.profile_window(self)
         try:

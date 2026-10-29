@@ -61,12 +61,21 @@ export AMIGA_GHIDRA_SCRIPTS="${AMIGA_GHIDRA_SCRIPTS:-$AMIGA_SHARE/ghidra_scripts
 export AMIGA_FRAMEWORK="${AMIGA_FRAMEWORK:-$AMIGA_SHARE/framework}"
 
 # PATH: the shared Python environment (Pillow, numpy, capstone, amitools), the cross tools,
-# vasm and friends, and the x86_64 FS-UAE.  Each is added once.
-for _amiga_dir in "$AMIGA_PREFIX/fs-uae" "$AMIGA_PREFIX" "$AMIGA_TOOLCHAIN/bin" "$AMIGA_SHARE/python/bin"; do
+# vasm and friends, and the native arm64 FS-UAE.  Each is added once.  The x86_64 FS-UAE
+# that comes with amiga-debug is left off PATH (and removed if an older env.sh put it there):
+# a project that wants it names it in FSUAE.
+_amiga_dir="$AMIGA_PREFIX/fs-uae"
+_amiga_path=":$PATH:"
+while case "$_amiga_path" in *":$_amiga_dir:"*) true ;; *) false ;; esac; do
+  _amiga_path="${_amiga_path%%":$_amiga_dir:"*}:${_amiga_path#*":$_amiga_dir:"}"
+done
+_amiga_path="${_amiga_path#:}"
+PATH="${_amiga_path%:}"
+for _amiga_dir in "$(dirname "$FSUAE_ARM")" "$AMIGA_PREFIX" "$AMIGA_TOOLCHAIN/bin" "$AMIGA_SHARE/python/bin"; do
   case ":$PATH:" in *":$_amiga_dir:"*) ;; *) PATH="$_amiga_dir:$PATH" ;; esac
 done
 export PATH
-unset _amiga_dir
+unset _amiga_path _amiga_dir
 
 for _amiga_file in "$VASM" "$AMIGA_TOOLCHAIN/bin/m68k-amiga-elf-gdb" "$KICKSTART" "$KICK13" \
                    "$WORKBENCH_ADF" "$WHDLOAD_BINARY" "$FSUAE_COMMON"; do

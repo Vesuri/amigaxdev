@@ -273,5 +273,31 @@ AMIGA_SETUP=typo
             self.assertEqual(values['env_x'], '')
 
 
+class EnvPath(unittest.TestCase):
+    def test_native_fsuae_on_path_and_x86_64_off(self):
+        (ROOT / "tmp").mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="env-test-", dir=ROOT / "tmp") as temp:
+            prefix = Path(temp) / "local prefix"
+            x86 = prefix / "fs-uae"
+            arm = prefix / "share/amiga/fs-uae-arm"
+            for d in (x86, arm):
+                d.mkdir(parents=True)
+                (d / "fs-uae").write_text("#!/bin/sh\n")
+                (d / "fs-uae").chmod(0o755)
+            path = f"/usr/bin:{x86}:/bin:{x86}"
+            for shell in ("/bin/bash", "/bin/sh", "/bin/zsh"):
+                out = subprocess.run(
+                    [shell, "-c", '. "$1" 2>/dev/null; command -v fs-uae; printf "%s\\n" "$PATH"',
+                     "env", str(ROOT / "share/env.sh")],
+                    env={"HOME": os.environ["HOME"], "PATH": path, "AMIGA_PREFIX": str(prefix)},
+                    capture_output=True, text=True, check=True).stdout.splitlines()
+                self.assertEqual(out[0], str(arm / "fs-uae"), shell)
+                entries = out[1].split(":")
+                self.assertNotIn(str(x86), entries, shell)
+                self.assertEqual(entries.count(str(arm)), 1, shell)
+                self.assertIn("/usr/bin", entries, shell)
+                self.assertIn("/bin", entries, shell)
+
+
 if __name__ == "__main__":
     unittest.main()
