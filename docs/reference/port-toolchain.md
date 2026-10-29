@@ -276,6 +276,15 @@ alternatives that were declined (an OS shim in the game, a fake exec in the slav
   (Revs, Slicks, Alone in the Dark `tools/test_whdload.py`). WHDLoad sees `TIMEOUT` and the
   QuitKey only through a moved VBR, so such a run needs a 68010 or later; `FILELOG` on a 68000
   can outlast the timeout before the game starts.
+- Choose the KickEmu cache option per CPU. `CACHE` marks chip memory
+  non-cacheable, which needs WHDLoad's MMU; without it (always on a 68020, on a
+  68030 unless the user gives WHDLoad's `MMU` option) both caches stay off. On a
+  68020 A1200 Vette's driving loop fell from 102 iterations to 1. `CACHECHIPDATA`
+  caches chip data too, which on a 68040/68060 hides blitter and other DMA writes.
+  Vette boots with `CACHECHIP` and, once DOS is up, calls `resload_SetCPU` with the
+  `CACHECHIPDATA` values on a 68020/68030 and the `CACHE` values on a 68040/68060
+  (where WHDLoad uses the MMU), choosing by KickEmu's `_attnflags`. Check the
+  result in the dump's `setcpu=` and `CACR=` lines.
 - Choose a QuitKey the game doesn't use (Revs: keypad `*`, because F10 is a game key).
 - The WHDLoad playbook covers slave building and hardware failures in depth:
   [new-game playbook §10](../playbooks/new-game-playbook.md#10-building-and-gating-patches),

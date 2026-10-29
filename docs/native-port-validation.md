@@ -96,6 +96,33 @@ startup reproduced the missing-publication crash while that control passed;
 debugger stops can flush caches and mask this class of failure. Chip DMA buffer
 policy and real-hardware speed/visual checks remain separate obligations.
 
+Under a WHDLoad KickEmu slave, publish code with `CacheControl(0, 0)`, not
+`CacheClearU()`. KickEmu routes `exec.CacheControl` to `resload_FlushCache`, and
+`CacheControl` clears all caches as a documented side effect without changing a
+setting. KickEmu does not patch `CacheClearU`; its own `kick31.s` comment notes
+the ROM routine lacks proper setup on CPUs with a copyback cache (Vette).
+
+## Self-modifying original code
+
+Original code that writes into its own instructions breaks under a copyback data
+cache even when every load and patch is published correctly: the write stays in
+the data cache and the instruction fetch reads the old bytes from memory. Vette's
+Main stores a loop limit and a base PICT ID into the immediates of `CMPI.W #6,D7`
+and `MOVE.W #$7E,D0`, then runs them. On a 68040/68060 the stale `#$7E` requested
+a PICT that does not exist, and the game raised its own fatal alert. The symptom
+looked like resource or memory exhaustion and moved with code layout.
+
+- Find it with a byte scan of every CODE resource, not only a disassembly's
+  defined functions: `LEA d16(PC),An` followed within a few words by a store
+  through `An`. No 68k store takes a PC-relative destination, so this pattern
+  catches the usual form.
+- Prefer removing the self-modification to flushing around it. Vette keeps the
+  values in private words below the A5 world: each `LEA`/`ADDQ.L #2`/`MOVE.W
+  D0,(A0)` store becomes `MOVE.W D0,d16(A5)` plus `NOP`s, and the consumers
+  become same-width `CMP.W d16(A5),D7` and `MOVE.W d16(A5),D0`. Check the original
+  bytes, that the address register is dead afterwards, and that the condition codes
+  match.
+
 ## Updating installed ROMs and saves
 
 Before changing an installer because it missed existing files, establish its
