@@ -460,6 +460,16 @@ re-inserts the system copper list after every `WaitTOF`.
   unchanged (CRC); no temp file, backup or rename. Each WHDLoad OS switch is a visible pause plus
   write delay (Slicks, Pokeri). Pre-create files that saves will overwrite: creating files under
   WHDLoad's write cache hung in low memory (Pokeri).
+- **Use only the DOS packets WHDLoad's kickfs serves** (`Src/sources/whdload/kickfs.s`, the
+  `.action` table). It has no `ACTION_RENAME_OBJECT`, `ACTION_CHANGE_MODE` (`ChangeMode`),
+  `ACTION_SET_FILE_SIZE` (`SetFileSize`) or `ACTION_PARENT_FH` (`NameFromFH`, `ParentOfFH`).
+  Without `DEBUG` its lookup does not stop at the table's end: an unknown packet jumps into
+  code, a privilege violation or an Access Fault in the drive's task (`DH0`), the type in D4 of
+  the dump (Prince of Persia 2 rename; SWOTL `ChangeMode`, `SetFileSize`, `NameFromFH`).
+  `SET_DATE`, `SET_PROTECT` and `SET_COMMENT` succeed without effect. Instead: overwrite with
+  `MODE_NEWFILE`, never rename; for a shared handle to a new or emptied file, `MODE_NEWFILE`,
+  `Close`, `MODE_OLDFILE`; keep the opened path rather than asking the handle. Test every file
+  write path under WHDLoad, not only native.
 - **Handle Workbench startup yourself**: without `pr_CLI`, `WaitPort`/`GetMsg` the WBStartup
   before opening dos.library and reply last, under `Forbid`; the freestanding startup does
   neither (Vette). Last means after the finalizers (`fini_array`) too: once Workbench has the
