@@ -50,7 +50,9 @@ AmigaXDev installs these ([environment](../environment.md)):
 
 - **Detect AGA with `GfxBase->ChipRevBits0 & GFXF_AA_LISA`.** On Kickstart 3.1 the AA bits are
   set only after `SetPatch`, so every boot path (Shell, Workbench, the slave) runs `SetPatch`
-  first; otherwise an A1200 silently takes the OCS path (Slicks, Rescue on Fractalus). Some
+  first; otherwise an A1200 silently takes the OCS path (Slicks, Rescue on Fractalus). A
+  `kick31.s` slave gets the same `SetChipRev(SETCHIPREV_BEST)` from `INITAGA`; without it
+  KickEmu reports `$13` and with it `$1F` (Vette, whose HIRES pointer was otherwise halved). Some
   Kickstarts expose only the internal MLISA flag (`$13` measured on an A1200): Pokeri requires
   both `GFXF_AA_ALICE` and `GFXF_AA_LISA`, or falls back to the chip IDs (Lisa `$F8` in `LISAID`
   `$DFF07C`, Alice in `VPOSR`), never the CPU type. Keep an ECS path if the port supports it
