@@ -41,7 +41,11 @@ For short waits or startup stalls, see [clock resolution](#clock-resolution-and-
 4. **Measure, don't theorise.** The headless emulator and gdb loop finds timing and render
    bugs where static reasoning keeps failing. Keep it cheap enough that measuring beats
    arguing.
-5. **Re-measure; never quote an old number.** A figure belongs to one build, probe set,
+5. **Profile several heavy scenes from the start, not one fixture.** Secret Weapons of
+   Luftwaffe tuned on its opening-frames window until a flyby profile on day 22. That profile
+   found EMS maps at about 25% of the close-bomber windows, which the frames fixture's window
+   missed. A window's content follows its start field, so rank on several runs.
+6. **Re-measure; never quote an old number.** A figure belongs to one build, probe set,
    window and workload. (Revs: a stale "~6 FPS", really 14.4, steered scope for months.)
 
 ## 2. Units: what to quote

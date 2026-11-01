@@ -341,8 +341,10 @@ Fractalus), on top of everything above:
 - **Guest RAM stays byte-exact; every native word/long access states its endian and alignment
   rule** (Slicks). Keep wide guest values in registers in native order and convert only at the
   memory boundary. A byte-reversed guest layout (guest byte L at host TOP − L) makes a
-  little-endian guest word a native big-endian word one byte lower (Secret Weapons of
-  Luftwaffe's plan).
+  little-endian guest word a native big-endian word one byte lower. Secret Weapons of
+  Luftwaffe adopted it with biased segment bases and SP/BP mirrored as offset ^ 7FFFh (R1b), and
+  left upper register words undefined (R4). Fix the contract before mass generation: SWOTL's
+  late change re-plumbed its harness.
 - **Make store targets statically known**: a store to a constant RAM address needs no device or
   bus check (Revs: −1.17 ms from removing an unreachable range test).
 - A translator change changes the oracle too: record baselines before changing the CPU model or

@@ -341,7 +341,15 @@ so every step looked right. The guardrails Secret Weapons of Luftwaffe adopted f
   operations and 1.36 M VGA writes from 16 sites, which per-port emulation cannot translate ahead
   of time. Every such seam has an explicit register, flag and memory contract in both directions.
 - **The original's timer interrupt is asynchronous state, not a call** (Slicks' INT 08h ran from
-  game code and during DOS services); deliver interrupts at safe guest boundaries.
+  game code and during DOS services). On the target, run the guest's handler from the Amiga
+  timer interrupt whenever the guest has interrupts enabled and no handler is active, on a
+  private guest stack. Justify it with a generation-time proof that the handler's memory, port
+  and interrupt-flag footprint is disjoint from the code it interrupts, plus a host-run monitor.
+  Sync points (interrupts taken only at chosen guest boundaries) belong in the test harness,
+  where the reference takes interrupts at the same points. Secret Weapons of Luftwaffe polled
+  at 2,096 loop heads first. That cost 5.15% of its meter's cycles and kept native routines
+  behind exact-poll scopes. Removing the polls (`docs/irq-plan.md`) cut frames from 330 to
+  300 ms.
 - **Spin-waits:** a wait on an I/O port is a device-model gap; a wait on RAM is a hook candidate.
   Report the candidates and hook only waits that own a frame (Revs hooked 1 of 41).
 
@@ -387,6 +395,25 @@ so every step looked right. The guardrails Secret Weapons of Luftwaffe adopted f
 - Guest code reaches the Amiga only as translator output; fix the translator or its annotations
   and regenerate, never the output. A native replacement of a guest routine is an HLE table entry
   with a reason and an oracle.
+- **Settle the memory and register contract before mass generation**:
+  - byte-reversed guest RAM with biased segment bases;
+  - SP/BP mirrored for address arithmetic;
+  - upper register words undefined, zero-extended only where consumed;
+  - virtual flags ([m68k optimisation §9](../reference/m68k-optimisation.md#9-code-generators-and-translators)).
+
+  Secret Weapons of Luftwaffe started with little-endian RAM, zero-extended registers and
+  flags in memory. Block-local speed steps under that contract yielded 1.19% from a 19.9%
+  group. It changed the contract on days 8–10 (R1b, R4, R5: −1.9%, −2.6%, −2.0%) and
+  re-plumbed its harness and sabotage plants (`docs/speed-plan.md` §5).
+- **EMS mapping must cost what it costs on a PC**: a page-table change, not a copy. Secret
+  Weapons of Luftwaffe copied two 16 KB pages byte by byte per map (240K cycles), about 25% of
+  the cycles in its close-bomber scenes. Long-word copies with an exact identical-remap skip cut
+  that scene's meter by 27.7% (its F1). Design the EMS model for speed before the first profile.
+- **Self-modifying regions**: lower them as a run-time cell walk, then cache matched cells with
+  exact invalidation on code stores, segment loads that reach the region, and runtime writes
+  (Secret Weapons of Luftwaffe: plain walk, then counted runs −9.0%, then a cell cache
+  −15.3%). Range-check every indirect transfer that can land in such a region: SWOTL crashed on an
+  unresolved `call dx` into its walk (fixed in `df529b7`).
 - Slicks shows the fallback when a full translator is out of scope: recover each routine into
   native C/C++ or hand-written 68020 assembly, each one checked against the original x86 code
   under an independent oracle.
@@ -432,6 +459,11 @@ Read [Amiga hardware](../reference/amiga-hardware.md) first. The rules every por
   three quarters of the display's Chip-bus slots; see [the Chip bus](../reference/amiga-hardware.md#the-chip-bus).
 - Translate the original sound chip to Paula (POKEY, AY-3-8912, Mac sound drivers, AdLib FM);
   Rescue on Fractalus `docs/sfx-events.md` and Pokeri `PaulaAy.cpp` are the prior art.
+- Price the worst-case sound effect before choosing live synthesis. Secret Weapons of
+  Luftwaffe's heavy gun rendered about 19 M cycles per shot, about 40% of a 50 MHz 68030.
+  It then prerendered effects at start-up: it ran the original driver per effect id, captured
+  its chip writes, synthesised the samples into Chip RAM and cached them on disk
+  (`docs/sound-plan.md`). Weigh the samples' Chip RAM (465 KB there) against the CPU.
 - Load the user's original data through DOS before taking over the machine, validate it, and fail
   with DOS error 20 before takeover if it is wrong; restore everything on a normal quit.
 - A software mouse pointer becomes a sprite without touching guest code: at each present, if
