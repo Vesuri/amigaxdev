@@ -2,7 +2,7 @@
 
 Use this when uncapping drawing or assessing a smaller simulation timestep. It complements
 [fixed-time simulation](fixed-time-simulation.md), which covers clock accounting, input
-history and catch-up. These lessons come from Indianapolis 500 StingRay:
+history and catch-up. These lessons come from Indianapolis 500 (the StingRay fork):
 `tmp/dev/docs/game.md`, `tmp/dev/docs/slave.md`, `tmp/dev/docs/simulation-feasibility.md`
 and `Games/Indianapolis500_Motion.s`. The equations and record layouts are game-specific;
 trace their equivalents before transferring a patch.

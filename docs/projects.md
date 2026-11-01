@@ -32,7 +32,6 @@ StingRay's slave repository (harness in the ignored `tmp/dev/`).
 | Test Drive 2 | W | migrated | — |
 | Their Finest Hour | W | migrated | — |
 | Battlehawks 1942 | W | migrated | — |
-| Indianapolis 500 | W | migrated | — |
 | Legends of Valour | W | migrated; uses `WHDLoad/`; retains its native vasm build | — |
 | Powerdrome | W | migrated | — |
 | Stellar 7 | W | migrated; NTSC is its default | — |
@@ -48,8 +47,7 @@ StingRay's slave repository (harness in the ignored `tmp/dev/`).
 | Red Baron | F | migrated (harness in `tmp/dev`, playbook reference on the branch) | — |
 | 4D Sports Driving | F | migrated (harness in `tmp/dev`) | — |
 | Hard Drivin' | F | on the shared environment from the start (harness in `tmp/dev`; slave changes, VERIFY variants and performance docs on the branch) | — |
-| Indianapolis 500 JOTD | F | harness in `tmp/dev` migrated; uncommitted slave work untouched | — |
-| Indianapolis 500 StingRay | F | migrated (harness in `tmp/dev`) | — |
+| Indianapolis 500 | F | StingRay fork worktree; migrated (harness in `tmp/dev`) | — |
 | Prince of Persia | F | on the shared environment from the start (harness in `tmp/dev`; keyboard route driven with `monitor key`) | — |
 | F1GP | W | on the shared environment from the start | — |
 | Mercenary 3 | W | on the shared environment from the start | — |
@@ -124,7 +122,7 @@ against a live emulator, and archives, smoke slaves and Ghidra exports are byte-
 
 | Switched | Kept on top of the shared code |
 |---|---|
-| Test Drive 2, Battlehawks 1942, Their Finest Hour, Indianapolis 500, Indianapolis 500 JOTD and StingRay harnesses | `i500.py` and `tfh.py` export `SOCK` for their state tools |
+| Test Drive 2, Battlehawks 1942, Their Finest Hour and Indianapolis 500 harnesses | `i500.py` and `tfh.py` export `SOCK` for their state tools |
 | Powerdrome | its gdb server's PD1 request framing, captures of up to 500 fields |
 | Legends of Valour | its boot, capture (both window modes, `.pc-base`), multi-address `until`, `gdb` handshake |
 | Stellar 7 | its lldb profiler-window fix; `run.sh` uses the launcher's `NTSC` and `SLOW_KB` |

@@ -22,19 +22,19 @@ For hardware-only failures and cache-coherency checks, also use
 > directories, build files, ReadMes, installers or icons, and every upstream commit is StingRay's
 > own upload. Method references: the JOTD fork's local branch `testdrive2` (commit `ffd6594`;
 > `git diff master...testdrive2 -- T/TestDrive2/usr` in `$PROJECTS/jotd_whdload_slaves`) for
-> the shape of a focused game change, and the standalone Indianapolis 500 project
-> (`$PROJECTS/Indianapolis 500`), whose harness and analysis this fork's work continues. Other
+> the shape of a focused game change, and the standalone Indianapolis 500 project (repository
+> `Vesuri/indianapolis500` on GitHub, no local checkout; its scratch analysis is in the
+> worktree's `tmp/dev/tmp/standalone/`), whose harness and analysis this fork's work continues. Other
 > useful references are Test Drive 2, Battlehawks 1942 (input tape), Their Finest Hour (routine
 > models), Legends of Valour (state waits and A/B automation) and Red Baron (a KickEmu slave in
 > the JOTD fork).
 >
-> Current target: branch `indianapolis500`, worktree `$PROJECTS/Indianapolis 500 StingRay`,
+> Current target: branch `indianapolis500`, worktree `$PROJECTS/Indianapolis 500`,
 > created from `master` at `e05698e`. The main checkout at `$PROJECTS/Stingray_WHDLoad_Patches`
 > stays on `master`. Do not recreate the branch, switch the main checkout or initialize a new
 > repo. The game's state and open work are in the worktree's `tmp/dev/docs/open-work.md`.
-> JOTD's Indianapolis 500 slave (v2.1) is older than StingRay's v3.0 and is not the base: the
-> JOTD fork's `indianapolis500` branch and the `$PROJECTS/Indianapolis 500 JOTD` worktree are
-> an abandoned, uncommitted first attempt.
+> JOTD's Indianapolis 500 slave (v2.1) is older than StingRay's v3.0 and is not the base. A first
+> attempt on it was abandoned uncommitted and deleted.
 
 The end state ("ready to improve") is defined in §12. Getting there means:
 1. a reproducible, cycle-exact trace of real gameplay;
@@ -218,7 +218,7 @@ label is `ws_config` (JOTD uses `slv_config`).
 Use the existing Indianapolis 500 worktree. Run these inspections there before editing anything:
 
 ```sh
-cd "$PROJECTS/Indianapolis 500 StingRay"
+cd "$PROJECTS/Indianapolis 500"
 git status --short --branch
 git worktree list
 git remote -v
