@@ -565,6 +565,13 @@ assembled with `-I.` and the project's `whdload/smoke_name.i`) tests the harness
 
 - Size chip/expansion memory and the stack from measurements, not guesses (Rescue on Fractalus
   §2); set `WHDLF_EmulLineA` when the original uses Line-A (Mac ports).
+- PreLoad competes for the host's Fast RAM with ExpMem and WHDLoad's backup of all of BaseMem,
+  so every byte of either reservation costs cache; preload stops at the first file that does
+  not fit. Install only files the program opens, and keep files read once at start (the
+  executable) out with `ws_DontCache` (kick31.s hard-codes it 0: build from a copy whose field
+  points at a slave label). Each read of an uncached file is an OS switch, so read those files
+  in few large reads. Check what stays cached with host access times (Secret Weapons of
+  Luftwaffe `tools/whdload_preload.py`, `docs/whdload.md` Memory).
 - The user supplies the original data; the installer copies and validates it (exact size and
   SHA-256 per file, or a bundled helper extracting an allowlist from the user's archive) into a
   staging drawer, and replaces `data/` only on success. Reuse/replace and save preservation:
