@@ -157,6 +157,25 @@ tail space require the original compaction fallback. Payloads, handle flags and
 pinned addresses remain intact. Pair a consumer's adoption with an original
 System 7.5.5 placement fixture and sanitizer heap tests.
 
+## HeapClearLow.inc
+
+`HeapClearLow.inc` supplies `MacHeap::clearLow` and `MacHeap::allocateLow` for the
+same allocator adapters. MEASURED on System 7.5.5: `NewPtr` and explicit or implicit
+`MoreMasters` place their block at the lowest run of free and movable blocks that
+covers it, moving those handles elsewhere, even across locked blocks. When
+compaction and purging cannot satisfy a relocatable request, the same relocation is
+the last resort: call `clearLow` (then `publish`) after the adapter's `purge` fails.
+The original picks relocation targets with its own rover; the helper relocates
+first-fit outside the run, so placement of the moved handles is not exact.
+Define `AMIGAXDEV_HEAP_TARGET_START` to `searchStart_` with `HeapFindSpace`.
+
+Moved blocks can hold code. Record any heap move (in `moveBytes` and any word
+swap) and publish the caches once before original code resumes; see
+[cache publication](../../docs/native-port-validation.md#cache-publication-at-dynamically-installed-entries).
+Also MEASURED on System 7.5.5: `DisposeHandle(nil)` clears MemError and returns
+noErr. `scripts/test_mac_heap_low.cpp` checks the placements with a minimal adapter;
+pair a consumer's adoption with its own heap tests and an original placement fixture.
+
 ## HeapResize.inc
 
 `HeapResize.inc` supplies in-place resizing for the same allocator adapters.

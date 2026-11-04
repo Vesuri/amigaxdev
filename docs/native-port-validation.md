@@ -82,6 +82,12 @@ flushing at registration is too early. Publish the newly installed entry at its
 first dispatch, after the writes, and avoid flushing on every later invocation.
 Keep the original instructions and existing segment-relocation flushes intact.
 
+Heap moves need the same publication. A moved unlocked block can hold code (a
+jump-table stub resource), and the original Memory Manager moves blocks with
+`BlockMove`, which flushes the caches (inferred). After any service that moved heap
+bytes, publish the caches once before original code resumes. MEASURED: without it,
+a copyback 68040 ran stale bytes at a relocated stub after `NewPtr` moved it.
+
 Validate with both guest cache bits and the emulator's data-cache model enabled;
 CACR alone does not prove the model is active. Use the corrected MMU build from
 [headless FS-UAE](reference/headless-fsuae.md#cached-040060-mmu-write-attributes)
