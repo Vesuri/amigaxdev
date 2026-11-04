@@ -5,10 +5,9 @@ Caller preconditions and validation limits are part of each contract.
 
 ## RectBounds.h
 
-`RectBounds.h` is used by Alone in the Dark and Prince of Persia 2. It combines the
-rectangle helper and OffsetRect/InsetRect operations from Alone in the Dark.
+`RectBounds.h` combines the rectangle helper and OffsetRect/InsetRect operations.
 EqualRect additionally compares all four coordinates without normalizing empty or
-inverted bounds; Prince of Persia 2 pairs its Boolean result with System 7.5.5.
+inverted bounds; pair its Boolean result with System 7.5.5 in the consumer.
 Union/intersection accept explicit load/store template arguments, like adjustment.
 Native callers can select shared `BigEndianMemory` word accesses while retaining
 the same signed comparisons, empty handling and full-input-before-output rule.
@@ -17,14 +16,13 @@ The default overloads retain byte accesses; consumers opt in per call.
 
 `BitmapFont.h` shares the existing compatibility-font parser and a bounded reader
 for original one-bit FOND/NFNT resources. `BitmapText8.h` adapts the clipping and
-pixel addressing of Alone in the Dark’s Text8 renderer to NFNT glyphs with integer
+pixel addressing of an 8-bit text renderer to NFNT glyphs with integer
 advances and bearings; it contains no game-specific font tables.
 
 ## GWorld8.h
 
 `GWorld8.h`, `CopyBits8.h`, `FillRect8.h`, `WindowGeometry.h`, `RegionRows.h`
-and `RegionOps.h` consolidate the existing Alone in the Dark helpers used by
-Prince of Persia 2. Define `AMIGAXDEV_REGION_UNION` to add region union to the parity-region
+and `RegionOps.h` hold the 8-bit QuickDraw drawing helpers. Define `AMIGAXDEV_REGION_UNION` to add region union to the parity-region
 operations. Consumers that do not use it retain the existing operation set and
 compiled dispatch; both configurations have sanitizer checks. Trap ownership and
 current-port selection remain consumer responsibilities.
@@ -41,20 +39,20 @@ viewport invalidation and palette changes.
 `CopyChangedRows.inc` supplies the 68020 C-ABI `copy_changed_rows` body for
 0–640 pixels and 0–480 rows. It compares row ends and copies the differing
 middle without a second framebuffer. The macro preserves callee-saved registers;
-its declared scratch registers/CCR follow the C ABI. Prince of Persia 2's native
-1,665-case fixture covers pixels, row bounds, padding, source preservation and
-registers. Its shared macro assembles identically to that tested body. Native
+its declared scratch registers/CCR follow the C ABI. Its original native
+1,665-case fixture covered pixels, row bounds, padding, source preservation and
+registers; the macro assembles identically to that tested body. Native
 performance still requires a matched consumer workload; this helper alone does
 not establish any game's frame cadence.
 
 ## BigEndianMemory.h
 
-`BigEndianMemory.h` shares Alone in the Dark’s explicit 68020 word/longword
+`BigEndianMemory.h` supplies explicit 68020 word/longword
 accesses, including unaligned addresses and alias-safe memory operands. Its host
 fallback preserves big-endian byte order; callers remain responsible for bounds.
 The native `AMIGAXDEV_MEMORY_PRIMITIVES_ONLY` mode exposes those same instruction
 macros to legacy adapters without adding inline function nodes to their compiler
-graph; this preserves Alone in the Dark’s existing function order and executable.
+graph, so an existing consumer keeps its function order and executable.
 
 ## CodeRangeCache.h
 
@@ -71,7 +69,7 @@ queries remain valid. Do not use `contains` before `valid` succeeds.
 
 ## UnsignedDivide.inc
 
-`UnsignedDivide.inc` shares Alone in the Dark's exact 64-bit-to-32-bit quotient
+`UnsignedDivide.inc` supplies an exact 64-bit-to-32-bit quotient
 with the audio adapters. Include it inside their namespace. Only significant
 quotient bits are examined; division by zero and quotient overflow return false.
 Independent host division checks bit boundaries and one million input pairs.
@@ -83,7 +81,7 @@ assembly loop, with unchanged alignment prefix and exact longword/byte tails.
 
 ## PcmDma.inc
 
-`PcmDma.inc` shares Alone in the Dark’s signed PCM conversion with Prince of Persia 2.
+`PcmDma.inc` supplies signed PCM conversion for Paula DMA.
 Include it inside a namespace after defining `Dma` with `layout` and `stride`.
 It preserves decimated loop phase and word padding while copying uninterrupted
 source spans; the 68020 path converts eight longwords per loop with a register
@@ -91,55 +89,52 @@ XOR mask, then exact longword/byte tails. Decimated spans retain their byte path
 
 ## ResourceDirectory.h
 
-`ResourceDirectory.h` and `ResourceDirectory.cpp` share Alone in the Dark's mutable
+`ResourceDirectory.h` and `ResourceDirectory.cpp` hold mutable
 resource metadata, stable identities and streamed publication. Define
 `AMIGAXDEV_RESOURCE_DIRECTORY_INDEXED` consistently across a consumer to enable
-Vette-style binary lookup over a lazily rebuilt sorted index. Identity breaks ties
+binary lookup over a lazily rebuilt sorted index. Identity breaks ties
 so the oldest surviving duplicate wins even after slot reuse. Successful opens,
 closes, additions, replacements and removals invalidate that index. The default
 configuration retains the existing linear implementation. Define
 `AMIGAXDEV_RESOURCE_DIRECTORY_MAP_LIMIT` to enforce the parser's per-map resource
-limit before mutation, as Prince of Persia 2 does.
+limit before mutation.
 
 ## VBLPasses.h
 
-`VBLPasses.h` factors queued virtual-retrace bookkeeping from Vette! and Alone
-in the Dark. Each elapsed Macintosh tick starts a separate queue pass; callbacks
+`VBLPasses.h` holds queued virtual-retrace bookkeeping. Each elapsed Macintosh tick starts a separate queue pass; callbacks
 resume the same pass after returning. Consumers retain task records, countdown
 semantics, ownership checks and user-mode trampolines. Synthetic tests exercise
 tick conservation, task removal, in-flight arrivals and wraparound.
 
-System 7.5.5 fixtures in Prince of Persia 2 and Alone in the Dark establish that
-counts decrement modulo 16 bits, and only reaching zero dispatches. A callback
-leaving zero is removed; VRemove then returns qErr (-1). AitD's original fixture
-also verifies that automatic and explicit removal leave the removed record's
+System 7.5.5 fixtures establish that counts decrement modulo 16 bits, and only
+reaching zero dispatches. A callback leaving zero is removed; VRemove then returns
+qErr (-1). The original fixtures also verify that automatic and explicit removal leave the removed record's
 qLink intact. Keep these policies in the consumer adapter; check membership before
 reading a returned callback's record, since it may have removed itself. Removing
 one callback must adjust the pass iterator without skipping its next neighbour.
 
 ## VideoTicks.h
 
-`VideoTicks.h` shares Alone in the Dark's PAL/NTSC field conversion and adds
+`VideoTicks.h` supplies PAL/NTSC field conversion and
 within-field PAL TickCount calculation. The platform must supply a coherent field
 epoch and beam position; callback scheduling and hardware sampling stay outside
 the helper. Tests include repeated five-tick deadlines that field-only ticks miss. Keep direct
 low-memory Ticks reads and TickCount coherent, including the virtual time exposed to
-queued callbacks. Alone in the Dark's paired isolated waits confirm PAL quantization,
-not a reached gameplay slowdown; its production clock remains field-updated. See
+queued callbacks. Paired isolated waits confirm PAL quantization, not a reached
+gameplay slowdown; a field-updated production clock is still valid. See
 [clock resolution and loading stalls](../../docs/reference/measurement-method.md#clock-resolution-and-loading-stalls)
 for the measurement limits and pending-interrupt/rollover controls.
 
 ## HeapMoveHigh.inc
 
 `HeapMoveHigh.inc` supplies `MacHeap::moveHigh` for the common arena/master-block
-allocator used by Alone in the Dark and Prince of Persia 2. Include it at file
+allocator. Include it at file
 scope after the class declaration; the adapter supplies its existing block layout,
 copy helpers, validation and result publication. A fitting free tail before the
 next pinned block permits target-only relocation. Interior holes and insufficient
 tail space require the original compaction fallback. Payloads, handle flags and
-pinned addresses remain intact. Alone in the Dark's original System 7.5.5 fixture
-and sanitizer heap tests cover this contract. Prince of Persia 2 adopts this helper under item 19.7 with its own original
-System 7.5.5 placement fixture.
+pinned addresses remain intact. Pair a consumer's adoption with an original
+System 7.5.5 placement fixture and sanitizer heap tests.
 
 ## HeapResize.inc
 
@@ -148,8 +143,8 @@ The zone must have no adjacent free blocks on entry. A split or growth can only
 create a free/free pair at the resized allocation's tail, so merge that pair
 locally instead of rescanning the zone. Logical sizes, allocation placement,
 free-byte accounting and the adapter's compaction/failure paths stay unchanged.
-Alone in the Dark's sanitizer tests combine resizing with 2,500 fragmented-heap
-operations and check that no adjacent free blocks survive. Prince of Persia 2 adopts the same helper under item 19.7.
+Sanitizer tests should combine resizing with thousands of fragmented-heap
+operations and check that no adjacent free blocks survive.
 
 ## RegionResultCache.h
 
@@ -157,8 +152,8 @@ operations and check that no adjacent free blocks survive. Prince of Persia 2 ad
 in a 32 KiB FIFO arena with 32 metadata slots. The operation tag and exact input
 record bytes are the key; callers validate/compute misses and only insert
 successful results. Handles and pixel buffers are not cached. It is optional
-caller-owned storage, exercised by Alone in the Dark's polygon/InsetRgn camera
-mask rebuilding and mutation/relocation/eviction sanitizer fixtures.
+caller-owned storage; its sanitizer fixtures cover mutation, relocation and
+eviction.
 
 ## RGBColorCache.h
 
@@ -191,8 +186,8 @@ a separate routine; no pixel snapshots or handle-address keys are retained.
 
 `HandleCopy.h` duplicates owned handle data through a heap adapter, protects
 the source from purging during allocation and restores its state on success or
-failure. The new handle retains its allocator default state. Prince of Persia 2
-measures HandToHand against System 7.5.5 and tests this helper with the real heap;
+failure. The new handle retains its allocator default state. Measure HandToHand
+against System 7.5.5 and test the helper with the consumer's real heap;
 trap-register and error contracts remain the caller's responsibility.
 
 ## BitmapRegion.h
@@ -208,8 +203,8 @@ extents or capacity exhaustion reject before a caller publishes the result.
 using the existing query error policy without rewriting unchanged zone headers. It preserves
 resource/purge flags and never moves payloads or changes the free list. Consumers
 declare `int16_t lockHandle(Handle)` and include the method beside their state
-accessors. Prince of Persia 2 checks whole-arena equality against state/setState
-composition for all 256 state inputs, plus disposed/null/interior rejection.
+accessors. Check whole-arena equality against state/setState composition for
+all 256 state inputs, plus disposed/null/interior rejection.
 
 ## HeapReadHandleState.inc
 
@@ -239,8 +234,8 @@ deadline or clock epoch.
 
 ## PaulaChannelState.h
 
-`PaulaChannelState.h` factors Alone in the Dark's settled-channel and conservative
-period-ceiling bookkeeping out of its hardware wrapper. Reset it at takeover;
+`PaulaChannelState.h` factors settled-channel and conservative
+period-ceiling bookkeeping out of a hardware wrapper. Reset it at takeover;
 mark a channel quiet only after the DMA-off and DAC-zero waits complete. It does
 not replace those waits or infer quietness from a zero volume.
 After the DMA-off wait, `disabled()` also permits an immediate replacement to
@@ -249,7 +244,7 @@ the DAT-zero handshake, as do error cleanup and hardware handoff.
 
 ## ImmutablePcmCache.h
 
-`ImmutablePcmCache.h` generalizes the donor's retained immutable song variants
+`ImmutablePcmCache.h` retains immutable song variants
 with bounded memory and explicit users. The caller supplies the plan comparison,
 conversion and allocation policies. Every conversion-affecting field belongs in
 the comparison; period may be excluded when only sample stride affects bytes.
@@ -260,7 +255,7 @@ uncached fallback; it never evicts samples still used by DMA.
 
 ## DirtyBands.h
 
-`DirtyBands.h` extracts Alone in the Dark’s coordinate-only disjoint C2P planner.
+`DirtyBands.h` is a coordinate-only disjoint C2P planner.
 Callers supply viewport dimensions and input capacity; it clips before alignment,
 coalesces adjacent equal bands and falls back to a complete bounding rectangle
 on output exhaustion. Synthetic controls cover both 320×200 and 512×384 views.
@@ -282,14 +277,14 @@ initially `headerBytes`. Split rewinds it to the modified block; coalescing reco
 the first free block or zone end; compaction resets it. MoveHHi must finish through
 release/coalesce. The full-heap invariant must reject an interior hint or a free
 block preceding it. No fitting-size cache or placement change is permitted.
-Prince of Persia 2's mixed-operation oracle compares against a complete chain walk;
+A consumer's mixed-operation oracle should compare against a complete chain walk;
 the standalone shared test enumerates all small occupancy layouts and safe hints.
 
 ## DirtyBandsAlign.inc
 
 `DirtyBandsAlign.inc` and `DirtyBandsPlan.inc` expose the same implementation
-bodies to existing namespace adapters. Alone in the Dark retains its original
-function identities and compiler output through these includes; new consumers
+bodies to existing namespace adapters, which keep their function identities
+and compiler output through these includes; new consumers
 can use the typed `DirtyBands.h` interface. The adapter defines dimensions,
 capacity, viewport validation and alignment macros, then undefines them after
 inclusion. No game-specific data or pixel comparisons enter the planner.
@@ -313,8 +308,8 @@ the checked implementation without modifying guest state. The slot table is
 read-only to assembly and must be cleared before its arena is reused. Mac OS
 result condition codes preserve the saved X/high bits. MMU mode accepts only
 low-byte 0/1 and preserves the current heap error; handle successes clear it.
-Prince of Persia 2 pairs the bodies with its checked, original-paired C services
-across handle flags, condition codes, invalid slots and MMU modes.
+Pair the bodies with the consumer's checked, original-paired C services across
+handle flags, condition codes, invalid slots and MMU modes.
 
 ## StripAddressChecks.h
 

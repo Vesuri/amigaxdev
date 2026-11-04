@@ -13,5 +13,5 @@ AmigaXDev docs/environment.md.  Modules:
   release   deterministic LH5 release archives and installer icons
   mac       Macintosh originals: MacBinary, resource forks, HFS, A-trap names, 68k sweep
   dos       DOS originals: MZ headers, the Amiga runtime check
-  framework the canonical dA JoRMaS framework: diff and sync against a port's copy
+  framework the canonical framework: diff and sync against a port's copy
 """

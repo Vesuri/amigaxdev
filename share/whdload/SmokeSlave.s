@@ -6,7 +6,7 @@
 ; and assembles this file, for example:
 ;   $(VASM) -m68000 -pic -x -devpac -Fhunkexe -nosym -I. -I"$(WHDLOAD)/Include" -I"$(NDK)" \
 ;           -o Smoke.slave $(AMIGA_SHARE)/whdload/SmokeSlave.s
-; -DSMOKE_DATA_LAST=1 places the PASS bytes after the code (Pokeri's layout).
+; -DSMOKE_DATA_LAST=1 places the PASS bytes after the code (an alternative layout).
         INCLUDE whdload.i
         INCLUDE whdmacros.i
 _base   SLAVE_HEADER

@@ -2,17 +2,15 @@
 
 Use this when uncapping drawing or assessing a smaller simulation timestep. It complements
 [fixed-time simulation](fixed-time-simulation.md), which covers clock accounting, input
-history and catch-up. These lessons come from Indianapolis 500 (the StingRay fork):
-`tmp/dev/docs/game.md`, `tmp/dev/docs/slave.md`, `tmp/dev/docs/simulation-feasibility.md`
-and `Games/Indianapolis500_Motion.s`. The equations and record layouts are game-specific;
-trace their equivalents before transferring a patch.
+history and catch-up. The examples' equations and record layouts are game-specific; trace
+their equivalents before transferring a patch.
 
 ## Snapshot what each view actually draws
 
 A correct interpolation formula does not establish that its inputs are correct. Follow the
-renderer backwards to its native inputs separately for driving, demo and replay. In I500,
-the cockpit consumes car records, external demo views consume nodes a tick behind those
-records, and instant replay updates only the nodes. Snapshotting the records in every mode
+renderer backwards to its native inputs separately for driving, demo and replay. In one
+racing game the cockpit consumes car records, external demo views consume nodes a tick behind
+those records, and instant replay updates only the nodes. Snapshotting the records in every mode
 can pass a formula check while replay cars stay frozen.
 
 Verify two independent properties: the saved snapshot equals the native input the renderer
@@ -22,7 +20,7 @@ Keep renderer copies separate from authoritative simulation state. Reset snapsho
 at camera cuts, teleports and source changes; define what happens when simulation stops.
 
 Removing a main-loop wait also accelerates anything that advances once per loop pass.
-I500's replay wipe needs the original wait even when ordinary drawing is uncapped. Audit
+A replay wipe can need the original wait even when ordinary drawing is uncapped. Audit
 transitions and animation state machines, and compare durations using the same emulated
 clock, not frame counts. Smooth racing alone does not validate the main-loop change.
 
@@ -35,17 +33,17 @@ frame after sampling or the next completion, which may belong to an in-progress 
 
 Compare paired runs from the same pre-input state, with and without a real input event.
 Inspect both the camera used for drawing and the resulting pixels; a changed simulation
-record alone is insufficient. Gunship's PAL 020/060 checks injected right stick after camera
-publication: the in-progress frame stayed byte-identical, while the first subsequent draw
-changed camera bank and visible pixels. Its accepted target is the next newly drawn frame.
+record alone is insufficient. Input injected after camera publication typically leaves the
+in-progress frame byte-identical, while the first subsequent draw changes the camera and the
+visible pixels; then the acceptable target is the next newly drawn frame.
 Framebuffer evidence does not establish scanout latency, especially with a pending VBL swap.
 
 ## Preserve side effects of display work being removed
 
 Before replacing a screen rebuild with bitplane-pointer swaps, inventory its other writes
-and their owners. Gunship's native rebuild also restored the normal palette; removing it
-left the final red/orange damage flash stuck. The replacement restores the selected bitmap's
-saved background colour when the hit timer expires, including fields with no pending frame.
+and their owners. A native rebuild that also restores the normal palette leaves a damage
+flash stuck when it is removed. The replacement restores the selected bitmap's saved
+background colour when the hit timer expires, including fields with no pending frame.
 Do not assume the normal colour is black. Check effect activation and expiry, both buffers,
 modal handoffs and screen rebuilds; preserve active effects rather than resetting them at
 every swap.
@@ -53,9 +51,9 @@ every swap.
 ## Preserve recorded-demo ownership when changing live controls
 
 An attract demo can use a tick-indexed input tape and a separate any-key exit decoder.
-Replacing the live input path can bypass both: Gunship's enhanced mode initially left the
-demo idle and unable to exit. It now selects the entire native flight loop at demo entry,
-retaining native tape timing and exit handling; ordinary play keeps enhanced timing.
+Replacing the live input path can bypass both, leaving the demo idle and unable to exit.
+One remedy selects the entire native game loop at demo entry, retaining native tape timing and
+exit handling, while ordinary play keeps enhanced timing.
 
 Audit playback progression and exit separately from live controls, including the transition
 back to ordinary play. Native demo ownership is a compatibility option, not a requirement
@@ -72,8 +70,8 @@ With alpha in [0, 1] measuring time since the latest completed tick:
 - If the next native pose is derivable, display `current + (next - current) * alpha`.
   This avoids using the previous tick's rate to predict a changed rate.
 
-I500's opponents move using stored rates before their controllers choose new rates. At tick
-completion those new rates therefore describe the next free-motion update. Derive `next`
+Opponents that move using stored rates before their controllers choose new rates are an
+example: at tick completion those new rates describe the next free-motion update. Derive `next`
 with the native arithmetic: preserve the fractional track byte, wrap, signed word behavior,
 and the order of lateral velocity and position updates. Use the shortest angular arc for
 presentation. Predicting the endpoint does not prove the intermediate path is physical.
@@ -81,7 +79,7 @@ presentation. Predicting the endpoint does not prove the intermediate path is ph
 Compare each prediction with the next actual simulation pose. Contacts, resets and other
 intervening writers can invalidate it; provide a correction/fallback policy. A match in
 ordinary free motion is not a guarantee across collisions. Do not reuse the opponent model
-for the player merely because the records share a layout: I500's player fields include
+for the player merely because the records share a layout: the player's fields can include
 published displacement, and its next pose depends on unread input and different physics.
 
 Extrapolation removes interpolation's deliberate presentation delay; it does not increase
@@ -89,8 +87,8 @@ input sampling or simulation frequency. Describe those limits separately from fr
 
 ## Keep fractional precision through projection
 
-Smoother simulation does not remove quantization later in the renderer. Grand Prix Circuit
-needed continuous camera pose across track-segment boundaries and full fractional object
+Smoother simulation does not remove quantization later in the renderer. A track-segment
+racing game needs continuous camera pose across segment boundaries and full fractional object
 depth through horizontal projection. Rounding distance to a segment or screen row first
 made distant cars and roadside signs jump sideways when they moved to the next row.
 Use the same fractional depth for placement and perspective scale, and sample road geometry
@@ -103,15 +101,15 @@ reference point and roadside signs to their ground contact. Check consecutive fr
 segment crossings, row changes and sprite transitions; a higher frame rate alone does not
 establish smooth placement. Keep these presentation corrections separate from physics state.
 
-Visibility needs fractional precision too. Road Rash compared separately truncated rider
-and camera positions; their segment crossings happened at different times, making a steady
+Visibility needs fractional precision too. Comparing separately truncated object and camera
+positions fails: their segment crossings happen at different times, making a steady
 separation alternate across the distant-view and mirror cutoffs. Subtract full fixed-point
 positions before comparing visibility bounds. Keep the native segment-index difference for
 projection if it indexes road samples: visibility distance and projection index are different
 quantities. Test both sides of each cutoff while advancing both positions together.
 
-Check continuity across track intervals before blaming interpolation. Road Rash's fractional
-camera-height term used one interval while forward height accumulation began with the next.
+Check continuity across track intervals before blaming interpolation. A fractional
+camera-height term can use one interval while forward height accumulation begins with the next.
 At each crossing that mismatch produced a vertical jump shared by the road and riders. Compare
 the same world point immediately before and after a segment boundary, including table wraps
 and section reloads. Align the fractional term with the interval being accumulated, and keep
@@ -121,9 +119,9 @@ a shared table alone neither proves nor rules out a gameplay effect.
 
 ## Control memory layout in state comparisons
 
-A bigger slave can change where WHDLoad loads the game. In I500 the option-disabled build
-and the original demo diverged; an original slave padded to the same size reproduced the
-same divergence from the unpadded original. At the matched load address, the padded original
+A bigger slave can change where WHDLoad loads the game. An option-disabled build can diverge
+from the original demo while an original slave padded to the same size reproduces the same
+divergence from the unpadded original. At the matched load address, the padded original
 and disabled patch matched the compared simulation state. This isolated a layout effect;
 it did not prove why the original game depends on its address.
 
@@ -138,8 +136,8 @@ nor does an option-disabled match validate enabled patches. State the comparison
 classify renderer workspace separately, and retain the ordinary original comparison as a
 separate acceptance question. Do not label unexplained differences as random noise.
 
-Grand Prix Circuit provides a concrete address-boundary failure: native grid and opponent
-selection code used word-sized additions and subtractions on full track addresses. A carry
+A concrete address-boundary failure: native grid and opponent selection code used word-sized
+additions and subtractions on full track addresses. A carry
 or borrow across a 64 KB boundary was lost, misplacing cars or excluding them from the view.
 Changing the slave size exposed a vulnerable allocation; a larger diagnostic build hid it.
 Check address arithmetic at boundary alignments and compare corrected and original operations
@@ -189,9 +187,9 @@ presentation together, then define handling and timing acceptance before impleme
 
 ## Interrupt-driven simulation needs a short protected snapshot
 
-Do not assume simulation advances in the drawing loop. Grand Prix Circuit updates physics
-from the VBL interrupt while foreground code draws. Removing a drawing wait therefore does
-not itself change its simulation rate. Inventory the interrupt counters, input sampling,
+Do not assume simulation advances in the drawing loop. A game can update physics from the VBL
+interrupt while foreground code draws; removing a drawing wait then does not itself change
+its simulation rate. Inventory the interrupt counters, input sampling,
 physics period and independent game clocks before changing cadence.
 
 If a foreground renderer copies several related fields, an interrupt can split that copy
@@ -211,8 +209,8 @@ while lap clocks, decisions, damage and event gates may retain their original pe
 A LoadView call can schedule a copper-list change without immediately stopping DMA from the
 old screen. A call counter is therefore a publication marker, not proof that a bitmap is safe
 to overwrite. Trace DMA bitplane pointers and CPU/blitter destinations through the handoff.
-Grand Prix Circuit initially overwrote the displayed bitmap despite apparently alternating
-its two software buffers; horizon flicker was a visible symptom.
+A patch can overwrite the displayed bitmap despite apparently alternating two software
+buffers; flicker at the top of the view is a typical symptom.
 
 Where the native main loop permits it, publish the new view and do CPU-only geometry work
 while waiting for the next field. Before the first screen write, confirm the field has
@@ -228,7 +226,7 @@ and require exact fetched-plane equality when the added fractions are zero.
 
 ## Redraw animation scripts without advancing them
 
-Wing Commander's cinematic actors combine drawing with script-cursor advancement. Calling
+Cinematic actors can combine drawing with script-cursor advancement. Calling
 such a routine on every displayed frame accelerates the animation; disabling its active flag
 can select a different interpretation of the record and cause flicker. Audit the routine's
 writes before treating it as a renderer.
@@ -241,9 +239,9 @@ window scenery must be composed on every newly drawn image even when their logic
 has not changed. Input polling is not a sufficient gate for drawing a persistent label.
 
 Keep world simulation, bitmap script advancement, input polling and display publication as
-separate timing owners. Wing Commander uses a 10 Hz world clock and, for selected bitmap
-sequences, one animation update every three display fields (50/3 Hz PAL, 20 Hz NTSC).
-Those are game-specific choices, not a general historical rate. Smooth transforms may still
+separate timing owners. A game can run a 10 Hz world clock and, for selected bitmap
+sequences, one animation update every three display fields (50/3 Hz PAL, 20 Hz NTSC);
+such rates are game-specific choices, not a general historical rate. Smooth transforms may still
 advance on every render between bitmap updates. Check native per-cel holds as well as the
 outer loop; one script update need not select a new bitmap.
 
@@ -273,6 +271,5 @@ image alone does not establish a hit on the same object.
 
 Useful focused checks cover the first visible shot, the next native update, slot reuse,
 an impact and scene exit, with prediction disabled as a control. Compare both authoritative
-state and rendered positions. Wing Commander's spawn, intro-shot and field-contact fixes
-illustrate these distinct failure modes; their offsets and record layouts belong in that
-project's documentation rather than a shared patch.
+state and rendered positions. Spawn, scripted-shot and field-contact faults are distinct
+failure modes; their offsets and record layouts belong in the project's documentation.

@@ -1,7 +1,7 @@
 # Validation harness
 
-How a port proves that it does what the original does. The rules come from the port
-projects. Each rule names the project where it was learned. Related docs:
+How a port proves that it does what the original does. The rules were learned on ports
+from several original platforms. Related docs:
 
 - [Native port validation](../native-port-validation.md): crash dumps turned into
   regressions, installer updates and release archives.
@@ -27,17 +27,16 @@ projects. Each rule names the project where it was learned. Related docs:
 
 **Tests, not confidence, settle correctness.** Ground truth is the original program under a
 reference emulator. Never compare the port with itself or with a host approximation. A layer
-cannot prove itself by agreeing with another layer derived from the same source (Slicks,
-Secret Weapons of Luftwaffe, Revs, Downwell).
+cannot prove itself by agreeing with another layer derived from the same source.
 
-| Original | Reference | Project |
-|---|---|---|
-| BBC Micro 6502 | jsbeeb, scripted; cycle counts read from the CPU | Revs |
-| Atari 8-bit 6502 | atari800 in FIFO mode, RAM dumps | Rescue on Fractalus |
-| DOS x86 | DOSBox-X with in-repo trace patches; Unicorn x86-16 as the instruction oracle | Slicks, Secret Weapons of Luftwaffe |
-| Classic Macintosh 68000 | MAME `mac2fdhd` with the original System | Vette, Alone in the Dark |
-| 68008 arcade board | MAME footage and board evidence; a host Musashi model as the executable reference | Pokeri |
-| GameMaker (Windows) | The Windows build and its VM bytecode; decompiled GML is only a readable hypothesis | Downwell |
+| Original | Reference |
+|---|---|
+| BBC Micro 6502 | jsbeeb, scripted; cycle counts read from the CPU |
+| Atari 8-bit 6502 | atari800 in FIFO mode, RAM dumps |
+| DOS x86 | DOSBox-X with in-repo trace patches; Unicorn x86-16 as the instruction oracle |
+| Classic Macintosh 68000 | MAME `mac2fdhd` with the original System |
+| 68008 arcade board | MAME footage and board evidence; a host Musashi model as the executable reference |
+| GameMaker (Windows) | The Windows build and its VM bytecode; decompiled GML is only a readable hypothesis |
 
 Rules for reference runs:
 
@@ -45,24 +44,23 @@ Rules for reference runs:
   - MAME: `SDL_VIDEODRIVER=dummy`, `-window`, and explicit `-cfg_directory` and
     `-nvram_directory`, so no state leaks into the repo. `-video none` alone still opens a
     fullscreen window.
-  - Bound every run with a timeout and stop only your own process (Vette).
+  - Bound every run with a timeout and stop only your own process.
 - **Keep the reference instrumentation in the repo,** as patches to the emulator or as
-  scripts in its scripting language. Record what each milestone saw (Slicks):
+  scripts in its scripting language. Record what each milestone saw:
   - executed addresses and block entries, direct and indirect edges;
   - interrupts with their registers, port events and code-region writes;
   - file events and frame-buffer or state hashes.
-- **Run two CPU personalities when the binary probes the CPU** (Slicks: 286 and 386).
+- **Run two CPU personalities when the binary probes the CPU** (286 and 386 for a DOS game).
 - **Keep a lossless seam beside every normalised view.** That means the exact instruction
   stream, VM assembly or resource metadata next to the decompiled or transliterated form, so
-  decompiler errors stay auditable (Downwell, Revs).
+  decompiler errors stay auditable.
 - **An image built from the disc does not model registers or OS-left state.** The stack
   pointer, zero page and workspace the OS hands over are provisional until measured on the
-  reference (Revs: `S` inherited as `$F8`, while a zeroed global gave 0).
+  reference (a 6502 `S` inherited as `$F8`, while a zeroed global gave 0).
 
 ## 2. Levels of evidence
 
-Each level answers a different question. None alone proves whole-game fidelity (Slicks,
-Revs).
+Each level answers a different question. None alone proves whole-game fidelity.
 
 | Level | Proves | Blind to |
 |---|---|---|
@@ -72,9 +70,9 @@ Revs).
 | Whole-program determinism: RAM at frame N against a recorded reference | Changes that move the oracle too (generator, CPU model, memory layout) | Anything the recorded trajectories never reach |
 | Behaviour against the reference: milestones, lockstep, picture comparison | The port computes what the original computes | Paths no scenario drives |
 | Gameplay regression suites with explicit success records | Lifecycle paths still complete | Fidelity of what they pass through |
-| Linked-ELF checks under a CPU oracle | The assembly actually linked | DMA-era timing (Pokeri) |
+| Linked-ELF checks under a CPU oracle | The assembly actually linked | DMA-era timing |
 
-**Gate a change by what it can affect** (Revs, Vette):
+**Gate a change by what it can affect**:
 
 - documentation: link and syntax checks;
 - a pure helper: host checks;
@@ -85,49 +83,48 @@ Revs).
 
 - **Rewrite in small byte-identical steps.** Turning a transliterated routine into clean C is a
   loop: verify the disassembly, splice the new body in by line, run the routine's differential,
-  commit. One routine per commit, each independently green (Revs). The ways a green step still
+  commit. One routine per commit, each independently green. The ways a green step still
   breaks at runtime are the fixture rules below: an argument in a register the fixture never
   varied, a gating byte that left a branch unexercised, a live exit register filed as incidental.
 - **Fixture or fail.** A validated name with no fixture fails the run. A run with zero
-  comparisons is a failure (Rescue on Fractalus printed PASS with none).
+  comparisons is a failure (one printed PASS with none).
 - **Compare the complete live-out**, not just memory:
   - declared live registers and flags;
   - the sequence of hardware writes, because order is semantic;
   - traps, OS calls and stack.
 
   A memory-only diff passed 4 of 9 sabotages of a routine that writes the video chip twenty
-  times a call (Revs).
+  times a call.
 - **No "incidental difference" bucket.** Each fixture declares its live exit registers and
   flags. Declared ones are hard failures; undeclared ones are asserted dead. An "incidental"
-  exit `A=0` shipped a live bug (Rescue on Fractalus). Some older docs still call exit
-  register diffs fine; that rule is retired.
-- **Mask undefined flags rather than canonising them** (Slicks).
+  exit `A=0` shipped a live bug.
+- **Mask undefined flags rather than canonising them**.
 - **A fast path that bypasses the traced interface must trace itself.** Otherwise the twin is
-  validated on the writes it did not optimise (Revs).
+  validated on the writes it did not optimise.
 - **Count unhandled traps (self-modifying-code sites, unknown calls) in both directions:**
   zero over legal cases, nonzero over illegal ones. An oracle that aborts on the first trap
   makes the path untestable.
 - **Run the differential big-endian, or lint wide aliases of little-endian guest RAM.** A
-  green host run with garbage on the target happened (Rescue on Fractalus, Revs).
+  green host run with garbage on the target has happened.
 - **Two adjacent asm twins may pass values in registers instead of through guest memory,** but
   keep the shim seam so the C oracle stays reachable through the memory path, and write down the
-  precondition the callee inherits, such as which registers arrive zero-extended (Revs).
+  precondition the callee inherits, such as which registers arrive zero-extended.
 - **A shim or seam reproduces every register and flag its callers read,** transitively, even
   when the native core no longer needs it.
   - A hook seam hands over every register live at that address, not only what the default
-    callee reads. A stale Y caused a months-long corruption (Revs).
+    callee reads. A stale Y caused a months-long corruption.
   - Treat an OS call as clobbering everything its contract doesn't preserve.
   - Flags can escape a routine.
   - A trap happens at the guest instruction boundary, after the stores before it.
 - **Keep the oracle independent of what is being tested.** A transliteration generated by
   the same transpiler as the twin cannot see a transpiler change. The original bytes under
-  Unicorn against generated 68020 code under a second engine can (Slicks, Revs).
+  Unicorn against generated 68020 code under a second engine can.
 - **Audit the architecture, not just the output.** Reject generated code for:
   - unexpected guest-context traffic, helper calls or flag materialisations;
   - dispatcher exits.
 
   Count interpreter and fallback entries in production scenarios, and fail on an unexpected
-  one (Slicks, Revs).
+  one.
 
 ### Integer and FPU replacements
 
@@ -136,17 +133,17 @@ saturation, signed overflow, GPRs, CCR and preserved FPU state (FP registers,
 FPCR, FPSR and FPIAR). Include boundary operands, rounding modes and fallback
 conditions, not just operands from one flight. Mask only architecturally undefined
 storage, such as padding words in extended-precision memory values; do not waive
-numerical or control-state differences. TFX used original guest execution plus an
-independent integer oracle and deliberately corrupted outputs to check the checker.
+numerical or control-state differences. Original guest execution plus an independent
+integer oracle works, with deliberately corrupted outputs to check the checker.
 
 ## 4. Fixtures: what to randomise
 
 **Randomise by default.** Randomise the whole guest state, including gating bytes, and
 decorrelate flags from values. Otherwise a branch stays untested because its gate happened
-to be zero in every hand-written case (Rescue on Fractalus).
+to be zero in every hand-written case.
 
 **The domain rule.** A fixture models the inputs the game actually uses, not every possible
-input (user decision, Revs). Narrow a byte only to a representation invariant you can state:
+input (a user decision). Narrow a byte only to a representation invariant you can state:
 "packed BCD", "index < 21", "pointer in this table".
 
 - Write the invariant at the fixture, together with its writer.
@@ -154,10 +151,10 @@ input (user decision, Revs). Narrow a byte only to a representation invariant yo
 - If no writer exists, the invariant isn't real; go back to random bytes.
 - Control flow must still go both ways.
 - The tell that a fixture is too wide: the harness is the only reason the twin isn't written
-  the obvious way. Revs reimplemented NMOS decimal `ADC` in software before narrowing to
+  the obvious way. One port reimplemented NMOS decimal `ADC` in software before narrowing to
   valid BCD let one `ABCD` do it.
 
-**A random pre-state can be systematically degenerate** (Revs):
+**A random pre-state can be systematically degenerate**:
 
 - A random self-modified byte in a callee can hang the oracle (a branch to itself) or exit at
   once and starve the routine under test. Plant the original's bytes at the callee's sites.
@@ -168,7 +165,7 @@ input (user decision, Revs). Narrow a byte only to a representation invariant yo
 - A callee can loop forever on states the real tables never produce. Exclude them, and say
   why at the point of exclusion.
 
-**State the fixture cannot vary** (Revs):
+**State the fixture cannot vary**:
 
 - Values a shim reseeds on every call are invariants of every case. Code conditioned on them
   is unreachable from the harness, so test it through determinism or the picture instead.
@@ -182,7 +179,7 @@ input (user decision, Revs). Narrow a byte only to a representation invariant yo
 ## 5. Results, not implementation details
 
 "Faithful behaviour from the user's point of view, not exact replication of the original
-architecture" (user decision, Revs). The differential pins results the rest of the program
+architecture" (a user decision). The differential pins results the rest of the program
 and the player can observe, not the transliteration's working notes.
 
 **Implementation details, and ignorable:**
@@ -207,7 +204,7 @@ this, and it must include:
 - A whole-RAM determinism check has no ignore list. A dropped scratch write is re-recorded
   there with the reader audit quoted in the commit.
 
-**Tolerances.** An accepted numerical departure (Revs: one `DIVU` instead of the original's
+**Tolerances.** An accepted numerical departure (say one `DIVU` instead of the original's
 truncated-divisor quotient, ±1 LSB) uses a tolerance hook, not an ignore mask.
 
 - Check in the space where the error model is exact: the twin exact to the true quotient,
@@ -221,11 +218,11 @@ truncated-divisor quotient, ±1 LSB) uses a tolerance hook, not an ignore mask.
 
 **A first-run PASS is indistinguishable from blindness.** Inject a few deliberate defects
 into every new gate, oracle, fixture and tolerance. Confirm that each fails, then remove
-them (Revs, Rescue on Fractalus).
+them.
 
 **A sabotage must be reachable in value space.** Moving a threshold to a value the program
-cannot produce proves nothing. Check parity, masks, floors and BCD constraints (Revs: `>= $28`
-became `>= $27` on an always-even value).
+cannot produce proves nothing. Check parity, masks, floors and BCD constraints (`>= $28`
+becoming `>= $27` on an always-even value).
 
 **When a sabotage survives,** the explanations are:
 
@@ -236,7 +233,7 @@ became `>= $27` on an always-even value).
   into the real table ranges and run more cases;
 - the oracle shares the input the defect lives in: see §7.
 
-**A sabotage run can lie** (Revs):
+**A sabotage run can lie**:
 
 - **Stale binary.** Unrelated defects report identical small mismatch counts. Remove the
   object and binary before every sabotage build.
@@ -246,20 +243,20 @@ became `>= $27` on an always-even value).
   it ran.
 
 **A control the gate erases is not a control.** Ask where in time and space the defect is
-observable, and compare that with where the gate samples (Revs):
+observable, and compare that with where the gate samples:
 
 - an end-of-run dump misses a one-time prologue effect or a mid-run transient;
 - a screen dump misses a cell the frame repaints;
 - a picture gate over some lines says nothing about the others.
 
 **A plant needs its path exercised.** Count visits to the path a plant breaks and assert a
-floor, so a fixture change cannot silently turn the plant into a no-op (Secret Weapons of
-Luftwaffe `tests/test_display_queue.py`: a deferred-present count after one plant escaped).
+floor, so a fixture change cannot silently turn the plant into a no-op (a deferred-present
+count was added after one plant escaped).
 
 **A harness around production source rots with it.** A test that compiles the production file
 against a stub header breaks as soon as production gains a dependency, and nobody sees it unless
-that test is in the gate set for every change to the file (Secret Weapons of Luftwaffe: it stopped
-compiling with a pointer change and was found only by a later display change).
+that test is in the gate set for every change to the file (one stopped compiling with a pointer
+change and was found only by a later display change).
 
 Change an input rather than a result, and verify the control per gate. Read the gated count,
 not the printed listing. Compare summary counts before per-line listings, and never diff two
@@ -273,10 +270,10 @@ runs captured with different amounts of output.
     sides.
 
   Name the shared thing, state the oracle's scope at the oracle, and gate that thing another
-  way: by argument, by the picture, or by a path that doesn't consult it (Revs).
+  way: by argument, by the picture, or by a path that doesn't consult it.
 - **A pass is a pass over its window.** Run a new oracle for at least twice the window that
-  first reached every arm it guards. Bisect only with the trajectory pinned (Revs: a
-  2500-field PASS failed over 5000 fields).
+  first reached every arm it guards. Bisect only with the trajectory pinned (a
+  2500-field PASS has failed over 5000 fields).
 - **Oracles over the same rows share their scope exclusions,** with the reason stated at
   each one.
 - **A derived table needs a staleness guard,** not just a regeneration command. Regenerate
@@ -295,17 +292,17 @@ runs captured with different amounts of output.
 - **Drive the real engine for N frames with the clock pinned,** dump all guest RAM, and
   require byte equality with a recorded reference. This is the gate for changes that alter
   the oracle as well as the twin: the generator, the CPU model, the memory representation.
-  It is also the gate for drivers that can have no fixture (Revs).
-- **Record several trajectories, because one trajectory is not a workload.** Revs records
-  parked, driving, steering, each session kind and a crash. A missing engine-sound step was
-  identical when parked and failed when driving.
+  It is also the gate for drivers that can have no fixture.
+- **Record several trajectories, because one trajectory is not a workload.** A driving game
+  records parked, driving, steering, each session kind and a crash. A missing engine-sound
+  step was identical when parked and failed when driving.
 - **Check that the gate can fail:** an unpinned clock diverges, and two configurations never
   compare equal. A wrong flag rule can hang the run instead of diverging, so a run that never
   reaches its dump is a failure.
 - **Record only from a clean tree, after the change is proven correct.** Re-record, clean,
   and check again: a sound reference survives a clean rebuild. A record taken after a
   differently flagged build fails consistently, with the same byte count from any build, and
-  reads like a real regression (Revs).
+  reads like a real regression.
 - **Never re-record to make a failure pass.** Record baselines before changing the generator
   or CPU model, and compare all affected trajectories afterwards.
 
@@ -316,8 +313,8 @@ Changing a host-side slave or option does not change a reused image. Key seeds b
 build and option hashes, or regenerate them whenever either changes. Verify loaded
 patch bytes as well as launch metadata. Reuse a seed only for the same configuration;
 a same-length live patch is an alternative for an isolated routine comparison, with
-cache publication handled explicitly. TFX found apparently valid A/B runs that had
-booted the same options from a shared seed.
+cache publication handled explicitly. Apparently valid A/B runs have booted the same
+options from a shared seed.
 
 ### Retaining evidence without retaining every scratch file
 
@@ -329,10 +326,8 @@ any unique saves or input data before removing a disk image. Measure allocated d
 space, since sparse image sizes can overstate physical use.
 
 Record what was removed and which checks now require a rerun. Seed loaders must
-check image existence, not just the containing directory. TFX reclaimed 34.7 GiB
-from disposable boot images and discovery dumps while retaining its other evidence.
-Do not delete traces or oracle inputs merely because a summary exists if those
-files are needed to reproduce or audit the result.
+check image existence, not just the containing directory. Do not delete traces or
+oracle inputs merely because a summary exists if those files are needed to reproduce or audit the result.
 
 ## 9. Behaviour against the reference
 
@@ -343,15 +338,14 @@ files are needed to reproduce or audit the result.
   - files and control-flow landmarks.
 
   Every negative observation needs a positive control proving execution reached the
-  surrounding path (Slicks).
+  surrounding path.
 - **Replays:** use fixed ticks, controlled RNG seeds, recorded input edges and compact state
-  digests. Compare persistent state and important events, not only screenshots (Downwell).
-  Compare digests at identical ticks. Both CPUs must use the same precision policy (Downwell:
-  table against portable atan).
-- **Different CPU speeds need not show identical intermediate frames.** Capture state pairs
-  (Vette).
+  digests. Compare persistent state and important events, not only screenshots.
+  Compare digests at identical ticks. Both CPUs must use the same precision policy (for
+  example, a table against a portable atan).
+- **Different CPU speeds need not show identical intermediate frames.** Capture state pairs.
 
-**Lockstep against the reference** (Revs)
+**Lockstep against the reference**
 
 Replay the port's run on the reference, frame for frame:
 
@@ -365,7 +359,7 @@ Making two machines agree took several fixes, each one found as a measured diver
 
 - force lottery values, such as the starter's random catch;
 - replay the entropy reads;
-- align defaults the two front ends set differently (Revs: the wing angle, which feeds grip);
+- align defaults the two front ends set differently (a car's wing angle, which feeds grip);
 - build with the original's exact arithmetic, because the physics read the picture and a
   one-pixel edge shift became a different trajectory.
 
@@ -380,26 +374,25 @@ State each excluded region at the comparison tool, with the reason:
 
 - **An autopilot that reads only the game's own state** and presses the player's keys changes
   no engine code and stays deterministic. It reaches corners, crests and whole laps that
-  straight-line trajectories never see (Revs).
+  straight-line trajectories never see.
 - **Gameplay regression suites:** each case requires its own success record, rejects loud
   stops, and cannot pass by timing out. A fixture that places state at a decoded checkpoint
-  proves that path, not uninterrupted play (Vette, Alone in the Dark).
-- **A demo is a performance workload, not proof of playable controls.** Ferrari Formula
-  One's demo and state oracles passed while ordinary throttle from rest failed. Exercise
+  proves that path, not uninterrupted play.
+- **A demo is a performance workload, not proof of playable controls.** A racing game's
+  demo and state oracles passed while ordinary throttle from rest failed. Exercise
   real press/hold/release combinations through the emulator's native input path and verify
   resulting player state: launch, braking, coasting, steering, manual gears and restart.
   Do not substitute direct writes to game control variables. Log actions and release held
   inputs on cleanup. The native builds' `monitor key`, `mouse` and `input` do this; see
   [harness commands](headless-fsuae.md#harness-commands-native-builds), and check the build
   with `require_harness` before relying on them.
-- **Use a known broken build as an input-regression control.** Ferrari Formula One's
-  `test_drive_controls.py` now uses the shared emulator and `amigaxdev.input.Input`.
-  Its pinned RC2 passes throttle, coast, brake, restart and steering; RC1 receives
-  throttle but remains at zero speed and must fail. The clutch variant holds both
-  buttons, releases left while right remains held, then releases right. Keep the
-  slave hashes, addresses, exact thresholds and action logs in Ferrari's
-  `CONTROLS_REGRESSION.md` and local harness. Input-route success is not a timing claim.
-- **An early checkpoint is evidence only for that endpoint** (Alone in the Dark).
+- **Use a known broken build as an input-regression control.** Drive the controls through
+  the shared emulator and `amigaxdev.input.Input`: the fixed build passes throttle, coast,
+  brake, restart and steering; a build that receives throttle but stays at zero speed must
+  fail. Exercise chords too (hold both buttons, release one while the other stays held,
+  then release it). Keep slave hashes, addresses, thresholds and action logs in the
+  project. Input-route success is not a timing claim.
+- **An early checkpoint is evidence only for that endpoint**.
 
 ## 10. On-target checks
 
@@ -413,37 +406,36 @@ The host harness cannot see Amiga-only code, endianness or beam timing.
   trampoline to the distant selection wrapper, preserve its entry ABI, and
   range-check the trampoline's own branch or address calculation. Verify a real
   boot and a nonzero diagnostic count after the repair. A missing initialized
-  marker is a failed capture, not an arithmetic mismatch or a capacity result
-  (Ferrari Formula One).
+  marker is a failed capture, not an arithmetic mismatch or a capacity result.
 
 - **Target-only assembly needs an in-process differential with a nonzero check count.** The
   assembly and its C oracle run back to back on identical state in every call, and are
   compared. Inline assembly is unverified until it has run on the target: a ROR/ROL-X bug
-  assembled and disassembled correctly (Revs, Rescue on Fractalus). Keep the portable C or
-  C++ version as the oracle (Downwell).
+  assembled and disassembled correctly. Keep the portable C or
+  C++ version as the oracle.
 - **An oracle that reads ISR-written state can race.** Snapshot before the change, run the
-  oracle on both sides, and discard calls where they disagree (Rescue on Fractalus).
-- **Shadow execution for simulation changes** (Slicks):
+  oracle on both sides, and discard calls where they disagree.
+- **Shadow execution for simulation changes**:
   1. At each wrapped call, snapshot the state.
   2. Run the reference, restore the snapshot, and run the native routine.
   3. Compare block hashes. Record the first differing block and continue from the reference.
   4. Fail on a mismatch, an error or an unexercised site.
-- **Retention check for drawing-order or dirty-region changes** (Slicks): run every update
+- **Retention check for drawing-order or dirty-region changes**: run every update
   from a snapshot with retention off, then for real, and compare the surfaces and caches.
 - **Verify C2P by decoding every pixel,** including those outside dirty areas. Never take FPS
-  from that build (Alone in the Dark, Vette).
+  from that build.
 - **Prove a pure reordering on the host.** Compile the old and new bodies side by side over
   randomised inputs; 160 000 cases take seconds. It is the only check that reaches Amiga-only
-  framework code. Then re-measure: byte-identical is not cost-identical (Revs).
+  framework code. Then re-measure: byte-identical is not cost-identical.
 - **Assert invariants the original hardware kept for free.** For example, check that the
-  emulated stack pointer stays in its window, at both ends (Revs).
+  emulated stack pointer stays in its window, at both ends.
 
 ## Exercise the user's route as well as isolated fixtures
 
 Direct-entry fixtures are useful for a bounded routine check, but they can bypass the
-allocation history and initialization that expose a bug. Wing Commander's side-cockpit
-images failed after the ordinary campaign route because earlier scenes fragmented native
-memory pools; a fresh flight fixture did not reproduce the missing cockpit rows.
+allocation history and initialization that expose a bug. In one port, cockpit images
+failed after the ordinary campaign route because earlier scenes fragmented native memory
+pools; a fresh flight fixture did not reproduce the missing rows.
 
 For a scene or rendering fix, retain one short acceptance route through the real menus,
 briefing and mission entry. Include the reported user actions, such as Return to skip a
@@ -461,12 +453,11 @@ visual acceptance or hardware performance.
 ## 11. Pictures
 
 - **Judge appearance only from a clean real run.** The remote debugger greys the display, so
-  a debugged run proves cost and state, never appearance (Revs).
+  a debugged run proves cost and state, never appearance.
 - **Decode screenshots against memory dumps** rather than eyeballing them. Fixed store
-  addresses map to screen positions: crop that region from a reference frame and look
-  (Revs).
+  addresses map to screen positions: crop that region from a reference frame and look.
 - **A dump of the published buffer is memory, not the beam.** DMA-level faults show only in
-  per-field screenshots from an instruction trace (Downwell).
+  per-field screenshots from an instruction trace.
 - **Picture gates compare a window.** A gate that prints a difference and still passes is a
   pass for the gated lines only.
 
@@ -479,11 +470,11 @@ original code still defines the routine's observable behaviour.
   guarded addition: publishing a dirty region, or skipping a hardware tail the copper already
   handled.
 - Moving a routine out of the validated tier costs its proof for good. Prefer the smaller
-  `#ifdef` (Revs, Rescue on Fractalus).
+  `#ifdef`.
 - A subsystem behind an OS call is OS behaviour. It is faithful, shared and validated against
   real hardware, while its Amiga half only reproduces the chip state.
 
-**Fidelity before improvement** (Slicks, Vette, Pokeri):
+**Fidelity before improvement**:
 
 - Every deviation is either fixed or listed with its reason and the user's decision.
 - Remove port-only additions, and don't add optional UI to hide a failure.
@@ -491,30 +482,28 @@ original code still defines the routine's observable behaviour.
   stops.
 
 **Undefined or garbage behaviour in the original is a user decision,** recorded as a
-deviation (Slicks).
+deviation.
 
-**Timing departures are written departures** (Revs, Slicks), for example a
+**Timing departures are written departures**, for example a
 frame-rate-independent simulation or a real-time clock. Each has a per-piece argument and its
 own gate; see [fixed-time simulation](../playbooks/fixed-time-simulation.md).
 
 **Before calling drift a bug, look for the original's own compensation table.** A table that
 equals the formula the hardware model implies proves both the model and the faithfulness from
-the binary alone (Rescue on Fractalus).
+the binary alone.
 
 ## 13. Coverage
 
 - **Enumerate modes, difficulty levels and session types,** and ask which code each one
-  excludes. A mode the tests never run is a whole untested subsystem. Practice skipped the
-  multi-car path, and the first race hung (Revs). A one-line grep for the gating flag finds
+  excludes. A mode the tests never run is a whole untested subsystem. In one racing game practice
+  skipped the multi-car path, and the first race hung. A one-line grep for the gating flag finds
   the exclusion.
 - **A body no scenario drives is unproven, not dead.** Static analysis gives an upper bound,
-  a trace a lower bound (Slicks, Revs).
-- **Delete oracle-tested code the shipped game never links,** together with its tests
-  (Slicks: 2035 lines).
+  a trace a lower bound.
+- **Delete oracle-tested code the shipped game never links,** together with its tests.
 - **Read bounds from the instruction, never from the first example.** Assert the instruction
-  shape you rely on (Revs: a patch count differed per track).
+  shape you rely on (a patch count can differ per level).
 - **A static count of a dynamic mechanism under-counts by exactly its dynamism.** The
-  operand encoding is the strongest evidence of the legal target set (Revs).
+  operand encoding is the strongest evidence of the legal target set.
 - **Untranslatable input fails at generation or reports loudly at run time.** A silent no-op
-  looks exactly like working code, and a `TODO` in generated output is not loud (Revs,
-  Slicks).
+  looks exactly like working code, and a `TODO` in generated output is not loud.

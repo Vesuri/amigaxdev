@@ -1,5 +1,5 @@
 // Included inside a caller namespace after defining Dma (layout and stride).
-// Canonical Alone in the Dark PCM stream conversion; intentionally no include guard.
+// Canonical PCM stream conversion; intentionally no include guard.
 inline uint8_t pcmAt(const Dma& dma,uint32_t position) {
     const auto& layout=dma.layout;
     if(layout.loopEnd && position>=layout.loopEnd)

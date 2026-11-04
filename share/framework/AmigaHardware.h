@@ -57,7 +57,7 @@ public:
     __inline static bool isRightMouseButtonPressed();
     // Busy-wait until the raster beam reaches (>=) the given PAL scanline, by
     // polling VPOSR/VHPOSR (the real beam-position registers): a genuine hardware
-    // raster sync, not a frame wait (Rescue on Fractalus maps the Atari's VCOUNT polls to it).
+    // raster sync, not a frame wait (a port can map another machine's beam polls, such as the Atari's VCOUNT, to it).
     static void waitBeamLine(uint16_t line);
     // ⚠⚠ isLongFrame() IS NOT IN THE ASSEMBLER-BRIDGED SET, on purpose.  It used to be
     // declared __asm/bridged in the ASSEMBLER builds, but AmigaHardwareAssembler.s never
@@ -95,7 +95,7 @@ public:
     // Masked compositing — portable C++ on both compilers (no hand-written asm
     // counterpart), so unconditional. blitterCombineWithMask draws source through
     // mask over background; blitterPatternWithMask fills destination with a 16-bit
-    // pattern through mask. (Imported from DanceDiverse3.)
+    // pattern through mask.
     static void blitterCombineWithMask(uint16_t* background, uint16_t* source, uint16_t* destination, uint16_t* mask, uint16_t width, uint16_t height, int16_t backgroundModulo, int16_t sourceModulo, int16_t destinationModulo, int16_t maskModulo, int16_t sourceShift, int16_t maskShift, uint16_t firstWordMask, uint16_t lastWordMask, bool clearMasked);
     static void blitterPatternWithMask(uint16_t pattern, uint16_t* destination, uint16_t* mask, uint16_t width, uint16_t height, int16_t sourceModulo, int16_t destinationModulo, int16_t maskModulo, int16_t sourceShift, int16_t maskShift, uint16_t firstWordMask, uint16_t lastWordMask, bool clearMasked);
     // Fully drain the blitter queue AND wait for the in-flight blit to finish.  blitterWait()

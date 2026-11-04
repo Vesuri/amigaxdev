@@ -4,7 +4,6 @@
 
 // Regression fixture, not a StripAddress implementation. Adapt each production
 // dispatch path to Snapshot -> Snapshot, including its trap PC advancement.
-// Based on Prince of Persia 2 b474556's original-paired native fixture.
 namespace amigaxdev { namespace strip_address_checks {
 constexpr std::array<uint32_t, 6> values{{0, 0x123456, 0x41c27330, 0x40000000,
                                          0x7fff8000, 0x81234567}};

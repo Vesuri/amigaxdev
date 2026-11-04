@@ -97,7 +97,7 @@ without edits.
 | `LHA` | `lha-compressor/src/lha` | LHa for UNIX, which creates release archives |
 | `AMIGA_PYLIB` | `pylib` | the `amigaxdev` Python package (below) |
 | `AMIGA_GHIDRA_SCRIPTS` | `ghidra_scripts` | shared Ghidra scripts: `-scriptPath "ghidra_scripts;$AMIGA_GHIDRA_SCRIPTS"` |
-| `AMIGA_FRAMEWORK` | `framework` | the canonical dA JoRMaS framework the ports compare their copies with |
+| `AMIGA_FRAMEWORK` | `framework` | the canonical framework the ports compare their copies with |
 
 Paths without a directory are under `$AMIGA_SHARE`. The shared `env.sh` also puts
 `$AMIGA_SHARE/python/bin`, `$AMIGA_TOOLCHAIN/bin`, `$AMIGA_PREFIX` and the directory of
@@ -139,7 +139,7 @@ the window. The contracts are in [the shared launcher](reference/headless-fsuae.
 |---|---|---|
 | `amigaxdev.env` | `path(NAME)`, `tool('objdump')`: the shared defaults with environment overrides | `local_env.py`, inline `AMIGA_TOOLCHAIN` lookups |
 | `amigaxdev.barto` | `load(trace)`, `Trace.instructions(field)`, `capture_part_starts()`; honours `NAME.pc-base` | `barto.py` |
-| `amigaxdev.gdbserve` | `Server(name, root, commands={...}).main(argv)`: serve / one-shot commands through the gdb stub (`stop`, `cont`, `gdb`, `shot`, `profile`, `wait`, `until`, `quit`; `commands` add or replace). `shot`, `profile`, `Server.capture` and `profile(g, n, file)` remove the old output first and raise `CaptureError` (an `ERROR` reply) on a gdb error, a disconnect, or a missing, partial or wrong-length trace, leaving no output file | the `td2.py` skeleton |
+| `amigaxdev.gdbserve` | `Server(name, root, commands={...}).main(argv)`: serve / one-shot commands through the gdb stub (`stop`, `cont`, `gdb`, `shot`, `profile`, `wait`, `until`, `quit`; `commands` add or replace). `shot`, `profile`, `Server.capture` and `profile(g, n, file)` remove the old output first and raise `CaptureError` (an `ERROR` reply) on a gdb error, a disconnect, or a missing, partial or wrong-length trace, leaving no output file | per-project gdb servers |
 | `amigaxdev.callprofile` | `Reduction(marks, tally).feed(trace)` per chunk, `.tree()`, `.inclusive()`, `.dma_shares()`, `.save()`/`.load()`: chunked traces reduced to self/inclusive cycles with SP-rebuilt call stacks, per-field totals and timestamped marks | per-project trace reducers |
 | `amigaxdev.aprof` | instruction-profile accounting and call trees; [contracts](reference/measurement-method.md#shared-instruction-profile-reader) | per-project profile readers |
 | `amigaxdev.native_service_scope` | explicit return/interrupt scope records from the optional instrumented build; [contracts](reference/measurement-method.md#explicit-native-service-scopes) | per-project native-service accounting |
@@ -151,7 +151,7 @@ the window. The contracts are in [the shared launcher](reference/headless-fsuae.
 | `amigaxdev.framework` | `python3 -m amigaxdev.framework diff\|sync PROJECT`: the port's framework against `$AMIGA_FRAMEWORK` | — |
 | Ghidra scripts | `DumpCallGraph`, `ExportListing`, `ExportAuditListing`, `DumpZeroPage`, `MacMarkEntries`, `MacApplyNames`, `MacDumpTraps` (Ghidra started from the project root: they read `ghidra_scripts/entrypoints.csv` and `tmp/trap_names.lua` there) | the identical per-port copies |
 | `whdload/SmokeSlave.s` | assemble with `-I.` and a project `smoke_name.i` holding the name line | `whdload/SmokeSlave.s` |
-| `fsuae_prepare`, `FSUAE_CLAIM_STRICT=1` | in `fsuae_common.sh`: claim for DEBUG=1 else stop the previous run; a strict claim that never takes a busy port | the `run.sh` claim block, Alone in the Dark's override |
+| `fsuae_prepare`, `FSUAE_CLAIM_STRICT=1` | in `fsuae_common.sh`: claim for DEBUG=1 else stop the previous run; a strict claim that never takes a busy port | the `run.sh` claim block |
 
 Project-specific names (`KICKSTART_RTB`, `WHDLOAD_HOST_KICKSTART`, `FSUAE`, `GDB`, ...) stay
 in the projects, defined from these. `FSUAE` is deliberately not shared: a project chooses its
@@ -172,9 +172,9 @@ All are the verified (`[!]`) dumps, the ones skick346's relocation tables are ma
 
 ## Shared Macintosh runtime sources
 
-`$AMIGA_SHARE/mac-runtime` holds canonical memory, QuickDraw, resource, clock and audio helpers used by
-Alone in the Dark and Prince of Persia 2. Consumers vendor identical source files
-and verify `manifest/shared-runtime.sha256` before compilation and host checks.
+`$AMIGA_SHARE/mac-runtime` holds canonical memory, QuickDraw, resource, clock and audio helpers for
+Macintosh ports. Consumers vendor identical source files
+and verify their own `manifest/shared-runtime.sha256` before compilation and host checks.
 Use the [runtime helper index](../share/mac-runtime/README.md) to choose a helper and
 find its contract and update workflow. Game-specific trap ABI
 and memory ownership checks remain in each port.

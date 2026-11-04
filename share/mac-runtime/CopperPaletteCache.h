@@ -3,7 +3,7 @@
 #ifndef __mc68000__
 #include <stdint.h>
 #endif
-// Inactive-list palette reuse, following Alone in the Dark's per-list palette
+// Inactive-list palette reuse, with per-list palette
 // generations. Content comparison also handles callers without a reliable seed;
 // invalidation bits avoid generation-wrap aliases. Caller never edits an active
 // list, and marks a list only after writing its complete palette.

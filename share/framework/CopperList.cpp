@@ -115,9 +115,9 @@ void CopperList::showBitmap(uint32_t listIndex, const Bitmap& bitmap, uint16_t f
 }
 #endif
 
-// Copper-driven palette/playfield (imported from DanceDiverse3) -- unconditional
+// Copper-driven palette/playfield -- unconditional
 // C++. setPalette writes the requested colour range as copper colour-register
-// moves (DD3's AGA bplcon3 bank switching is dropped: this covers the 32 base
+// moves (AGA bplcon3 bank switching is dropped: this covers the 32 base
 // registers; pull the 24-bit bundle for AGA banking). setPlayfield mirrors
 // AmigaHardware::setPlayfield but emits copper moves so the mode can be set
 // per-frame from the copper list.
@@ -135,7 +135,7 @@ uint32_t CopperList::setPalette(uint32_t listIndex, const Palette& palette, uint
     return listIndex;
 }
 
-// From the DanceDiverse3 lineage (Slicks).
+// AGA 24-bit palette: high nibbles, then low nibbles with LOCT.
 uint32_t CopperList::setPalette24Bit(uint32_t listIndex, const Palette24Bit& palette, uint16_t colorIndex, int16_t fromIndex, int16_t toIndex, bool forceWrite)
 {
     uint32_t i, j;

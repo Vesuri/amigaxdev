@@ -10,8 +10,15 @@ The playbook's §0 rules apply here (`docs/playbooks/new-game-playbook.md`), in 
 
 - **Never commit Kickstart, Workbench, WHDLoad or game bytes**, or anything made from them.
   The repo holds scripts, checksums and names. Downloads and builds go in the ignored `tmp/`.
-- **No local paths in the repo**: no home directories, usernames or paths into other projects.
-  Name a project by its name. `~/.local` and `~/.local/share/amiga` are the allowed convention.
+- **This repo is the reference for other projects, never the other way round.** Don't
+  reference other projects or their repositories: no project names, paths, files, commits or
+  per-project status. Write a lesson learned in a project as a generic rule, technique or
+  contract, with the conditions it holds under, and without saying where it came from. New
+  projects must be able to start from this repo alone. Public third-party upstreams (FS-UAE,
+  WHDLoad, Aminet, JOTD's and StingRay's slave repositories and their forks, pinned
+  downloads) are tools, not projects, and may be named.
+- **No local paths in the repo**: no home directories or usernames. `~/.local` and
+  `~/.local/share/amiga` are the allowed convention.
   The Kickstart and Workbench sources are always supplied by the user (`TOSEC=`, `AMIGA_OS=`);
   never write a mirror address into a script or doc.
 - **Pin every input** in `manifest/` by sha256 or commit. Check it before installing it.

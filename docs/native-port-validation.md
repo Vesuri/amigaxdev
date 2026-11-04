@@ -2,9 +2,7 @@
 
 These checks apply to ports that run original 68k instructions with relocated
 memory and native service hooks. They complement the [WHDLoad playbook](playbooks/new-game-playbook.md).
-The reference implementation is Pokeri: `docs/rom-set.md`, `docs/testing.md`,
-`host/native_start_address_test.cpp`, `tools/test_release_installer.py` and
-`tools/check_release.py`. No game or dump bytes belong in this repository.
+No game or dump bytes belong in this repository.
 
 ## Diagnose the access before blaming the CPU
 
@@ -15,9 +13,8 @@ from the dump before translating addresses to original-program offsets.
 
 Use the recorded access address, direction and data together with the saved PC.
 Do not assume the instruction displayed at that PC performed the failed access:
-inspect the preceding instructions and exception context. In Pokeri's coin-in
-failure, the reported PC mapped to original `$29E0`, a read, but the recorded
-access identified the preceding byte write at `$29DC`.
+inspect the preceding instructions and exception context. A reported PC can map to
+an original read while the recorded access identifies the preceding byte write.
 
 Check the routine's live bytes against the original, its device-address
 relocations, every I/O hook descriptor, and the generated patch tables. Recover
@@ -25,10 +22,10 @@ the caller from the saved return address and inspect runtime jump stubs as well
 as static calls. Add discovered indirect targets to the project's symbol and
 entrypoint tables so later disassembly can reach them.
 
-Pokeri's routine at original `$29D2` had one missing device relocation and eight
-missing hooks. The coin had already been credited; the crash was a subsequent
-video access. That evidence established a hook-coverage defect, not an MMU or
-cache defect. Fixing the descriptors retained the original game instructions.
+A missing device relocation or I/O hook shows up as a crash at a later device access,
+after the routine's earlier effects have already happened. That evidence establishes a
+hook-coverage defect, not an MMU or cache defect; fixing the descriptors keeps the
+original game instructions.
 
 ## Turn the dump into a regression
 
@@ -45,9 +42,8 @@ handling, not physical cache behaviour. Keep any narrower harness limits explici
 
 Separate the evidence: host equivalence, linked Amiga checks, emulated CPU/MMU
 runs and a user's physical-machine retest answer different questions. Record the
-scope of each and close the hardware retest only when it has happened. Pokeri
-0.91 was confirmed to fix coin-in on the user's A1200 with 68040/40 MHz, MMU and
-32 MB RAM; that does not requalify every game path or memory configuration.
+scope of each and close the hardware retest only when it has happened. A confirmed fix
+on one physical configuration does not requalify every game path or memory configuration.
 
 ## Macintosh logical addresses and native high pointers
 
@@ -56,10 +52,10 @@ Amiga pointer can use those same bits for real Fast RAM above 16 MB. The emulate
 Macintosh address-mode byte does not restrict the native physical address space;
 keep handle flags separately rather than embedding them in native pointers.
 
-Prince of Persia 2's `StripAddress` regression (`b474556`) truncated a native pointer
-with `$00FFFFFF`, causing missing artwork with 32 MB Zorro III RAM. Its fix follows
-Alone in the Dark: preserve the full native pointer. This needs a shared regression
-fixture, not another identity-function implementation.
+A `StripAddress` that masks a native pointer with `$00FFFFFF` breaks as soon as data
+lands in Fast RAM above 16 MB (for example missing artwork with 32 MB Zorro III RAM).
+Preserve the full native pointer, and test it with the shared regression fixture rather
+than another identity-function implementation.
 
 `mac-runtime/StripAddressChecks.h` provides 384 native cases: six zero/low/high
 pointers, all CCR inputs and both emulated modes. Adapt every real dispatch path
@@ -71,19 +67,17 @@ match the original logical pointer numerically.
 
 Run `scripts/test_strip_address.cpp` for fixture controls: old truncation and
 corrupt register/mode/CCR/PC results must fail. That host test validates the checker;
-it does not execute a consumer's dispatch. Prince of Persia 2's original and native
-integration evidence is pinned in `manifest/release-z3.sha256`; its checker also
-requires completed integration and restoration. Preserve project-specific addresses
-and gameplay checkpoints there. Qualify both ordinary and high-memory launches with
-actual gameplay progression, clean quit, restored vectors/patches and WHDLoad return.
-The high-memory reference completes eight gameplay updates and Amiga-Q with 32 MB Z3,
-NOMMU and JIT off; this is correctness evidence, not a timing claim.
+it does not execute a consumer's dispatch. Pin a port's original and native integration
+evidence in the port itself, with its addresses and gameplay checkpoints, and require
+completed integration and restoration. Qualify both ordinary and high-memory launches
+(e.g. 32 MB Z3, NOMMU, JIT off) with actual gameplay progression, clean quit, restored
+vectors/patches and WHDLoad return; this is correctness evidence, not a timing claim.
 
 ## Cache publication at dynamically installed entries
 
 A registered code pointer need not be ready to execute when it is registered.
-Alone in the Dark's original Macintosh loader calls SetTrapAddress **before**
-writing its LoadSeg/UnloadSeg/ExitToShell trampolines. With copyback Fast RAM,
+An original Macintosh loader can call SetTrapAddress **before** writing its
+LoadSeg/UnloadSeg/ExitToShell trampolines. With copyback Fast RAM,
 flushing at registration is too early. Publish the newly installed entry at its
 first dispatch, after the writes, and avoid flushing on every later invocation.
 Keep the original instructions and existing segment-relocation flushes intact.
@@ -100,24 +94,24 @@ Under a WHDLoad KickEmu slave, publish code with `CacheControl(0, 0)`, not
 `CacheClearU()`. KickEmu routes `exec.CacheControl` to `resload_FlushCache`, and
 `CacheControl` clears all caches as a documented side effect without changing a
 setting. KickEmu does not patch `CacheClearU`; its own `kick31.s` comment notes
-the ROM routine lacks proper setup on CPUs with a copyback cache (Vette).
+the ROM routine lacks proper setup on CPUs with a copyback cache.
 
 ## Self-modifying original code
 
 Original code that writes into its own instructions breaks under a copyback data
 cache even when every load and patch is published correctly: the write stays in
-the data cache and the instruction fetch reads the old bytes from memory. Vette's
-Main stores a loop limit and a base PICT ID into the immediates of `CMPI.W #6,D7`
-and `MOVE.W #$7E,D0`, then runs them. On a 68040/68060 the stale `#$7E` requested
-a PICT that does not exist, and the game raised its own fatal alert. The symptom
-looked like resource or memory exhaustion and moved with code layout.
+the data cache and the instruction fetch reads the old bytes from memory. A typical
+case stores a loop limit and a resource ID into the immediates of `CMPI.W #6,D7` and
+`MOVE.W #$7E,D0`, then runs them; on a 68040/68060 the stale immediate requests a
+resource that does not exist and the game raises its own fatal alert. The symptom
+looks like resource or memory exhaustion and moves with code layout.
 
 - Find it with a byte scan of every CODE resource, not only a disassembly's
   defined functions: `LEA d16(PC),An` followed within a few words by a store
   through `An`. No 68k store takes a PC-relative destination, so this pattern
   catches the usual form.
-- Prefer removing the self-modification to flushing around it. Vette keeps the
-  values in private words below the A5 world: each `LEA`/`ADDQ.L #2`/`MOVE.W
+- Prefer removing the self-modification to flushing around it. Keep the values in
+  private words below the A5 world: each `LEA`/`ADDQ.L #2`/`MOVE.W
   D0,(A0)` store becomes `MOVE.W D0,d16(A5)` plus `NOP`s, and the consumers
   become same-width `CMP.W d16(A5),D7` and `MOVE.W d16(A5),D0`. Check the original
   bytes, that the address register is dead afterwards, and that the condition codes
@@ -128,8 +122,8 @@ looked like resource or memory exhaustion and moved with code layout.
 Before changing an installer because it missed existing files, establish its
 actual destination: selected parent, appended game drawer and data subdrawer.
 An installation under a different name can bypass an otherwise working reuse
-check. Pokeri's installer uses `RAYPokeri/data`; the reported existing install
-was named `RayPokeriFI`. Document any required rename and selection of the parent
+check, for example an installer that expects `Game/data` facing an existing install
+named `GameFI`. Document any required rename and selection of the parent
 rather than assuming the installer searches arbitrary drawers.
 
 Offer an explicit **Use existing / Replace** choice when all required files are
@@ -185,8 +179,8 @@ duplicate file names are rejected.
 After independent Lhasa extraction, call
 `release.check_extracted_names(directory, expected_members)` with the complete
 planned file list, including drawer and installer icons. Exact names detect
-truncation and lost drawer/icon pairing. `Prince of Persia 2 Install.info` exceeds
-the default limit; `PoP2 Install.info` fits. RAM: installation is supported within
+truncation and lost drawer/icon pairing: a 31-byte `<long game name> Install.info`
+exceeds the default limit where a shortened name fits. RAM: installation is supported within
 its filesystem's naming limits; it should not be prohibited as a workaround.
 
 ## Installation verification and normal startup
@@ -205,8 +199,8 @@ byte with the independently extracted executable. A stale ELF, different convert
 or unintended build therefore fails, even if the requested flags look correct.
 
 This audit supplements behavioral tests: prove malformed extents and unknown services
-still fail, and installation identity checks still reject changed inputs. Prince of
-Persia 2's `tools/check_scaffold_link.py` supplies a concrete release policy. Host
+still fail, and installation identity checks still reject changed inputs. Keep the
+concrete release policy (symbol patterns, required guards) in the port. Host
 fixture tests cover both modes and reject altered executable/guard evidence. Any
 startup-speed claim needs matched workloads and measurement; removing diagnostics
 alone is not a measured result.

@@ -22,8 +22,7 @@ MEASURED: both baseline repeats on both CPUs report
 `15,15,15,31,31,31,16,25,10,2`; the corrected debugger and CPU both report
 `4,8,0,20,24,16,25,10,2,21`. The sequence exercises X, N, Z, V and C transitions.
 The corrected four-run matrix passes twelve evidence-corruption controls.
-Prince of Persia 2 retains the run names and evidence hashes. These are debugger
-instrument checks, not gameplay or hardware performance measurements.
+These are debugger instrument checks, not gameplay or hardware performance measurements.
 
 After a monitor command advances the CPU, GDB still requires
 `maintenance flush register-cache`; that separate host-cache issue is unchanged.

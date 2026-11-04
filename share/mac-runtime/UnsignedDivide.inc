@@ -1,4 +1,4 @@
-// Include inside a namespace with uint32_t available. Shared from Alone in the Dark.
+// Include inside a namespace with uint32_t available.
 // Freestanding 68020 builds have no 64-bit division runtime. Return a bounded
 // 32-bit quotient using shifts/subtractions; never silently truncate overflow.
 inline bool divide(unsigned long long numerator,unsigned long long denominator,uint32_t& result) {

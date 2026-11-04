@@ -46,7 +46,7 @@ private:
     struct Record { uint32_t identity=0;uint16_t fork=0;Entry entry={};uint8_t* name=0; };
     Fork forks_[maximumForks];Record records_[maximumResources];uint32_t nextIdentity_=1;
 #ifdef AMIGAXDEV_RESOURCE_DIRECTORY_INDEXED
-    // Vette's sorted lookup, with identities breaking ties for duplicate keys.
+    // Sorted lookup, with identities breaking ties for duplicate keys.
     mutable uint16_t lookup_[maximumResources],lookupCount_=0;
     mutable bool lookupValid_=false;
     bool lookupBefore(uint16_t a,uint16_t b) const;

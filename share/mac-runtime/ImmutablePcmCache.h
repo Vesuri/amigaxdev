@@ -1,7 +1,7 @@
 #pragma once
 // Fixed-width types are supplied by the caller (including Amiga compat types).
 
-// Bounded reuse of immutable PCM variants, following Alone in the Dark's
+// Bounded reuse of immutable PCM variants, such as
 // prepared-song samples. Source ownership and immutability are caller contracts;
 // mutable effects must not use pointer identity as a cache key. Entries in use
 // cannot be evicted. Allocation failure preserves the uncached caller fallback.

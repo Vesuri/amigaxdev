@@ -1,5 +1,5 @@
-#ifndef VETTE_INSTALL_IO_H
-#define VETTE_INSTALL_IO_H
+#ifndef INSTALL_DATA_IO_H
+#define INSTALL_DATA_IO_H
 #include <stddef.h>
 #ifdef INSTALL_AMIGA
 typedef unsigned long uint32_t;

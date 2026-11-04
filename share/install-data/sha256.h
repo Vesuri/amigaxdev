@@ -1,5 +1,5 @@
-#ifndef VETTE_INSTALL_SHA256_H
-#define VETTE_INSTALL_SHA256_H
+#ifndef INSTALL_DATA_SHA256_H
+#define INSTALL_DATA_SHA256_H
 #include "io.h"
 typedef struct { uint32_t h[8],bytes,used; unsigned char block[64]; } SHA256;
 void sha_init(SHA256 *s);

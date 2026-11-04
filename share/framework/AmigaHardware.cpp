@@ -39,7 +39,7 @@ void AmigaHardware::setCopperList(const CopperList& copperList, bool immediate)
     }
 }
 
-// From the DanceDiverse3 lineage (Slicks).  The high nibbles of each colour go first, then the
+// AGA 24-bit palette.  The high nibbles of each colour go first, then the
 // low nibbles with BPLCON3's LOCT bit set, switching bank every 32 colours.
 void AmigaHardware::setPalette24Bit(const Palette24Bit& palette, uint16_t colorIndex, int16_t fromIndex, int16_t toIndex)
 {
@@ -167,8 +167,8 @@ void AmigaHardware::setPlayfield(uint16_t width, uint16_t height, uint8_t bitpla
         // ⚠ UNMEASURED: this AGA fetch window is the empirical pair the framework was handed
         // down with.  FMODE=3 fetches four words per access, so the documented OCS formulas
         // above do not apply.  The ports that run FMODE 3 write their own measured values
-        // rather than these: Alone in the Dark 320-pixel lores, 8 planes: $20/$98; Pokeri
-        // 4 hires planes from 640-pixel rows: $38/$c8 (ECS $3c/$cc).  Derive the window for
+        // rather than these: e.g. 320-pixel lores, 8 planes: $20/$98; 4 hires planes from
+        // 640-pixel rows: $38/$c8 (ECS $3c/$cc).  Derive the window for
         // your width and check the picture (AmigaXDev docs/reference/amiga-hardware.md).
         if (hires) {
             *ddfstrtPointer = (uint16_t)(0x88 - alignedWidth);
@@ -763,7 +763,7 @@ void AmigaHardware::processBlitterQueue()
 }
 #endif
 
-// Masked compositing routines (imported from DanceDiverse3). These have no
+// Masked compositing routines. These have no
 // hand-written asm counterpart, so they are unconditional C++ — used by all four
 // ASSEMBLER x compiler combinations. They share the blitter queue with the asm
 // blitter routines via the same statics/register macros.

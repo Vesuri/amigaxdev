@@ -2,7 +2,7 @@
 #ifndef __mc68000__
 #include <stdint.h>
 #endif
-// Existing Alone in the Dark 68020 accesses, shared with the other Mac ports.
+// Explicit 68020 big-endian accesses for the Mac ports.
 // The target supports unaligned words/longs; packed alias types describe them
 // without alignment or strict-aliasing assumptions. Host checks use byte order.
 namespace BigEndianMemory {

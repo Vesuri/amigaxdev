@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-/* Adapted to bounded C99 by Vesuri for Alone in the Dark.
+/* Adapted to bounded C99 by Vesuri.
  * Arithmetic/MTF/BWT format follows XADMaster; no Objective-C dependency.
  * Included by install.c to share buffered I/O and error handling. */
 static const uint16_t RandomizationTable[]=

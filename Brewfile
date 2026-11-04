@@ -24,12 +24,12 @@ brew "libpng"
 brew "freetype"
 brew "sdl2-compat"
 
-# Host builds of the ports (SDL2 front ends, Downwell's assets and audio).
+# Host builds of the ports (SDL2 front ends, asset and audio tools).
 brew "sdl2_image"
 brew "libsndfile"
 brew "coreutils"
 
-# Macintosh HFS volumes (hmount, hcopy, humount): Alone in the Dark's original data.
+# Macintosh HFS volumes (hmount, hcopy, humount) for Mac ports' original data.
 brew "hfsutils"
 
 brew "git"

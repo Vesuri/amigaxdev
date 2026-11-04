@@ -27,7 +27,7 @@ public:
     void fill(uint16_t x = 0, uint16_t y = 0, uint16_t width = 0, uint16_t height = 0);
 #endif
 
-    // Higher-level drawing (imported from DanceDiverse3). Portable C++ on both
+    // Higher-level drawing. Portable C++ on both
     // compilers — they build on clear/copy/line/fill and the masked blitter ops,
     // so they need no hand-written asm counterpart and are always available.
 

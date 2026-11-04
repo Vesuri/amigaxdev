@@ -60,13 +60,12 @@ may accidentally read harmless zeroes from unrelated memory. Own and initialize 
 structures the original code dereferences, even when higher-level service calls already
 work. Do not map a foreign platform's low memory over Amiga vectors or Exec state.
 
-Alone in the Dark is a concrete example. Its original stdio close reads a Macintosh
-FCB's VCB pointer and volume reference even for read-only files. The port therefore owns
-an FCB table and a compatibility VCB; file references are non-overlapping record offsets,
-and table updates follow file-model changes. See Alone in the Dark `docs/file-manager.md`
-and `tools/test_mac_files.cpp` for the layout contract and lifecycle tests, and
-`tools/test_whdload.py --cpu 68040 --mmu` for the functional harness. These are Mac-port
-requirements, not structures to add to an ordinary Amiga game.
+For example, a Macintosh program's stdio close can read an FCB's VCB pointer and volume
+reference even for read-only files. Such a port owns an FCB table and a compatibility VCB;
+file references are non-overlapping record offsets, and table updates follow file-model
+changes. Cover the layout and lifecycle with host unit tests and the functional behaviour
+with a WHDLoad run on a 68040 with the MMU on. These are Mac-port requirements, not
+structures to add to an ordinary Amiga game.
 
 For scripted input, remember that WHDLoad OS switches can clear a runtime's held-key
 state. A controller that intends to keep a key held should reconcile that level after

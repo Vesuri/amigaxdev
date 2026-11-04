@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import base64
 import sys
 from pathlib import Path
 import tempfile
@@ -13,10 +14,10 @@ class Release(unittest.TestCase):
     def test_name_boundaries(self):
         for length in (29, 30):
             release.check_names(['a' * length, 'd/' + 'b' * length])
-        for name in ('a' * 31, 'd/' + 'a' * 31, 'Prince of Persia 2 Install.info',
+        for name in ('a' * 31, 'd/' + 'a' * 31, 'Example Game Title Install.info',
                      '../file', '/file', 'a//b', 'a\\b', 'DH0:file', 'bad\nname'):
             with self.subTest(name=name), self.assertRaises(ValueError): release.check_names([name])
-        release.check_names(['PoP2 Install.info', 'PoP2 Install/Install.info'])
+        release.check_names(['Game Install.info', 'Game Install/Install.info'])
         release.check_names(['d' * 25 + '.info'])
         with self.assertRaises(ValueError): release.check_names(['d' * 26 + '.info'])
         with self.assertRaises(ValueError): release.check_names(['Game', 'game'])
@@ -32,6 +33,16 @@ class Release(unittest.TestCase):
             release.check_extracted_names(root, expected)
             (root / 'Game/Install.info').rename(root / 'Game/Install.inf')
             with self.assertRaises(ValueError): release.check_extracted_names(root, expected)
+
+    def test_installer_icon_appname(self):
+        (ROOT / 'tmp').mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=ROOT / 'tmp') as temp:
+            old = b'APPNAME=Template!\0'
+            data = b'head' + len(old).to_bytes(4, 'big') + old + b'tail'
+            (Path(temp) / 'install.info.b64').write_bytes(base64.b64encode(data))
+            new = b'APPNAME=Game\0'
+            self.assertEqual(release.installer_icon(temp, 'Game'),
+                             b'head' + len(new).to_bytes(4, 'big') + new + b'tail')
 
     def test_archive_rejects_before_compression(self):
         with patch.object(release, 'member') as member:

@@ -1,4 +1,4 @@
-"""The canonical dA JoRMaS framework ($AMIGA_FRAMEWORK) against a port's vendored copy.
+"""The canonical framework ($AMIGA_FRAMEWORK) against a port's vendored copy.
 
   python3 -m amigaxdev.framework diff PROJECT [--template DIR]
       one line per file: identical, local change, upstream change missing, diverged, or only
@@ -10,10 +10,10 @@
       the port's own build and measurements before committing)
 
 PROJECT is the port's checkout (or its framework directory).  Ports rename the framework's
-identifiers when they vendor it (REVS_SASC_ALIAS, vette_mulu16, ...); both sides are compared
+identifiers when they vendor it (GAME_SASC_ALIAS, game_mulu16, ...); both sides are compared
 with those prefixes mapped to DAJ_/daj_ and the 16-bit math header include mapped to
-"daj_math.h".  With a template directory (--template, or $DAJ_TEMPLATE: dA JoRMaS
-Template/C++), a file that differs is classified by which side still matches the template.
+"daj_math.h".  With a template directory (--template, or $DAJ_TEMPLATE: the copy both
+sides started from), a file that differs is classified by which side still matches the template.
 """
 import difflib
 import os

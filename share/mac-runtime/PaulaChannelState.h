@@ -1,7 +1,7 @@
 #pragma once
 // Fixed-width types are supplied by the caller (including Amiga compat types).
 
-// Register-state bookkeeping from Alone in the Dark's Paula restart protocol.
+// Register-state bookkeeping for a Paula restart protocol.
 // The caller owns the hardware exclusively and performs the indicated waits.
 // A silent volume is not a settled DAC: only the completed DMA-off/DAT-zero
 // handshake permits markQuiet(). Reset this state on every hardware takeover.

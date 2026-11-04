@@ -119,7 +119,7 @@ inline bool validMap(const uint8_t* bounds,uint16_t stride,uint32_t bytes) {
     const int32_t h=coord(bounds,2)-coord(bounds,0),w=coord(bounds,3)-coord(bounds,1);
     return h>0 && w>0 && uint32_t(w)<=stride && uint32_t(h)*stride<=bytes;
 }
-// Vette's unscaled clipping equations, applied to byte pixels. The caller
+// Unscaled CopyBits clipping equations, applied to byte pixels. The caller
 // supplies a measured colour map when the colour environments differ, and
 // establishes owned buffers. Same-buffer copies require an unscaled, unmasked
 // transfer with identical strides; other aliasing forms remain unsupported.
@@ -169,7 +169,7 @@ inline bool copy(const uint8_t* src,uint32_t srcBytes,uint16_t srcStride,const u
     const uint8_t* source=src+uint32_t(coord(from,0)+limits[0]-coord(to,0)-coord(srcMap,0))*srcStride;
     uint8_t* target=dst+uint32_t(limits[0]-coord(dstMap,0))*dstStride;
     if(src==dst) {
-        // Vette's overlap traversal, applied to byte pixels. Copy the last row
+        // CopyBits overlap traversal, applied to byte pixels. Copy the last row
         // first when its destination follows its source, and reverse each span
         // when necessary. Clipping is resolved before selecting the direction.
         const uint8_t* in=source+(sourceX+limits[1]);

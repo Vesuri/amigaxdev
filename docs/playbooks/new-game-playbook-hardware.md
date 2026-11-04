@@ -50,14 +50,13 @@ and flushes both data and instruction caches on 68040/68060. This matters when m
 instructions are still in the data cache. The reference is the installed WHDLoad
 `Docs/autodoc.html#resload_FlushCache`; prefer that API to processor-specific cache opcodes.
 
-Test Drive II provides a hardware-confirmed example. Its Aztec loader writes JMP stubs at
-`duel:0ff0c..0ff12` and restores BSR stubs at `duel:0fe7e..0fe86`. A real A1200/68040 at
-40 MHz, with MMU, 32 MB RAM and WHDLoad 19.2, black-screened while the quit key worked.
-RAM already held a JMP, but the saved loader context had consumed a byte of its target as
-overlay index 205. That selected an invalid file offset and entered the Seek retry at
-`duel:0ff42`. Flushing at the completed rewrite exits (`duel:0fe90`, `duel:0ff1a`) fixed
-startup on that machine. See [the source change and validation in PR #25](https://github.com/jotd666/whdload_slaves/pull/25).
-That confirmation does not establish a fix for a separate, untested 68060 report.
+A hardware-confirmed example: an Aztec C overlay loader writes JMP stubs and later restores
+BSR stubs in place. A real A1200/68040 at 40 MHz, with MMU, 32 MB RAM and WHDLoad 19.2,
+black-screened while the quit key worked. RAM already held the JMP, but the CPU had executed
+the stale stub and consumed a byte of its target as an overlay index. That selected an
+invalid file offset and entered the loader's Seek retry loop. Flushing at the exits of the
+completed rewrite fixed startup on that machine. A confirmation on one CPU does not establish
+a fix for a separate, untested 68060 report.
 
 ## Validate the fix at the right level
 

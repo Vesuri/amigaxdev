@@ -2,12 +2,8 @@
 
 Use this after identifying the game's time sources and getting the user's decision on
 simulation cadence. These checks complement the [new-game playbook](new-game-playbook.md#9-understand-game-time-before-optimising-anything).
-Legends of Valour `docs/simulation-timing.md`, `docs/one-degree-turning.md` and
-`tools/turning_input_validate.sh` provide concrete implementations; Stunt Car Racer shows
-what changes when the physics rate itself is raised; Red Baron prices a fixed step before
-building it and Their Finest Hour smooths a per-frame step. Their constants and patch offsets are
-game-specific. Uncapping drawing and smaller timesteps are in
-[simulation and presentation](simulation-and-presentation.md).
+The examples' constants are game-specific; the method is not. Uncapping drawing and smaller
+timesteps are in [simulation and presentation](simulation-and-presentation.md).
 
 ## Separate completed ticks from elapsed-time observations
 
@@ -52,14 +48,14 @@ to older ticks. Record input against the clock consumed by the simulation instea
   input at the boundary where the next screen becomes ready, then verify fresh input
   still works. Also check mixed keyboard/joystick readers: a queued key must not bypass
   hardware polling and then select from stale cached joystick state without consuming
-  the key. Grand Prix Circuit exhibited both mechanisms; test them separately.
+  the key. One game can exhibit both mechanisms; test them separately.
 - Input history is finite. Define and instrument overflow behavior; test ordinary play
   and long pauses so a test-only history limit does not become a release abort. If the
   policy discards elapsed input/time, expose that as recovery, not a successful exact match.
 
 For speed acceptance, compare after equal durations of **applied input**, separately from
-input-to-update and input-to-display latency. Road Rash's original variable-step path could
-apply a newly sampled throttle state retroactively across the preceding frame. Correcting
+input-to-update and input-to-display latency. An original variable-step path can apply a
+newly sampled throttle state retroactively across the preceding frame. Correcting
 that behavior changed distance at a fixed wall-clock checkpoint even when equal applied-input
 durations produced matching speed. Record when each input was sampled and which simulation
 time consumed it. Retain equal-elapsed-field checks and latency bounds as separate gates;
@@ -90,17 +86,10 @@ rendering caps and beam synchronization separate from the simulation decision.
 A fixed step that the slowest target cannot sustain turns into a growing backlog. Before
 implementing one, project its cost: measure one world tick's cycles (routine cost with
 callees) and the rest of a frame's work, then work out ticks per second, world-only
-utilization and the render rate that is left for every speed setting. Red Baron
-(`docs/game-time.md`) did this for 225-unit world ticks on the A500:
-
-| Time Scale | World ticks/s | World-only utilization | Render fps left |
-|---|---:|---:|---:|
-| 0 | 3.4 | 20% | 1.5 |
-| 40 (default) | 8.2 | 48% | 1.0 |
-| 60 | 26.9 | 159% | unsustainable |
-
-A 100-unit quantum alone came to about 109% at the default setting, which ruled it out.
-Make the projection an explicit acceptance gate rather than a claim: the plan names what
+utilization and the render rate that is left for every speed setting, as a table per
+quantum candidate. On an A500 a fine quantum can exceed 100% world-only utilization at the
+default speed setting before a single frame is drawn, which rules it out; the top speed
+settings may be unsustainable at any quantum. Make the projection an explicit acceptance gate rather than a claim: the plan names what
 it does not yet prove (convergence, sustained catch-up of code that does not exist yet)
 and what changes if the gate fails (a coarser quantum, or optimising first). Where a
 setting is beyond the machine, keep the debt, skip rendering while behind, service input and
@@ -110,9 +99,9 @@ Do not claim that catch-up always holds nominal speed.
 ## A variable step measured per frame: average it when intervals count frames
 
 Some games keep a variable step and set countdowns as multiples of it, counted down once per
-frame. Their Finest Hour's T (frames per second, from a boot benchmark) scales both the
+frame. For example, a T (frames per second, from a boot benchmark) can scale both the
 per-step motion and its countdowns: a gun's reload is T/3 frames, a bullet lives 2T frames.
-Its `docs/internals.md` "Real-time simulation" describes the replacement:
+The replacement:
 
 - Measure T every frame, but from an **average** frame length that moves 1/8 of the way
   to each frame's length. A countdown lasts its time only while T matches the frames that
@@ -128,25 +117,25 @@ Its `docs/internals.md` "Real-time simulation" describes the replacement:
 - Measure the field rate rather than assuming PAL, and leave the boot benchmark alone if its
   value is used outside the replaced loop.
 - At large T, per-step increments become small, and the game's truncation of each one loses
-  speed and turn rate. Carry the fractions per object in 16.16 (Their Finest Hour: 4 649 →
-  4 712 units/s at 50 fps, against 4 715 nominal).
+  speed and turn rate. Carry the fractions per object in 16.16; that brings a speed lost by
+  a percent or two at 50 fps back to within a tenth of a percent of nominal.
 
 ## Raising the update rate: decide per quantity what scales
 
-Stunt Car Racer runs its physics six times as often as the original (about 8.3 Hz to 50 Hz,
-with several physics iterations per displayed frame when drawing is slow). The lessons are
-in its `AGENTS.md` §Frame Rate Conversion; the per-operation conversions are in
+The example is a car physics model run six times as often as the original (about 8.3 Hz to
+50 Hz, with several physics iterations per displayed frame when drawing is slow); the
+per-operation conversions are in
 [simulation and presentation](simulation-and-presentation.md#analyze-a-smaller-timestep-by-units-and-writers).
 
-- **Read what a "velocity" really is before scaling its thresholds.** Stunt Car Racer's
-  suspension "velocity" is `delta × momentum / 256 + position`, so the position term
+- **Read what a "velocity" really is before scaling its thresholds.** A suspension
+  "velocity" of `delta × momentum / 256 + position` lets the position term
   dominates hard landings: the same landing reads `$1968` at 10 FPS and `$1A50` at 60 FPS
   (1.05×). Damage and impact thresholds on it need no scaling; scaling them would have been
   the bug. Collision forces and distances are magnitudes, not rates, and stay too.
 - **Scale what integrates over the step,** and only that: forces and accelerations that are
-  added once per tick (momentum amplification and pitch/roll rates, ×6 in Stunt Car Racer).
+  added once per tick (momentum amplification and pitch/roll rates, ×6 in the example).
 - **Keep spring-to-damping ratios, not individual constants.** A stiffness scaled with the
-  rate makes the body that much stiffer. Stunt Car Racer kept its spring at ×2 and made
+  rate makes the body that much stiffer. The example keeps its spring at ×2 and makes
   ground damping about 6× stronger per iteration.
 - **Damping scaled for the rate is only right where a restoring force compensates.** Airborne,
   with no spring, the scaled damping removed angular momentum about 36× faster per real
@@ -161,15 +150,15 @@ in its `AGENTS.md` §Frame Rate Conversion; the per-operation conversions are in
   | inside the physics loop behind a fixed-rate pulse (an accumulator that overflows at a constant wall-clock rate) | nothing |
 
 - **Over-sampling is not mis-scaling.** An accumulation that fires per physics iteration fires
-  six times as often during the same bounce. Stunt Car Racer divides that accumulation
-  (by 8, close to 6) rather than changing the constants it compares with.
+  six times as often during the same bounce. Divide that accumulation (by a power of two
+  close to the rate factor) rather than changing the constants it compares with.
 - **Test the behaviour, not the arithmetic.** What the maths says should scale can differ from
   what the code's structure does; judge ramps, landings and bounces in play.
 
 ## Precision and control feel are separate decisions
 
-Finer rendering angles need not mean smaller UI-button steps. In Legends of Valour,
-one-degree mouse precision was accepted while the button tap/repeat override was removed.
+Finer rendering angles need not mean smaller UI-button steps: one-degree mouse precision can
+be wanted while the button tap/repeat steps stay native.
 When changing precision, test direct mouse motion and UI commands independently. Retain
 the native command handler when its behavior is wanted; verify its relocated target in
 captured memory rather than merely checking that a new wrapper returns plausible steps.
@@ -229,4 +218,3 @@ Version the extended movie layout, bound every count and validate truncation.
 An old movie without timestep history cannot provide exact enhanced replay;
 document the compatibility limit. Rewind correctness in a CPU fixture, native
 file I/O, rendered UI behavior and a live-emulator mission are separate evidence.
-Their Finest Hour's timing audit and recording checks demonstrate this split.

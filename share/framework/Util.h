@@ -35,7 +35,7 @@ public:
     // Opt-in CHIP-RAM arena: call allocateMemoryPool() once, then carve
     // 8-byte-aligned segments with getFreeMemoryPoolSegment() (no per-allocation
     // AllocMem overhead, no fragmentation). The framework's own allocate()s still
-    // use AllocMem; a production opts in for its own data. (From DanceDiverse3.)
+    // use AllocMem; a production opts in for its own data.
     static uint8_t* memoryPool;
     static uint32_t memoryPoolSize;
     static uint8_t* memoryPoolFreeSegment;

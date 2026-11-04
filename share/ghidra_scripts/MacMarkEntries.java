@@ -1,6 +1,6 @@
 // Mark the loader/init/interrupt entry points and disassemble from each so
 // auto-analysis can follow control flow.  The entry list is the project's
-// ghidra_scripts/entrypoints.csv (see run() for the lookup); a project may generate rows of it (Alone in the Dark: its CODE 0 rows),
+// ghidra_scripts/entrypoints.csv (see run() for the lookup); a project may generate rows of it (e.g. from the CODE 0 jump table),
 // never transcribed into this script or hand-edited.
 //@category AmigaXDev
 import java.io.BufferedReader;

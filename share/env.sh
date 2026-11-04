@@ -55,7 +55,7 @@ export LHA="${LHA:-$AMIGA_SHARE/lha-compressor/src/lha}"
 
 # Shared tools: the amigaxdev Python package (on the shared venv's path already), the Ghidra
 # scripts (-scriptPath "ghidra_scripts;$AMIGA_GHIDRA_SCRIPTS"), and the
-# canonical dA JoRMaS framework the ports compare their copies with.
+# canonical framework the ports compare their copies with.
 export AMIGA_PYLIB="${AMIGA_PYLIB:-$AMIGA_SHARE/pylib}"
 export AMIGA_GHIDRA_SCRIPTS="${AMIGA_GHIDRA_SCRIPTS:-$AMIGA_SHARE/ghidra_scripts}"
 export AMIGA_FRAMEWORK="${AMIGA_FRAMEWORK:-$AMIGA_SHARE/framework}"

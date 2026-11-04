@@ -4,7 +4,7 @@
 #include <stdint.h>
 #endif
 namespace VideoTicks {
-// Existing Alone in the Dark PAL/NTSC field conversion. Phase is in [0,4].
+// PAL/NTSC field conversion. Phase is in [0,4].
 inline uint16_t fieldDelta(bool pal,uint16_t& phase) {
     if(pal && ++phase==5) { phase=0;return 2; }
     return 1;

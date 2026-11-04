@@ -1,4 +1,4 @@
-; Shared retained 16-byte ABI v2 scanner from Alone in the Dark.
+; Shared retained 16-byte ABI v2 scanner.
 ; Input: D7 DOS segment list, A2 resload. Output: A0 binding start.
 ; Clobbers D0-D1/A0-A1. Consumer defines BINDING_MAGIC and _binding_missing.
 ; Layout: 8-byte magic, version word=2, switch epoch word=0, resload pointer=0.

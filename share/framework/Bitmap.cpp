@@ -440,7 +440,7 @@ void Bitmap::fill(uint16_t x, uint16_t y, uint16_t fillWidth, uint16_t fillHeigh
 }
 #endif
 
-// Higher-level drawing (imported from DanceDiverse3) — unconditional C++ on both
+// Higher-level drawing — unconditional C++ on both
 // compilers: these build on the clear/copy/line/fill primitives above (asm or C++,
 // per ASSEMBLER) and the masked blitter ops, so they need no asm counterpart.
 // Set a rectangle to a solid PEN.  A pen is planar, so plane k's fill value is 0xffff when bit k
@@ -471,7 +471,7 @@ void Bitmap::fill(uint16_t x, uint16_t y, uint16_t fillWidth, uint16_t fillHeigh
 // Finishing a row before starting the next bounds the damage to the ONE row the paint front is on
 // when it crosses the beam: the front moves ~12x faster than the beam, so it crosses at most once.
 // What is left is a plain single-buffer tear (some rows the new ring, some the old) — which is
-// what the original (Rescue on Fractalus' Atari) does too, since its own writes race the display
+// what an original that draws to a single buffer does too, since its own writes race the display
 // the same way.  A wrong PEN is the part the original never shows, and this ordering removes it.
 // The op count is unchanged (the same masked words are written, in a different order), and for an
 // interleaved bitmap the locality improves: a row's planes are 40 bytes apart, not a bitplane apart.

@@ -84,5 +84,4 @@ MEASURED: two corrected repetitions of all four combinations pass (eight runs,
 raw reads only with both MMU and copyback data caching enabled. The cache-aware
 view matches all 96 authored bytes in both phases of every corrected run, while
 the raw view is unchanged by observation. NOMMU/cache-on has no raw/cache divergence
-in these observations. Prince of Persia 2 retains the evidence hashes and separate
-original-paired release observations.
+in these observations.

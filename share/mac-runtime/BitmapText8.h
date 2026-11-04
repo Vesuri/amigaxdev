@@ -2,8 +2,8 @@
 #define AMIGAXDEV_BITMAP_TEXT8_H
 #include "BitmapFont.h"
 #include "RectBounds.h"
-// Integer-advance, monochrome srcOr text. Clipping and pixel addressing reuse
-// Alone in the Dark's Text8 renderer; glyphs come from the selected NFNT.
+// Integer-advance, monochrome srcOr text. Clipping and pixel addressing follow
+// an 8-bit text renderer; glyphs come from the selected NFNT.
 namespace BitmapText8 {
 inline bool draw(uint8_t* pixels,uint32_t capacity,uint16_t stride,
                  const uint8_t* map,const uint8_t* port,const uint8_t* vis,const uint8_t* clip,

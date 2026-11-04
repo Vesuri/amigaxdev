@@ -191,7 +191,7 @@ uint8_t* Util::memoryPool = 0;
 uint32_t Util::memoryPoolSize = 0;
 uint8_t* Util::memoryPoolFreeSegment = 0;
 
-// CHIP-RAM arena. DanceDiverse3 used SAS/C's `_MemType` + `new` to get chip RAM;
+// CHIP-RAM arena. SAS/C code can use `_MemType` + `new` to get chip RAM;
 // AllocMem(MEMF_CHIP) does the same on both compilers (GCC's operator new is
 // MEMF_ANY, so it could not back this).
 uint8_t* Util::allocateMemoryPool(uint32_t bytes)
@@ -300,7 +300,7 @@ Rect Polygon::boundingRect() const
 // Util::sqrt — integer square root. ASSEMBLER off: portable C++ (both compilers).
 // GCC + ASSEMBLER: reach the SAS/C register-arg asm (_sqrt__4UtilFUl in
 // UtilAssembler.s) via a register-marshalling wrapper — GCC has no register-param
-// syntax, so this is the bridge for any *Assembler.s routine (see GCC-PORT.md §4).
+// syntax, so this is the bridge for any *Assembler.s routine.
 // SAS/C + ASSEMBLER: provided directly by UtilAssembler.s, so no body here.
 #if defined(ASSEMBLER) && !defined(__SASC)
 uint32_t Util::sqrt(uint32_t x)

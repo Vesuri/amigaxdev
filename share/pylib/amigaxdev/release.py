@@ -189,11 +189,9 @@ def write(archive_path, data, refuse_overwrite=False):
 
 
 # --- icons -------------------------------------------------------------------------------------
-# The ports reuse WHDLoad/Rescue on Fractalus icon artwork, base64 in release/icons/:
-# drawer.info.b64, readme.info.b64, install.info.b64 (Installer's tool types) and game.inf.b64
-# (distributed as <Game>.inf, renamed and configured by Installer).
-
-TEMPLATE_APPNAME = b'APPNAME=Rescue on Fractalus!\0'
+# A project keeps its template icons base64 in release/icons/: drawer.info.b64,
+# readme.info.b64, install.info.b64 (Installer's tool types) and game.inf.b64 (distributed as
+# <Game>.inf, renamed and configured by Installer).
 
 
 def template_icon(icons_dir, name):
@@ -209,6 +207,10 @@ def installer_icon(icons_dir, appname, game=False, require=()):
     for r in require:
         assert r in data, r
     new = b'APPNAME=' + (appname.encode('latin-1') if isinstance(appname, str) else appname) + b'\0'
-    field = struct.pack('>I', len(TEMPLATE_APPNAME)) + TEMPLATE_APPNAME
-    assert data.count(field) == 1
-    return data.replace(field, struct.pack('>I', len(new)) + new)
+    # the template's one APPNAME tool type: a big-endian length, then the NUL-terminated string
+    assert data.count(b'APPNAME=') == 1
+    start = data.index(b'APPNAME=')
+    assert start >= 4
+    length = struct.unpack('>I', data[start - 4:start])[0]
+    assert data[start + length - 1:start + length] == b'\0'
+    return data[:start - 4] + struct.pack('>I', len(new)) + new + data[start + length:]

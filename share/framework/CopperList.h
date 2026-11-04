@@ -27,7 +27,7 @@ public:
     void showBitmap(uint32_t listIndex, const Bitmap& bitmap, uint16_t firstBitplane = 1, uint16_t bitplaneNumberDelta = 1, int16_t xOffset = 0, int16_t yOffset = 0, uint16_t bitplaneCount = 0);
 #endif
 
-    // Copper-driven palette/playfield (imported from DanceDiverse3, adapted to the
+    // Copper-driven palette/playfield (adapted to the
     // template's Palette and setPlayfield). Write color/mode changes into the copper
     // list so they take effect mid-frame (raster splits) rather than at vblank.
     // Pure C++ on both compilers. setPalette/setColor cover the 32 colour registers;

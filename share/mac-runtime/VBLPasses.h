@@ -3,7 +3,7 @@
 #ifndef __mc68000__
 #include <stdint.h>
 #endif
-// Queued virtual retrace passes from Vette! and Alone in the Dark.
+// Queued virtual retrace passes.
 // Safe-point callers own task records, countdown semantics and callbacks.
 // Age all entries on begin(), then drain that fixed pass in queue order.
 // New entries join the following pass; removal precedes array compaction.

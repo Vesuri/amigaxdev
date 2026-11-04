@@ -1,4 +1,4 @@
-/* Shared bounded StuffIt I/O and decoding from Vette!/Alone in the Dark.
+/* Shared bounded StuffIt I/O and decoding for native installers.
  * LGPL-2.1-or-later; see COPYING.LIB. Adapter supplies workspaces and File I/O. */
 static int fail(const char *s) { if(!error) error=s; return 0; }
 static uint16_t be16(const unsigned char *p) { return (uint16_t)((p[0]<<8)|p[1]); }

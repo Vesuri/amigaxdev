@@ -13,7 +13,6 @@ search for the affected option, helper or symptom before reading surrounding tex
 | Start a standalone WHDLoad improvement | [WHDLoad playbook](playbooks/new-game-playbook.md) |
 | Work in a JOTD or StingRay fork | [JOTD](playbooks/new-game-playbook-jotd.md) or [StingRay](playbooks/new-game-playbook-stingray.md); choose one |
 | Port a game from another platform | [Porting playbook](playbooks/new-port-playbook.md); choose the matching original CPU/runtime approach |
-| Migrate a project to shared files | [Migration recipe and status](projects.md) |
 | Write or repair a project's `AGENTS.md` | [A project's agent instructions](environment.md#a-projects-agent-instructions) |
 | Work on AmigaXDev's pending improvements | [Open work](open-work.md); proposals there are not installed capabilities |
 

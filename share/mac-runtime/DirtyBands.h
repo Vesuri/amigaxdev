@@ -3,7 +3,7 @@
 #ifndef __mc68000__
 #include <stdint.h>
 #endif
-// Coordinate-only planner extracted from Alone in the Dark. Caller supplies
+// Coordinate-only dirty-band planner. Caller supplies
 // viewport dimensions, bounded input storage and a signed 16-bit rectangle.
 namespace DirtyBands {
 // Kalms needs a width divisible by 32, but its output may start on any word.
