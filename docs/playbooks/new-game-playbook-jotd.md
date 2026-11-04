@@ -420,13 +420,13 @@ from `$GAME_SOURCE`, stage below its ignored `tmp/`, and write archives to its i
 Use LHa for UNIX (`LHA`, §1), level-1 LH5 headers (`lha a1o5q2`).
 
 - Retain the original installer and preinstalled archives as immutable local inputs.
-- Ship exactly the previous release's files (main playbook §13): replace the normal release
-  slave and ReadMe; if the original ships the slave's source, replace it with the release source
-  at the same paths; if it ships none, add none. Ask before adding files the previous release
-  lacked (new modules, includes, an SDK). Change icons only when intended.
-- Validate an explicit member manifest: the original names and case, with content unchanged
-  except the replaced files. Check sorted membership: LHa sorts members, so do not claim
-  original member order is preserved.
+- Ship the previous release's files (main playbook §13): replace the normal release slave and
+  ReadMe; if the original ships the slave's source, replace it in that directory with
+  the release source plus exactly the files the release build includes, and drop superseded
+  source files; if it ships none, add none. No docs, VERIFY-only modules or SDK copies. Change
+  icons only when intended.
+- Validate an explicit member manifest: the original names and case, plus the declared added
+  modules, minus the declared removals, with every other member byte-identical.
 - Re-extract and compare bytes with the staging tree; check version, requirements, tooltypes,
   and absence of VERIFY-only options/instruments. Assemble any shipped source and compare the result with the shipped slave.
 - The preinstalled archive contains copyrighted game data: keep it local. Do not add it to Git

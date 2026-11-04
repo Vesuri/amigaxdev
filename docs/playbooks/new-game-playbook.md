@@ -927,11 +927,15 @@ When the work ships, add `make dist` (a packaging script): for each original arc
 (installer pack and Retroplay pack, kept in `tmp/`), unpack it, replace the slave, the ReadMe
 and any slave source the original ships, and repack to `dist/` (ignored).
 
-- **The release has exactly the previous release's files.** If it shipped the slave's source
-  (`source/`, `Source/`, `src/`, with or without a `Makefile`), replace those files with the
-  current release source at the same paths and names. If it shipped no source, add none. When
-  the current source needs files the previous one didn't have (new modules, includes), ask
-  before adding them. Never ship VERIFY-only modules.
+- **The release has the previous release's files.** If it shipped no slave source, add none.
+  If it shipped source (`source/`, `Source/`, `src/`, with or without a `Makefile`), replace it
+  in that directory with the current release source, keeping the shipped names where the files
+  still exist. Add exactly the files the release build of the main source includes, so the
+  shipped source assembles to the shipped slave, and drop shipped source files that no longer
+  exist (a superseded `.asm`). Never add docs, notes, VERIFY-only modules, extra makefiles or
+  copies of SDK includes (`whdload.i`, `lvo/`, kick sources). Find the included set from the
+  assembler's dependency list (`vasm -depend=list`) of the release build, and prove it by
+  assembling the extracted archive's source against the installed SDK.
 
 - **Lhasa can't create archives.** Use LHa for UNIX (`LHA`, §1) with level-1 headers
   (`lha a1o5q2`, matching the originals). An alternative for a strict two-file update is a
@@ -950,8 +954,9 @@ and any slave source the original ships, and repack to `dist/` (ignored).
   version, memory) to match the slave header.
 - Test archive integrity with `"$LHA" t`, then extract the result into a separate temporary
   directory. Require exactly the original member names, every extracted file equal to its
-  staged copy, every replaced file equal to the current build or source, and every other file
-  byte-identical to the original. Require the slave and ReadMe to differ from the originals. This verifies package
+  staged copy, every replaced or added file equal to the current build or source, the member
+  list equal to the original's plus the declared additions minus the declared removals, and
+  every other file byte-identical to the original. Require the slave and ReadMe to differ from the originals. This verifies package
   contents; it does not replace gameplay checks of the slave.
 - Derive the output archive version from the built slave's `$VER` string and require a matching
   ReadMe entry. The release version (`DECL_VERSION`, e.g. `1.2b`) is separate from `ws_Version`,
