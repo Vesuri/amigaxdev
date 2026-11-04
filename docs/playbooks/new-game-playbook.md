@@ -935,7 +935,9 @@ and any slave source the original ships, and repack to `dist/` (ignored).
   still exist. Add exactly the files the release build of the main source includes, so the
   shipped source assembles to the shipped slave, and drop shipped source files that no longer
   exist (a superseded `.asm`). Never add docs, notes, VERIFY-only modules, extra makefiles or
-  copies of SDK includes (`whdload.i`, `lvo/`, kick sources). Find the included set from the
+  copies of SDK includes (`whdload.i`, `lvo/`, kick sources). A makefile the previous release
+  shipped is rewritten to build the shipped main source with the release flags against
+  `$WHDLOAD`, `$NDK` and `$AMIGA_INCLUDE`, one target per shipped slave. Find the included set from the
   assembler's dependency list (`vasm -depend=list`) of the release build, and prove it by
   assembling the extracted archive's source against the installed SDK.
 
