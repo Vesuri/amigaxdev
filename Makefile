@@ -65,6 +65,8 @@ test-mac-runtime: test-block-move
 	@tmp/tests/blitter-completion
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined scripts/test_heap_search.cpp -o tmp/tests/heap-search
 	./tmp/tests/heap-search
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Iscripts/fixtures/mac-resource scripts/test_mac_resource_writer.cpp -o tmp/tests/mac-resource-writer
+	@tmp/tests/mac-resource-writer
 	@mkdir -p tmp/tests
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_bitmap_region.cpp -o tmp/tests/mac-bitmap-region
 	@tmp/tests/mac-bitmap-region

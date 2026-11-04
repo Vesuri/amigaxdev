@@ -10,7 +10,7 @@ Game-specific trap ABI, ownership checks and publication remain in the consumer.
 | Changed-row copies and C2P planning | [CopyChangedRows](catalogue.md#copychangedrowsinc), [DirtyBands](catalogue.md#dirtybandsh), [namespace adapters](catalogue.md#dirtybandsaligninc) |
 | QuickDraw caches | [RegionResultCache](catalogue.md#regionresultcacheh), [RGBColorCache](catalogue.md#rgbcolorcacheh), [region validation](catalogue.md#region-validation-cache) |
 | Memory access and bounds | [BigEndianMemory](catalogue.md#bigendianmemoryh), [AddressSpan](catalogue.md#addressspanh); `BlockMoveBytes.h`, `BlockMoveChecks.h`, `ForwardLongCopy.inc` document copy contracts in source |
-| CODE, resource and identity lookup | [CodeRangeCache](catalogue.md#coderangecacheh), [ResourceDirectory](catalogue.md#resourcedirectoryh), [IdentityIndexCache](catalogue.md#identityindexcacheh) |
+| CODE, resource and identity lookup | [CodeRangeCache](catalogue.md#coderangecacheh), [ResourceDirectory](catalogue.md#resourcedirectoryh), [ResourceWriter / ResourceStage](catalogue.md#resourcewriterinc), [IdentityIndexCache](catalogue.md#identityindexcacheh) |
 | Native high-pointer regression | [StripAddressChecks](catalogue.md#stripaddresschecksh) |
 | Heap allocation and handles | [HeapMoveHigh](catalogue.md#heapmovehighinc), [HeapResize](catalogue.md#heapresizeinc), [HeapFindSpace](catalogue.md#heapfindspaceinc), [HandleCopy](catalogue.md#handlecopyh), [HeapLockHandle](catalogue.md#heaplockhandleinc), [HeapReadHandleState](catalogue.md#heapreadhandlestateinc), [PinnedSlotRanges](catalogue.md#pinnedslotrangesh) |
 | VBL callbacks and clocks | [VBLPasses](catalogue.md#vblpassesh), [VideoTicks](catalogue.md#videoticksh), [PAL deadlines](catalogue.md#pal-beam-deadlines) |

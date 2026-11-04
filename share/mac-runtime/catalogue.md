@@ -99,6 +99,27 @@ configuration retains the existing linear implementation. Define
 `AMIGAXDEV_RESOURCE_DIRECTORY_MAP_LIMIT` to enforce the parser's per-map resource
 limit before mutation.
 
+## ResourceWriter.inc
+
+`ResourceWriter.inc` serializes a resource fork from an immutable recipe through a
+caller's sink, with the consumer's `ResourceWriter.h` and `ResourceForks.h` (as
+`ResourceDirectory.h` uses them; `scripts/fixtures/mac-resource/` shows the
+interface). Types follow first appearance and each type's references keep recipe
+order, including duplicate type/ID pairs. Unchanged payloads are read from their
+sources in at most `chunkBytes` per transfer; the layout lives on the heap, since
+4096 entries need 49 KB. `measure` validates without reading payloads. A failed
+write calls `finish(false)` and publishes nothing.
+
+`ResourceStage.h` and `ResourceStage.inc` are the DOS sink. The adapter supplies
+`FileAccess` (`resloadActive`, `resloadStat`, `resloadReplace`),
+`RESOURCE_STAGE_SYSTEM_WINDOW` and the staging suffixes `RESOURCE_STAGE_NEW_SUFFIX`
+and `RESOURCE_STAGE_OLD_SUFFIX`. Native DOS writes the new file, renames the old one
+to the backup, renames the new one into place and deletes the backup, restoring the
+old file if a step fails. Existing staging or backup files are recovery evidence:
+`begin` refuses with `recoveryRequired` rather than overwrite them. Under resload
+the fork is buffered (at most 2 MB) and replaced in place. `RESOURCE_STAGE_FAULT_PROBE`
+exposes `g_resourceStageFault` to inject rename and delete failures.
+
 ## VBLPasses.h
 
 `VBLPasses.h` holds queued virtual-retrace bookkeeping. Each elapsed Macintosh tick starts a separate queue pass; callbacks
