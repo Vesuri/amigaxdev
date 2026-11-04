@@ -226,6 +226,20 @@ working option explicitly; do not infer a general hardware/runtime defect from
 this emulator-specific observation. CPU-cache options such as `NoCache` are
 separate from `NoWriteCache`.
 
+Secret Weapons of Luftwaffe located the 20.1 [build 7190] stall: after "clock restored"
+at exit, the "dircache clearing" walk loops forever on an entry flagged 1 at +232, the
+file the game created that is still in the write cache. It never advances, so the file
+never reaches disk and `COREDUMP` writes nothing; the screen shows the empty Workbench.
+Diagnose with the gdb stub: attach at launch (`--remote_debugger=N`),
+interrupt the hang, and dump Chip and Fast; identical registers over 20 s and WHDLoad's
+debug strings next to the loop name it. Nothing in the loop clears the flag. There
+(A1200, 8 MiB Fast) it took PreLoad plus the write cache: any file created during the run,
+even 540 bytes, hung both the game's own exit and `TIMEOUT`; it passed with `NoWriteCache`,
+without PreLoad, or with 8 MiB more Fast, and still hung after shrinking the slave's Chip and
+ExpMem by up to 256 KiB. `NoWriteCache` is an option or tooltype only (no slave flag), so a
+slave cannot rule the hang out: document the tooltype for small-memory machines. Time the
+probe runs: a passing one took 30 s, so a 60 s ceiling flags a hang.
+
 ## The gdb stub
 
 The Barto stub in both FS-UAE builds, driven by `m68k-amiga-elf-gdb`.
