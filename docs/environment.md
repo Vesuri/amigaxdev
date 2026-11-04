@@ -90,6 +90,7 @@ without edits.
 | `SETPATCH` | `SetPatch` | SetPatch 40.16 from Workbench 3.1 |
 | `WHDLOAD` | `WHDLoad` | WHDLoad 20.1: `Include/`, `Src/sources/whdload/` (KickEmu), `C/WHDLoad` |
 | `WHDLOAD_BINARY` | `$WHDLOAD/C/WHDLoad` | the WHDLoad executable put on the game drive |
+| `AMIGA_INCLUDE` | `include` | `lvo/dos.i`, `exec.i`, `graphics.i`, `expansion.i` as WHDLoad's kick sources and slaves include them, each bridging to the NDK's `lvo/<library>_lib.i`. Assemble a slave with `-I$AMIGA_INCLUDE -I$WHDLOAD/Include -I$WHDLOAD/Src/sources -I$NDK`; a project needs no generated or copied bridges |
 | `INSTALLER43` | `Installer43/Installer` | Commodore Installer 43.3 |
 | `ADCD` | `adcd21/Reference` | Developer CD 2.1 `Reference/`: `ROM_Kernel_Manuals/Hardware_Manual` (and `Libraries_Manual`, `Devices_Manual`, AmigaGuide text), `HTML/` (the same as pages), autodocs, Amiga Mail |
 | `AGA_GUIDE` | `AGA.Guide` | AGA chipset registers (the Hardware Reference Manual covers OCS/ECS) |

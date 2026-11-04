@@ -40,6 +40,9 @@ export SETPATCH="${SETPATCH:-$AMIGA_SHARE/SetPatch}"
 # Commodore's Installer 43.3, for install scripts.
 export WHDLOAD="${WHDLOAD:-$AMIGA_SHARE/WHDLoad}"
 export WHDLOAD_BINARY="${WHDLOAD_BINARY:-$WHDLOAD/C/WHDLoad}"
+# lvo/<library>.i as WHDLoad's sources and slaves name it; the NDK ships lvo/<library>_lib.i.
+# Assemble with -I$AMIGA_INCLUDE -I$WHDLOAD/Include -I$WHDLOAD/Src/sources -I$NDK.
+export AMIGA_INCLUDE="${AMIGA_INCLUDE:-$AMIGA_SHARE/include}"
 export INSTALLER43="${INSTALLER43:-$AMIGA_SHARE/Installer43/Installer}"
 
 # Reference: the Amiga Developer CD 2.1's Reference/ (ROM_Kernel_Manuals/Hardware_Manual and the

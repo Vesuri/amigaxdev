@@ -27,6 +27,7 @@ DEFAULTS = {
     'SETPATCH': _SHARE + '/SetPatch',
     'WHDLOAD': _SHARE + '/WHDLoad',
     'WHDLOAD_BINARY': _SHARE + '/WHDLoad/C/WHDLoad',
+    'AMIGA_INCLUDE': _SHARE + '/include',
     'INSTALLER43': _SHARE + '/Installer43/Installer',
     'ADCD': _SHARE + '/adcd21/Reference',
     'AGA_GUIDE': _SHARE + '/AGA.Guide',

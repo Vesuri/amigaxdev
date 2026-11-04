@@ -342,8 +342,8 @@ fork-specific build, source ownership and release rules below take precedence.
   `tmp/build/`: `tools/build.sh [NAME] [-DDEFINE=1 ...]` writes
   `tmp/build/<Game>[-NAME].Slave` and always assembles, so a define never leaves a
   stale variant. Upstream has no build file for any game; do not add one to the repository.
-- vasm's `-m68000 -pic -x -devpac -Fhunkexe -nosym`, with `Games/`, the shared WHDLoad 20.1
-  `Include/` and the NDK (`~/.local/opt/m68k-amiga-elf/sys-include`) on the include path. vasm
+- vasm's `-m68000 -pic -x -devpac -Fhunkexe -nosym`, with `Games/`, `$AMIGA_INCLUDE` (the
+  `lvo/dos.i`-style names), the shared WHDLoad 20.1 `Include/` and the NDK (`~/.local/opt/m68k-amiga-elf/sys-include`) on the include path. vasm
   finds `WHDLoad.i` through `-I`; StingRay's `INCDIR SOURCES:INCLUDE/` line stays. Record the
   actual dependency versions, flags and paths in local notes. Do not vendor SDK files into the
   fork.

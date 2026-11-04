@@ -52,6 +52,16 @@ check "elf2hunk-fixed"         test -x "$AMIGA_SHARE/elf2hunk-fixed"
 check "gcc8 support files"     test -f "$PREFIX/support/gcc8_c_support.c"
 # vasm prints its banner and exits non-zero without a source file.
 check "vasm (x86_64)"          sh -c "'$PREFIX/vasmm68k_mot' 2>&1 | grep -q 'vasm'"
+# WHDLoad's KickEmu sources include lvo/dos.i; the shared bridges resolve it against the NDK.
+lvo_bridges() {
+  local s; s=$(mktemp "${TMPDIR:-/tmp}/lvo.XXXXXX") || return 1
+  printf ' include "lvo/dos.i"\n include "lvo/exec.i"\n include "lvo/graphics.i"\n include "lvo/expansion.i"\n jsr _LVOOpen(a6)\n' > "$s"
+  grep -q 'lvo/dos.i' "$AMIGA_SHARE/WHDLoad/Src/sources/whdload/kick13.s" &&
+    "$PREFIX/vasmm68k_mot" -quiet -Fhunkexe -o /dev/null -I"$AMIGA_SHARE/include" \
+      -I"$PREFIX/opt/m68k-amiga-elf/sys-include" "$s"
+  local r=$?; rm -f "$s"; return $r
+}
+check "lvo bridges for WHDLoad's kick sources" lvo_bridges
 check "FS-UAE (x86_64)"        "$PREFIX/fs-uae/fs-uae" --version
 check "FS-UAE arm64"           "$AMIGA_SHARE/fs-uae-arm/fs-uae" --version
 check "FS-UAE aprof"           "$AMIGA_SHARE/fs-uae-aprof/fs-uae" --version

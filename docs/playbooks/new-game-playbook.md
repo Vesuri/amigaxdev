@@ -703,7 +703,9 @@ in an interpreter before booting.
 ## 10. Building and gating patches
 
 - Cross-build the slave with vasm (a small `whdload/makefile`):
-  `-m68000 -pic -x -devpac -Fhunkexe -nosym -I$(WHDLOAD)/Include -I$(NDK)`. Build on the shared 20.1
+  `-m68000 -pic -x -devpac -Fhunkexe -nosym -I$(AMIGA_INCLUDE) -I$(WHDLOAD)/Include
+  -I$(WHDLOAD)/Src/sources -I$(NDK)` (`AMIGA_INCLUDE` holds the `lvo/dos.i`-style names the
+  KickEmu sources include). Build on the shared 20.1
   KickEmu and headers (vendored), but **declare `slv_Version = 17`** and no `slv_MemConfig` unless
   the slave really needs a v20 feature: `kick13.s` handles both through `IFGE slv_Version-20`.
   Use the single shared `WHDLoad/` development tree; old versioned paths are retired

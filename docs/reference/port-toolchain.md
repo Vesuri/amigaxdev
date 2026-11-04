@@ -253,8 +253,8 @@ slave) cost more than they save.
 
 - `kick13` when the program is 1.3-clean: its ROM image is 256 KB against 512 KB for
   `kick31`. An AGA port uses `kick31` and adds `INITAGA`, which a direct AGA platform needs.
-- Assemble the slave with vasm against `$WHDLOAD/Include` and the KickEmu sources in
-  `$WHDLOAD/Src/sources/whdload` instead of vendoring copies.
+- Assemble the slave with vasm against `$AMIGA_INCLUDE`, `$WHDLOAD/Include` and the KickEmu
+  sources in `$WHDLOAD/Src/sources/whdload` instead of vendoring copies.
 - Ship the same executable as the standalone build; the slave patches only explicit,
   magic-tagged configuration blocks.
 - A typical port slave mounts `data/`, sets PROGDIR and a null-terminated argument string,

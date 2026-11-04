@@ -336,8 +336,8 @@ fork-specific build, source ownership and release rules below take precedence.
   only as the existing source requires. Resolve API headers, `lvo/` and `whdload/kick13.s`
   against the shared WHDLoad 20.1 development tree and NDK (§1). If directory names differ,
   build an ignored include staging tree pointing to the official sources, not a second copy
-  of the game slave; generated local LVO wrappers can map `lvo/dos.i` etc. to NDK `*_lib.i`
-  files with include guards. Slaves that include WHDLoad's own sources (`savegame.s` includes
+  of the game slave. Put `-I$AMIGA_INCLUDE` first: it maps `lvo/dos.i`, `exec.i`, `graphics.i`
+  and `expansion.i` to the NDK's `*_lib.i`, so don't generate local LVO wrappers. Slaves that include WHDLoad's own sources (`savegame.s` includes
   `macros/ntypes.i`) also need `-I$AMIGA_SHARE/WHDLoad/Src`. A JOTD slave can rebuild
   byte-identical with `vasmm68k_mot -DDATETIME -I$AMIGA_SHARE/WHDLoad/Include
   -I$AMIGA_SHARE/WHDLoad/Src -I$AMIGA_SHARE/ndk/Include_I -I. -devpac -nosym -Fhunkexe -pic`.
