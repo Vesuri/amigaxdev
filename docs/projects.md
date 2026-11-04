@@ -60,9 +60,8 @@ StingRay's slave repository (harness in the ignored `tmp/dev/`).
 The fork worktrees belong to two main checkouts, `jotd_whdload_slaves` (JOTD's repository) and
 `Stingray_WHDLoad_Patches` (StingRay's), which have no harness of their own.
 
-Not Amiga game projects, left alone: dA JoRMaS (an Amiga demo repo; it already uses
-`fsuae_common.sh`, whose old functions are unchanged), Excellence, PETSCIIRobots-SDL, Tutka,
-amiberry, pt2-clone, Apartment, Lego.
+Not an Amiga game project, left alone: dA JoRMaS (an Amiga demo repo; it already uses
+`fsuae_common.sh`, whose old functions are unchanged).
 
 What migrated means: the project's `amiga/env.sh` sources the shared one, its run scripts launch
 through the shared `fsuae_options`, and its tools take the toolchain from the environment. Its

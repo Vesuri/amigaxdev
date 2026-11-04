@@ -14,7 +14,7 @@ and [Homebrew](https://brew.sh), with Homebrew's `bin` ahead of `/bin` on `PATH`
 `#!/usr/bin/env bash` and need the bash 5 that setup installs, not macOS's 3.2. Then:
 
 ```sh
-git clone <this repo> AmigaXDev && cd AmigaXDev
+git clone https://github.com/Vesuri/amigaxdev.git AmigaXDev && cd AmigaXDev
 make setup TOSEC=<TOSEC tree> AMIGA_OS=<Workbench directory> DEVCD=<Developer CD>
 ```
 
