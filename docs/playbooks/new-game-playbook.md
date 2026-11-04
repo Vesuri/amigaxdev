@@ -924,13 +924,19 @@ Physical-machine validation remains separate.
 ## 13. Release archives
 
 When the work ships, add `make dist` (a packaging script): for each original archive
-(installer pack and Retroplay pack, kept in `tmp/`), unpack it, replace only the slave and the
-ReadMe, and repack to `dist/` (ignored).
+(installer pack and Retroplay pack, kept in `tmp/`), unpack it, replace the slave, the ReadMe
+and any slave source the original ships, and repack to `dist/` (ignored).
+
+- **The release has exactly the previous release's files.** If it shipped the slave's source
+  (`source/`, `Source/`, `src/`, with or without a `Makefile`), replace those files with the
+  current release source at the same paths and names. If it shipped no source, add none. When
+  the current source needs files the previous one didn't have (new modules, includes), ask
+  before adding them. Never ship VERIFY-only modules.
 
 - **Lhasa can't create archives.** Use LHa for UNIX (`LHA`, §1) with level-1 headers
   (`lha a1o5q2`, matching the originals). An alternative for a strict two-file update is a
   record-level rewriter: retain each unchanged compressed record verbatim and emit standard
-  stored `-lh0-` records for the new slave and ReadMe. This needs no compressor and preserves
+  stored `-lh0-` records for the replaced files. This needs no compressor and preserves
   untouched metadata, but produces larger replacements. Its parser supports the known
   level-0/1 inputs only; reject unsupported headers rather than guessing boundaries.
 - Stage a fresh extraction of each original archive under ignored `tmp/`, not a game drawer
@@ -944,8 +950,8 @@ ReadMe, and repack to `dist/` (ignored).
   version, memory) to match the slave header.
 - Test archive integrity with `"$LHA" t`, then extract the result into a separate temporary
   directory. Require exactly the original member names, every extracted file equal to its
-  staged copy, and every file except the slave and ReadMe byte-identical to the original.
-  Require those two replacements to differ from the originals as well. This verifies package
+  staged copy, every replaced file equal to the current build or source, and every other file
+  byte-identical to the original. Require the slave and ReadMe to differ from the originals. This verifies package
   contents; it does not replace gameplay checks of the slave.
 - Derive the output archive version from the built slave's `$VER` string and require a matching
   ReadMe entry. The release version (`DECL_VERSION`, e.g. `1.2b`) is separate from `ws_Version`,
@@ -954,7 +960,7 @@ ReadMe, and repack to `dist/` (ignored).
 
 ### Intentional installer and icon updates
 
-The two-file replacement procedure above is the default for an unchanged installer. When
+The replacement procedure above is the default for an unchanged installer. When
 installation behavior or defaults intentionally change, declare the additional changed or
 added members explicitly and retain byte equality for every other original member. Compare
 the extracted archive with that declared member list rather than assuming only two files
