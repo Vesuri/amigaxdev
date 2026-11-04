@@ -1,4 +1,4 @@
-"""Shared AITDPROF 1 parsing and structural call-tree accounting.
+"""Shared APROF 1 parsing and structural call-tree accounting.
 
 Port symbol names, buckets and workload denominators belong to consumers.
 Unmatched return counters are retained: a structurally valid tree does not
@@ -19,7 +19,7 @@ def parse_profile(text):
     the exception vector; Line-A targets are 0xA0000000 | trap word."""
     header, pcs, nodes = {}, {}, {}
     lines = text.splitlines()
-    require(lines and lines[0] == 'AITDPROF 1', 'not an AITDPROF 1 profile')
+    require(lines and lines[0] == 'APROF 1', 'not an APROF 1 profile')
     for line in lines[1:]:
         f = line.split()
         if not f:

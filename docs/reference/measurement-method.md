@@ -203,7 +203,7 @@ each replaced a habit that had already cost time.
 - **Read the full output file, not the terminal.** A wrapper that ends with `tail` drops the
   header, which holds the sanity lines. Check the log belongs to the current run.
 
-The shared AITDPROF reader keeps the unassigned stop remainder separate from
+The shared APROF reader keeps the unassigned stop remainder separate from
 function costs. Its alignment is `gcd(cpucycleunit, CYCLE_UNIT)`: CPU units
 need not divide the Chip clock. At requested 50 MHz, units 36 and 512 allow
 an 80-unit remainder (`512 - 12*36`) after Chip-boundary synchronization.
@@ -473,7 +473,7 @@ is reusable, and say plainly that it did not ship.
 
 ## Shared instruction-profile reader
 
-`amigaxdev.aprof.parse_profile` reads `AITDPROF 1` flat-PC and call-node records;
+`amigaxdev.aprof.parse_profile` reads `APROF 1` flat-PC and call-node records;
 `call_tree` supplies child lists, traversal order and inclusive totals. Consumers
 retain their own symbols, buckets and workload denominators. The parser requires
 flat-PC time plus gap/high time to equal node self-time. Elapsed time may exceed

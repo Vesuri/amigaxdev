@@ -5,7 +5,7 @@ import unittest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'share/pylib'))
 from amigaxdev.aprof import parse_profile, call_tree, require_return_pairing
 
-BASE='''AITDPROF 1
+BASE='''APROF 1
 units 1024
 cycleunit 128
 CYCLE_UNIT 512
@@ -41,7 +41,7 @@ class Checks(unittest.TestCase):
             with self.assertRaises(ValueError):
                 parse_profile(base.replace('cycleunit 36',f'cycleunit {unit}'))
     def test_accounting(self):
-        for before,after in [('768 3','769 3'),('gap 128','gap 0'),('overflow 0','overflow 1'),('AITDPROF 1','AITDPROF 2')]:
+        for before,after in [('768 3','769 3'),('gap 128','gap 0'),('overflow 0','overflow 1'),('APROF 1','APROF 2')]:
             with self.assertRaises(ValueError):parse_profile(BASE.replace(before,after))
     def test_tree(self):
         _,_,nodes=parse_profile(BASE)

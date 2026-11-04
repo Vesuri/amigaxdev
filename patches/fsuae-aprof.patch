@@ -4,7 +4,7 @@ index 0f3249a9..6cab1b55 100644
 +++ b/src/barto_gdbserver.cpp
 @@ -1,4 +1,7 @@
  #include "sysconfig.h"
-+// AITD-PROF: newcpu.cpp cycle profiler, driven by "monitor aprof start|stop <file>".
++// APROF: newcpu.cpp cycle profiler, driven by "monitor aprof start|stop <file>".
 +bool aprof_start(void);
 +bool aprof_stop(const char *path);
  #ifdef _WIN32
@@ -29,7 +29,7 @@ index fea994a4..ba04b9db 100644
  }
  
  
-+// AITD-PROF: time every CE020/030 chip-bus access.
++// APROF: time every CE020/030 chip-bus access.
 +extern bool aprof_on;
 +extern evt_t aprof_chip_acc;
 +extern uae_u32 aprof_chip_cnt;
@@ -60,7 +60,7 @@ index f6d7fd40..e52002ab 100644
  };
  // BARTO-END
  
-+// AITD-PROF: whole-address-space cycle profiler with a calling-context tree.
++// APROF: whole-address-space cycle profiler with a calling-context tree.
 +#include <unordered_map>
 +struct aprof_frame { uae_u32 ret; uae_u32 node; uae_u8 kind; };
 +struct aprof_node { uae_u32 parent; uae_u32 target; uae_u8 kind; uae_u64 self; uae_u64 calls; };
@@ -156,7 +156,7 @@ index f6d7fd40..e52002ab 100644
 +	if (!f)
 +		return false;
 +	// Times are emulated cycle units: CYCLE_UNIT per colour clock.
-+	fprintf(f, "AITDPROF 1\n");
++	fprintf(f, "APROF 1\n");
 +	fprintf(f, "units %llu\nvsyncs %u\ncycleunit %d\nCYCLE_UNIT %d\ncolorclock_hz %d\n",
 +		(unsigned long long)(get_cycles() - aprof_start_cycles), vsync_counter - aprof_start_vsync, cpucycleunit, CYCLE_UNIT,
 +		currprefs.ntscmode ? 3579545 : 3546895);
@@ -230,7 +230,7 @@ index f6d7fd40..e52002ab 100644
 +		aprof_pop(m68k_getpc(), true);
 +	}
 +}
-+// AITD-PROF-END
++// APROF-END
 +
  const int areg_byteinc[] = { 1, 1, 1, 1, 1, 1, 1, 2 };
  const int imm8_table[] = { 8, 1, 2, 3, 4, 5, 6, 7 };
