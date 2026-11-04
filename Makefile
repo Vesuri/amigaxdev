@@ -69,6 +69,8 @@ test-mac-runtime: test-block-move
 	@tmp/tests/mac-heap-low
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Iscripts/fixtures/mac-resource scripts/test_mac_resource_writer.cpp -o tmp/tests/mac-resource-writer
 	@tmp/tests/mac-resource-writer
+	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Iscripts/fixtures/amiga-dos -Iscripts/fixtures/mac-resource scripts/test_mac_resource_stage.cpp -o tmp/tests/mac-resource-stage
+	@tmp/tests/mac-resource-stage
 	@mkdir -p tmp/tests
 	$(CXX) -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -Ishare/mac-runtime scripts/test_mac_bitmap_region.cpp -o tmp/tests/mac-bitmap-region
 	@tmp/tests/mac-bitmap-region

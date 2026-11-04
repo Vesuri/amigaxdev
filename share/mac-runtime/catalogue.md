@@ -110,15 +110,16 @@ sources in at most `chunkBytes` per transfer; the layout lives on the heap, sinc
 4096 entries need 49 KB. `measure` validates without reading payloads. A failed
 write calls `finish(false)` and publishes nothing.
 
-`ResourceStage.h` and `ResourceStage.inc` are the DOS sink. The adapter supplies
-`FileAccess` (`resloadActive`, `resloadStat`, `resloadReplace`),
-`RESOURCE_STAGE_SYSTEM_WINDOW` and the staging suffixes `RESOURCE_STAGE_NEW_SUFFIX`
-and `RESOURCE_STAGE_OLD_SUFFIX`. Native DOS writes the new file, renames the old one
-to the backup, renames the new one into place and deletes the backup, restoring the
-old file if a step fails. Existing staging or backup files are recovery evidence:
-`begin` refuses with `recoveryRequired` rather than overwrite them. Under resload
-the fork is buffered (at most 2 MB) and replaced in place. `RESOURCE_STAGE_FAULT_PROBE`
-exposes `g_resourceStageFault` to inject rename and delete failures.
+`ResourceStage.h` and `ResourceStage.inc` are the DOS sink. They buffer the whole
+fork (at most 2 MB) and replace the target in place with `MODE_NEWFILE`, as the
+original Resource Manager writes its file. Never publish with renames or staging
+files: WHDLoad's kickfs has no `ACTION_RENAME_OBJECT` (and resload no rename), and
+`MODE_NEWFILE` truncates both there and on native DOS
+([files under WHDLoad](../../docs/reference/amiga-hardware.md#files-whdload-and-the-os-lifecycle)). `begin` checks the target
+first: missing is created, a directory is -50, a write-protected file -45.
+`finish(false)` leaves the target untouched; a failed in-place write can leave it
+truncated. The adapter supplies only `RESOURCE_STAGE_SYSTEM_WINDOW`, which runs a
+DOS function in its system context.
 
 ## VBLPasses.h
 
