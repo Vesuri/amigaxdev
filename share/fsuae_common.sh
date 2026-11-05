@@ -216,9 +216,11 @@ fsuae_setup() {
       esac
       KICKSTART="$share/Kickstarts/kick40063.A600"
       ;;
-    a3000)
+    a3000|a3000-50)
       AMIGA_MODEL=A3000 CPU=68030 CHIP_KB=2048 FAST_KB=8192 SLOW_KB=0
       chipset=ecs mmu=68030 fpu=68882 frequency=25000000 data_cache=true
+      # ECS twin of a1200-030 (A/B of the chipset): its 50 MHz 68030, no FPU.
+      [ "$AMIGA_SETUP" = a3000-50 ] && fpu=0 frequency=50000000
       # Shared ECS 3.1 ROM supports directory drives; native A3000 SCSI needs its own ROM.
       KICKSTART="${KICKSTART_A3000:-$share/Kickstarts/kick40063.A600}"
       ;;
@@ -235,7 +237,7 @@ fsuae_setup() {
       esac
       ;;
     *)
-      echo "Unknown AMIGA_SETUP '$AMIGA_SETUP'; use a500, a500-1.5m, a500+, a500-020, a500+-020, a3000, a1200, a1200-fast, a1200-030, a1200-040 or a1200-060" >&2
+      echo "Unknown AMIGA_SETUP '$AMIGA_SETUP'; use a500, a500-1.5m, a500+, a500-020, a500+-020, a3000, a3000-50, a1200, a1200-fast, a1200-030, a1200-040 or a1200-060" >&2
       return 1 ;;
   esac
   export AMIGA_MODEL CPU CHIP_KB FAST_KB SLOW_KB KICKSTART

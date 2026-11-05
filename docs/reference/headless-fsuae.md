@@ -85,6 +85,7 @@ AMIGA_SETUP=a1200-040 DEBUG=1 amiga/run.sh
 | `a500-020` | A500 / OCS | 68020 / 14 MHz | 512 | 0 | 8192 | none | none |
 | `a500+-020` | A500+ / ECS | 68020 / 14 MHz | 1024 | 0 | 8192 | none | none |
 | `a3000` | A3000 / ECS | 68030 / 25 MHz | 2048 | 0 | 8192 | 68030 | 68882 |
+| `a3000-50` | A3000 / ECS | 68030 / 50 MHz | 2048 | 0 | 8192 | 68030 | none |
 | `a1200` | A1200 / AGA | 68EC020 / 14 MHz | 2048 | 0 | 0 | none | none |
 | `a1200-fast` | A1200 / AGA | 68EC020 / 14 MHz | 2048 | 0 | 8192 | none | none |
 | `a1200-030` | A1200 / AGA | 68030 / 50 MHz | 2048 | 0 | 8192 | 68030 | none |
@@ -99,6 +100,7 @@ Fast RAM) on the stock OCS and ECS Chip RAM: 68020 software on pre-AGA chipsets.
 All presets disable JIT and extra Zorro III/motherboard RAM. They select Kickstart 3.1:
 `kick40063.A600` for the 68000 models and A3000, and `KICKSTART_A1200` (`kick40068.A1200`) for A1200.
 This preserves directory hard-drive boot support; these are not original factory ROM setups.
+`a3000-50` is `a1200-030` on ECS (same CPU, clock, caches and memory) for chipset A/B runs.
 `a3000` uses 8 MB of Zorro II Fast RAM and the shared ECS ROM for directory drives,
 rather than the original motherboard RAM/SCSI configuration. Set `KICKSTART_A3000` to
 a user-supplied A3000 ROM to override its ROM selection.
@@ -281,7 +283,7 @@ handoff (`trap_lockstep_*` in `src/traps.cpp`). Without deterministic mode nothi
 disk and runs breakpoint, `fields`, chained `profile`, register-read and Ctrl-C stops twice; the
 runs must agree on registers, beam position, chip RAM and every trace byte, the guest's own field
 counter (`GfxBase->VBCounter`) must advance by exactly the fields each command ran, and chained
-chunks must match one unbroken profile. On `a1200-030`, `a1200-040`, `a1200-060` and `a3000` it
+chunks must match one unbroken profile. On `a1200-030`, `a1200-040`, `a1200-060`, `a3000` and `a3000-50` it
 boots a directory drive whose startup-sequence writes a file line by line, twice, stopping every
 25 fields: the runs must agree on registers, chip RAM and the file at every stop and on Fast RAM
 at the end, the file must be complete, and the emulator log must not say it turned data-cache

@@ -63,6 +63,7 @@ fsuae_options || exit 1
             ("a500-020", "A500", "68020", 512, 8192, 0, 0, 0, 14187580),
             ("a500+-020", "A500+", "68020", 1024, 8192, 0, 0, 0, 14187580),
             ("a3000", "A3000", "68030", 2048, 8192, 0, 68030, 68882, 25000000),
+            ("a3000-50", "A3000", "68030", 2048, 8192, 0, 68030, 0, 50000000),
             ("a1200", "A1200", "68EC020", 2048, 0, 0, 0, 0, 14187580),
             ("a1200-fast", "A1200", "68EC020", 2048, 8192, 0, 0, 0, 14187580),
             ("a1200-030", "A1200", "68030", 2048, 8192, 0, 68030, 0, 50000000),
@@ -80,7 +81,7 @@ fsuae_options || exit 1
                     self.assertEqual(values["jit_compiler"], "0")
                     self.assertEqual(values["uae_cachesize"], "0")  # JIT cache, not CPU cache
                     self.assertEqual(values["uae_cpu_compatible"], "true")
-                    data_cache = case[0] in ("a3000", "a1200-030", "a1200-040", "a1200-060")
+                    data_cache = case[0] in ("a3000", "a3000-50", "a1200-030", "a1200-040", "a1200-060")
                     self.assertEqual(values["uae_cpu_data_cache"], str(data_cache).lower())
                     self.assertEqual(values["uae_uaeboard"], "full+indirect" if data_cache else "min")
                     rom = "kick40068.A1200" if case[0].startswith("a1200") else "kick40063.A600"
