@@ -520,6 +520,13 @@ CPU=68030 SLOW_KB=0 EXTRA_ARGS='--uae_cpu_speed=real --uae_cpu_multiplier=0 --ua
 
 Use `--base 0x200000` for fast-RAM dumps.
 
+**Which CPUs give an instruction trace.** FS-UAE records the `profile` trace only in its
+cycle-exact 68000/010 loop and its cycle-exact 68020/030 loop without an MMU. A 68030 with its
+MMU (`CPU=68030`, the `a3000`/`a1200-030` presets) and every 68040/060 core record nothing.
+Profile per routine on the 68000 and 68020, and use only frame rates (`SWAP_ONLY`) on the faster
+CPUs, plus aprof's instruction counts on `-NOMMU` 040/060 cores
+([measurement method](../reference/measurement-method.md#3-instruments)).
+
 **The machine matrix.** One set, all running the same build and window:
 the A500-equivalent (68000, 512 KB chip + 1.5 MB slow, `AMIGA_SETUP=a500-1.5m`); a stock A1200 (68EC020, 2 MB chip, no
 fast RAM), which can behave differently from an A1200 with fast RAM; an A1200 with 4–8 MB
@@ -906,6 +913,11 @@ Physical-machine validation remains separate.
   replacement; two or three deliberate sabotages for any new checker. Run the full machine matrix
   only at checkpoints, never rerun the emulator without a source change in between, and open a
   work item only for a demonstrated defect.
+- **Give every timing or equivalence gate a finite bound, stated before the work starts**:
+  which fields, routes and machines, and what counts as a match. Open-ended gates such as
+  "match the native A500 history exactly" stall timing work indefinitely. On the 68000, a
+  representative-behaviour policy is enough: the same distinct poses, scenes and game speed
+  within a stated tolerance, not field-for-field equality with the original's history.
 
 ## 12. "Ready to improve": the definition of done for setup
 
