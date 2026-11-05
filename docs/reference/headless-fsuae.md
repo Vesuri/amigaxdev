@@ -82,6 +82,8 @@ AMIGA_SETUP=a1200-040 DEBUG=1 amiga/run.sh
 | `a500` | A500 / OCS | 68000 / 7 MHz | 512 | 512 | 0 | none | none |
 | `a500-1.5m` | A500 / OCS | 68000 / 7 MHz | 512 | 1536 | 0 | none | none |
 | `a500+` | A500+ / ECS | 68000 / 7 MHz | 1024 | 0 | 0 | none | none |
+| `a500-020` | A500 / OCS | 68020 / 14 MHz | 512 | 0 | 8192 | none | none |
+| `a500+-020` | A500+ / ECS | 68020 / 14 MHz | 1024 | 0 | 8192 | none | none |
 | `a3000` | A3000 / ECS | 68030 / 25 MHz | 2048 | 0 | 8192 | 68030 | 68882 |
 | `a1200` | A1200 / AGA | 68EC020 / 14 MHz | 2048 | 0 | 0 | none | none |
 | `a1200-fast` | A1200 / AGA | 68EC020 / 14 MHz | 2048 | 0 | 8192 | none | none |
@@ -91,6 +93,8 @@ AMIGA_SETUP=a1200-040 DEBUG=1 amiga/run.sh
 
 `a500-1.5m` is the playbooks' A500-equivalent: most WHDLoad slaves need more than the 512 KB
 trapdoor expansion of `a500` (an ExpMem of 800 KB or more is common).
+`a500-020` and `a500+-020` model a 68020 accelerator card (twice the stock clock, 8 MB Zorro II
+Fast RAM) on the stock OCS and ECS Chip RAM: 68020 software on pre-AGA chipsets.
 
 All presets disable JIT and extra Zorro III/motherboard RAM. They select Kickstart 3.1:
 `kick40063.A600` for the 68000 models and A3000, and `KICKSTART_A1200` (`kick40068.A1200`) for A1200.
