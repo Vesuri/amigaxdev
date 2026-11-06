@@ -541,7 +541,15 @@ on the Mac with vasm against `$WHDLOAD`; a smoke slave (AmigaXDev `whdload/Smoke
 assembled with `-I.` and the project's `whdload/smoke_name.i`) tests the harness without a game.
 
 - Size chip/expansion memory and the stack from measurements, not guesses; set
-  `WHDLF_EmulLineA` when the original uses Line-A (Mac ports).
+  `WHDLF_EmulLineA` when the original uses Line-A (Mac ports). Measure every mode that
+  allocates differently: once ExpMem is full, `MEMF_ANY` allocations come from Chip and a
+  later Chip allocation fails without a trace (SWOTL: the EGA version's 256 KiB of model
+  planes pushed its FM effect samples out of Chip until ExpMem grew by `$40000`).
+- One executable for several chipsets: drop `WHDLF_ReqAGA`, let the executable choose from
+  `GfxBase` (kickemu boots on the host's chipset; `INITAGA` is harmless on ECS) and give a
+  Custom option that forces the lesser path on AGA. A 512 KB Chip machine needs its own slave
+  (BaseMem `$80000` works: WHDLoad backs all of Chip up in Fast), sized on that machine. Test
+  each chipset on its own machine model and ROM (presets `a500-020`, `a500+-020`, `a3000`).
 - PreLoad competes for the host's Fast RAM with ExpMem and WHDLoad's backup of all of BaseMem,
   so every byte of either reservation costs cache; preload stops at the first file that does
   not fit. Install only files the program opens, and keep files read once at start (the
