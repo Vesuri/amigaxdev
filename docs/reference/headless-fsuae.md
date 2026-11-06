@@ -430,6 +430,17 @@ gdb's status, with `trap fsuae_stop EXIT`.
 
 ## Reading results
 
+- **A slave that faults: rerun the same scenario with `CoreDump` in the WHDLoad arguments**
+  before reaching for breakpoints. WHDLoad catches the access fault itself (its MMU
+  setup), so the gdb stub does not stop, and a conditional breakpoint on a hot
+  instruction slows the emulator to a crawl. `CoreDump` writes `.whdl_register` and the
+  memory dumps into the boot drawer (the directory the slave was started from) when the
+  fault ends the run. The report gives the fault's address and width, PC as a slave offset,
+  the disassembly around PC with each operand's effective address, all registers, the
+  exception frame and stacks; map `.whdl_memory`/`.whdl_expmem` with its BaseMem/ExpMem
+  ranges to read the program's variables at the fault. Delete the old files first:
+  `.whdl_register` is appended to, the others are overwritten
+  ([reading WHDLoad dumps](../playbooks/new-game-playbook-hardware.md#read-the-matching-dump-first)).
 - **Read `.run/gdb-out.log`, not the script's stdout.** The 40-line tail drops headers and early
   phases; a frame total summed from it read 36 ms low. Copy the log to a per-arm file as
   soon as a run ends and compute from that.
