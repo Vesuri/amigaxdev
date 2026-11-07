@@ -58,7 +58,7 @@ anything else.
 | Word index | — | `Xn.w` is sign-extended; addressing tables from their midpoint removed eight index clears per 32 pixels, −4.4% |
 | Bitfields (`BFINS`, `BFEXTU`, `BFFFO`) | Absent; a table-emulated `bfffo` is expensive | Present; per-pixel `BFINS` into all planes suits sparse pixels |
 | Word/long at an odd address | Address-error exception | Allowed, extra bus cycles |
-| Longword at an address ≡ 2 mod 4 | No penalty | Extra bus cycle: 101 hot globals misaligned made a cold start ~8% and gameplay 0.65% slower. Fix with `alignas(4)` and a link audit |
+| Longword at an address ≡ 2 mod 4 | No penalty | Extra bus cycle: 101 hot globals misaligned made a cold start ~8% and gameplay 0.65% slower. Fix with `__attribute__((aligned(4)))` and a link audit |
 | 32-bit `mul`/`div` | None. GCC calls `__mulsi3`, `__divsi3`, `__udivsi3`, `__modsi3`, `__umodsi3` (~200–600 cycles): ban them and audit every link | `mulu.l`/`divu.l`/`divs.l` exist. Direct constant division beat a reciprocal table |
 | Shifts | 2n+8 cycles: `lsl.l #8` 24, `ror.w #8` 22. Byte swaps and pair builds are expensive | Barrel shifter: `ror.w #8` ≈ 1.8 cycles, about its two code bytes |
 | Indexed displacement | `(d8,An,Xn)` only: a far table needs its own address register | Full-format EAs with 16/32-bit displacements |

@@ -208,7 +208,7 @@ regression is then caught when it is introduced, not found in a profile months l
 | 64-bit helpers | `__(ashl\|ashr\|lshr\|mul\|udiv\|div\|umod\|mod)di3` | unexpected 64-bit arithmetic |
 | post-68000 instructions | `bf*`, `divsl`/`divul`, `extb`, `cas`, `chk2`, `move16`, `movec`, `rtd`, ... in the disassembly | a 68000 target must not contain them |
 | soft float | any `__*sf*`/`__*df*` helper symbol | no FPU code and no soft-float library in the runtime |
-| alignment | `O .data/.bss` objects of 4+ even bytes at an address not divisible by 4 | GCC aligns 32-bit data to 2; a misaligned longword costs a second 68020 bus cycle, and unrelated edits move neighbours (removing a few globals slowed cold startup 8%). Declare them `alignas(4)` |
+| alignment | `O .data/.bss` objects of 4+ even bytes at an address not divisible by 4 | GCC aligns 32-bit data to 2; a misaligned longword costs a second 68020 bus cycle, and unrelated edits move neighbours (removing a few globals slowed cold startup 8%). Declare them `__attribute__((aligned(4)))`, not `alignas(4)`: host tests that compile the same source with clang on 64-bit reject an `alignas` below a pointer's natural 8, while the attribute only ever raises alignment |
 | probe symbols | a `PROBE_SYMS` name that is not a data symbol | `--gc-sections` drops unused counters and gdb then prints code bytes. Make each a GC root with `-Wl,--undefined=SYM` |
 | release contents | diagnostic symbols in a `DIST=1`/`RELEASE=1` link; missing `$VER` | no instrument ships |
 | chip BSS | nonzero bytes in `.MEMF_CHIP` | see above |

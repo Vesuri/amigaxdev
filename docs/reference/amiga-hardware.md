@@ -515,5 +515,5 @@ with its own display owner overrides it, with FMODE 0 or its own measured window
 - A cross-object `bsr` is `R_68K_PC16`, which `elf2hunk` cannot represent; use `jsr`.
 - Every global a debugger reads must be kept from `--gc-sections` (a `PROBE_SYMS` list), or its
   symbol resolves into instruction bytes.
-- `alignas(4)`, the mul/div audit and the other link audits: [port toolchain](port-toolchain.md)
+- 4-byte alignment of globals (`aligned(4)`), the mul/div audit and the other link audits: [port toolchain](port-toolchain.md)
   and [68k optimisation](m68k-optimisation.md#2-68000-versus-68020).
