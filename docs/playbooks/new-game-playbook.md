@@ -104,7 +104,11 @@ have only the installed game, look for the slave source in the matching installe
 installs include `source/` more often than not, and a Retroplay pack without source may have an
 installer pack that has it: ask the user for the installer pack. The ReadMe may also point to the
 author's repository: StingRay's `MK1Roxxor/WHDLoad_Patches` on GitHub holds his slave sources
-(`gh api 'repos/MK1Roxxor/WHDLoad_Patches/git/trees/HEAD?recursive=1'`, then fetch the raw file).
+(`gh api 'repos/MK1Roxxor/WHDLoad_Patches/git/trees/HEAD?recursive=1'`, then fetch the raw file),
+and JOTD's `jotd666/whdload_slaves` holds his under `<L>/<Game>/usr/source/`. Look in both
+before settling on an installer's source, whatever the ReadMe says, and use the repository
+commit whose source matches the shipped slave. Maintainers take over each other's slaves, so
+the ReadMe's history names everyone; credit them all.
 Without source, disassemble the slave: it is a normal hunk executable. **Reconstruct it so
 vasm rebuilds it byte-identically** (a small slave takes one session): disassemble each code region
 separately (data islands break the instruction alignment), turn PC-relative targets into
@@ -116,6 +120,31 @@ stores distance−2; `PL_P`/`PL_PS` store the destination relative to the list s
 WHDLoad 20 KickEmu sources** (the user's requirement): `Src/slave-examples/kick13.asm` and
 `kick13.s` from the shared `$WHDLOAD` tree (20.1; §10). The slave still declares
 WHDLoad 17 unless it needs a v20 feature (§10).
+
+**Published source often does not rebuild byte-identically under vasm, and that is not a
+blocker.** Rebuild the unmodified source first. The usual causes, none of them a code change:
+
+- **Another assembler.** Barfly sources carry `IFD BARFLY` blocks with `OUTPUT`, `BOPT`,
+  `SUPER`, `DOSCMD` and an `INCBIN "T:date"` build date in the version string, which vasm
+  cannot take, and `BOPT O+` picks other short forms. Devpac and Barfly assemble
+  `and.l #n,Dn`, `cmp.w #n,Dn` and `sub.l #n,Dn` as `ANDI`/`CMPI`/`SUBI`; vasm keeps the
+  immediate-source `AND`/`CMP`/`SUB` encoding (same size, same result). Writing the `i` form
+  in the source makes vasm emit the same bytes. Without `-devpac`, vasm also turns
+  `sub.l #2,Dn` into `subq`.
+- **Another KickEmu revision.** A kickemu slave includes the `kick13.s`/`kick31.s` of the
+  WHDLoad package its author had; the 20.1 files are larger, so every offset after them
+  moves. Do not vendor an old KickEmu to chase identity.
+- **Source only the original assembler accepted**: an unclosed `IFD`, an include path such as
+  `Sources:whdload/kick13.s`, a `DEBUG` symbol left set although the shipped slave was built
+  without it (no debug strings in the binary).
+
+Make only the edits vasm needs and comment each in place. Then prove the build equivalent:
+compare the slave header field by field; disassemble the author's code in both (from the
+first instruction after the KickEmu part, or back from the end of the strings in a small
+direct slave) and diff, allowing only the encodings above and moved PC-relative
+displacements; the patch lists and version tables must match byte for byte; and boot it to
+the game. That vasm build is the baseline from then on, and later changes are held to byte
+identity against it.
 
 Put the playable tree at `tmp/game/<Name>/`, exactly as `run.sh` will mount it on `DH1:`.
 

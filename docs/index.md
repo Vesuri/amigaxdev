@@ -20,6 +20,7 @@ search for the affected option, helper or symptom before reading surrounding tex
 
 | Need | Read |
 |---|---|
+| Find a slave's source, or rebuild a shipped slave that does not come out byte-identical | [Identify the slave](playbooks/new-game-playbook.md#2-unpack-and-identify-the-game): sources, reconstruction, assembler and KickEmu differences |
 | Machine preset, CPU, RAM, ROM or MMU settings | [Named setups](reference/headless-fsuae.md#named-machine-setups) |
 | Emulator choice, debugger input, bounded field advancement | [Builds](reference/headless-fsuae.md#which-fs-uae), [harness commands](reference/headless-fsuae.md#harness-commands-native-builds) |
 | Window placement, sound or screenshots | [Window options](reference/headless-fsuae.md#sound-window-screenshots) |
