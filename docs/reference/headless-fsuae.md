@@ -500,7 +500,19 @@ are audible and in front. `SOUND=1|0` (`SILENT=1`) and `WINDOW=front|back|none` 
   re-measured 17.181 ms against 17.194 audible. Check that sound is off with
   `lsof -p PID | grep -ic CoreAudio` (3 normally, 0 with dummy).
 - Audio capture: `SDL_AUDIODRIVER=disk SDL_DISKAUDIOFILE=/absolute/path` with
-  `--audio_driver=sdl`.
+  `--audio_driver=sdl` (raw 16-bit stereo at the logged `sound_frequency`, 44.1 kHz by default).
+- **FS-UAE hides too-short audio DMA waits.** On a 68020 or faster (or any CPU not at cycle
+  speed) it restarts a channel itself when DMA comes back on while the channel is still playing
+  (UAE `audio.cpp`, `audio_state_channel2`), logging `Audio N DMA wait hack ENABLED` (the
+  first 100 times). Real hardware does not, so a slave can sound right in FS-UAE and lose notes
+  on a real 68040. `--uae_chipset_hacks=8` in the extra arguments switches it off, together with
+  two smaller Paula workarounds (very short periods, pointers written during startup). The log
+  then reads `... DMA wait hack DISABLED` for each restart that fails: count those lines from a
+  fixed stretch of music to compare builds, and expect 0 on the A500 reference.
+- **Compare recordings against a second reference run**, not only against one: align by
+  cross-correlating onset strength (spectral flux) over the whole recording, since boot times
+  differ, then compare in windows of a few seconds. Two correct runs of the same machine
+  already disagree on some onsets; that is the comparison's noise floor.
 - Interactive screenshots: hold F12, press S. The directory comes from `FSEMU_SCREENSHOTS_DIR`
   (point it into `tmp/`); `--screenshots_output_dir` is parsed but ignored.
 - Headless frames: `dump binary memory` the chunky buffer or bitplanes and decode on the host

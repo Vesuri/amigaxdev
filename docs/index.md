@@ -24,6 +24,7 @@ search for the affected option, helper or symptom before reading surrounding tex
 | Machine preset, CPU, RAM, ROM or MMU settings | [Named setups](reference/headless-fsuae.md#named-machine-setups) |
 | Emulator choice, debugger input, bounded field advancement | [Builds](reference/headless-fsuae.md#which-fs-uae), [harness commands](reference/headless-fsuae.md#harness-commands-native-builds) |
 | Window placement, sound or screenshots | [Window options](reference/headless-fsuae.md#sound-window-screenshots) |
+| Music loses notes or wobbles in tempo on a fast CPU; FS-UAE sounds right but hardware does not | [CPU-timed audio DMA waits](playbooks/new-game-playbook.md#8-baseline-profile), [Paula audio](reference/amiga-hardware.md#paula-audio), [FS-UAE's audio workaround](reference/headless-fsuae.md#sound-window-screenshots) |
 | Debugger RAM differs from CPU reads; stale flags | [Cache observer](reference/cache-observer.md), [register observer](reference/register-observer.md) |
 | Hardware-only crash, black screen, executable cache publication | [WHDLoad hardware debugging](playbooks/new-game-playbook-hardware.md); [native port regressions](native-port-validation.md) for relocated or [self-modifying](native-port-validation.md#self-modifying-original-code) original code |
 | WHDLoad MMU faults or vector ownership | [MMU diagnosis](playbooks/whdload-mmu.md) |

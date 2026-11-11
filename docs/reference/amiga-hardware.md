@@ -391,7 +391,11 @@ re-inserts the system copper list after every `WaitTOF`.
 - **Keep DMA control in blanking**: stop in one VBI, program and start in the next. DMA control
   during display coincided with one-refresh horizontal strips in static scenery (20–40 ms
   latency). If a restart must wait inline, wait at least two sample periods of the largest
-  period since the stop (from the Hardware Reference Manual's audio state machine).
+  period since the stop (from the Hardware Reference Manual's audio state machine). A
+  channel stopped during its high byte finishes that period, then plays the low byte for one
+  more period using the period register's current value (already the new note's, if the
+  driver wrote it), and goes idle only then. Time the wait by the beam (count `VHPOSR` line
+  changes, one line is about 227 colour clocks on PAL), never by CPU loops.
 - **Protect note setup from the audio interrupt, not just DMA timing.** A pending request
   can consume a partially prepared attack/loop state before the new sample starts. Mask that
   channel during preparation and restore it only after the state and DMA startup are ready.

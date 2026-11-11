@@ -606,6 +606,19 @@ Measure with WHDLoad's `DCACHE` (or `CACHE`) when the slave leaves caches alone.
 Whether the slave manages caches is a per-game decision for the user: leave them to WHDLoad's
 options (with the ReadMe recommending `DCache`), or enable KickEmu's `CACHE`.
 
+**CPU-timed audio DMA waits.** Many music players and effect routines switch audio DMA off,
+set the channel registers, then wait with a CPU loop (`dbf` over a few hundred chip reads)
+before switching DMA on again. On a 68000 such a loop can last 10–20 raster lines; on a 68040
+it can drop below one. Then the channels are still playing when DMA comes back, the new
+notes do not start, and the music loses notes or sounds unsteady in tempo, mostly on
+68040/060 with the MMU. Find the loops between the `DMACON` off and on writes, and replace
+them with a wait for raster-line changes (`VHPOSR` high byte) sized to two periods of the
+longest period the game uses (the hardware rule is in
+[Paula audio](../reference/amiga-hardware.md#paula-audio)). Keep the loop's register results.
+The wait runs only when notes or effects start: count its calls in the busiest scene before
+calling it cheap. FS-UAE hides this bug by default; verify with its workaround off
+([headless FS-UAE](../reference/headless-fsuae.md#sound-window-screenshots)).
+
 Record the cache state behind every figure from the hardware, not from the API. A VERIFY-only
 boot can log `CACR` right after the slave's `resload_SetCPU`; the API state
 reports instruction and data caches requested even on CPUs that have neither. Read `CACR` only
