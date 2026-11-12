@@ -342,6 +342,26 @@ Each port keeps a host build of the same core sources: Clang, GNU Make, SDL2 fro
 - **Unicorn** for differential oracles: use the shared `$AMIGA_UNICORN` build, not Homebrew's,
   which dies with SIGILL on arm64 where an add/subtract-with-borrow folds to a constant.
   Unicorn's 68020: write SR before A7 (A7 is the active stack pointer).
+  - **Unicorn's M68000 model is not a 68000** (2.1.4, measured). It runs word and long accesses
+    at odd addresses and jumps to odd PCs without an address error. It also runs 68020
+    instructions (`bfins`, `extb.l`, `muls.l`, `divu.l`, `bra.l`, `cas`, `movec`, scaled and
+    full-format indexes, memory indirect) as the M68020 model does. The model setting does take
+    effect: the ColdFire models reject `bfins`. A host core that stands in for an A500 needs its
+    own checks:
+    - a memory hook failing any access wider than a byte at an odd address, and a block hook
+      failing an odd PC;
+    - a decode of every executed instruction as 68000, and an exception hook that stops on
+      any exception;
+    - code assembled only with vasm `-m68000`, with a lint rejecting `machine`, `mc680x0`,
+      `cpu32` and `opt p=` directives, which switch vasm's CPU back.
+    Prove the checks with bare-model controls: the model with no checks must run each plant
+    to its end, so the checks, not the model, are what fail it.
+  - **Capstone's 68000 mode** rejects 68020 opcodes but decodes 68020 extension words as a
+    68020 does: `(a0,d0.w*4)` and `([a0])`. A 68000 ignores the scale and full-format bits and
+    runs a different instruction. Its address-mode field calls a brief word with a zero
+    displacement a base displacement. So to check an indexed operand, rebuild its 68000 brief
+    word (D/A, register, W/L, 8-bit displacement, scale and bit 8 clear) from the operand's
+    fields and require it among the instruction's extension words.
 - `brew install` on a managed Mac may raise a privilege prompt: let the user start installs.
 
 ### Deterministic stripped HUNK padding
