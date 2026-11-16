@@ -49,6 +49,8 @@ in the installed developer package's `Docs/` directory.
 - Map `.whdl_expmem` with that report's ExpMem base. Match the exact executable and
   resolve each loaded hunk independently: code, data and BSS need not share one relocation
   delta. Publish findings as game code/resource offsets rather than transient addresses.
+  `python3 -m amigaxdev.whdldump DIR --seg A,B,...` does the mapping: the fault address and
+  width, the frame's fault address and SSW, and PC as `hunk N +$offset`.
 - Reproduce with the old build, then rerun the same scenario with the correction. If a
   later fault appears, investigate it too. An MMU failure alone does not establish a
   cache bug; `NoCache` is a diagnostic comparison, not a substitute for finding the cause.

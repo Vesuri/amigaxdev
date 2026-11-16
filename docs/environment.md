@@ -146,6 +146,7 @@ the window. The contracts are in [the shared launcher](reference/headless-fsuae.
 | `amigaxdev.native_service_scope` | explicit return/interrupt scope records from the optional instrumented build; [contracts](reference/measurement-method.md#explicit-native-service-scopes) | per-project native-service accounting |
 | `amigaxdev.disasm` | `python3 -m amigaxdev.disasm dis\|disd\|hotspots [--label NAME] ...` | `dis.sh`, `disd.py`, `hotspots.py` |
 | `amigaxdev.adf`, `amigaxdev.patchlist` | `python3 -m amigaxdev.adf DISK`, `python3 -m amigaxdev.patchlist SLAVE OFFSET` | `adf.py`, `patchlist.py` |
+| `amigaxdev.whdldump` | `python3 -m amigaxdev.whdldump [--report N] [--json] [--seg A,B,...\|--hunk0 A] DIR [read ADDR [N] \| dis [ADDR [N]] \| reports]`: a CoreDump directory's report (the last of the appended ones by default), registers, exception frame, PC and stack return addresses as region and `hunk N +$offset`, memory by Amiga address; `Dump(dir).read/word/long/reg/where/frame/summary` in Python | hand-parsed `.whdl_register` and offset arithmetic on `.whdl_expmem` |
 | `amigaxdev.release` | `archive(prefix, files, drawer_icon, dos_stamp(y, m, d))`, `write()`, `refuse_originals()`, `installer_icon(icons_dir, appname)` | the body of `package_release.py`, `installer_icon.py` |
 | `amigaxdev.mac` | `macbin`, `resource_fork`, `hfs_extract`, `gen_trap_names`, `m68k_sweep` | the Macintosh ports' copies |
 | `amigaxdev.dos` | `mz_info` (with Compack detection), `verify_amiga_runtime` | the DOS ports' copies |

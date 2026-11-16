@@ -441,6 +441,9 @@ gdb's status, with `trap fsuae_stop EXIT`.
   ranges to read the program's variables at the fault. Delete the old files first:
   `.whdl_register` is appended to, the others are overwritten
   ([reading WHDLoad dumps](../playbooks/new-game-playbook-hardware.md#read-the-matching-dump-first)).
+  `python3 -m amigaxdev.whdldump DIR --hunk0 ADDR` prints the summary with PC and the
+  stack's return addresses as hunk offsets; `read ADDR [N]` and `dis [ADDR [N]]` read the
+  dumped memory by Amiga address ([shared tools](../environment.md#shared-tools)).
 - **Read `.run/gdb-out.log`, not the script's stdout.** The 40-line tail drops headers and early
   phases; a frame total summed from it read 36 ms low. Copy the log to a per-arm file as
   soon as a run ends and compute from that.

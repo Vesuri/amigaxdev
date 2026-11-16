@@ -28,6 +28,7 @@ search for the affected option, helper or symptom before reading surrounding tex
 | Debugger RAM differs from CPU reads; stale flags | [Cache observer](reference/cache-observer.md), [register observer](reference/register-observer.md) |
 | Hardware-only crash, black screen, executable cache publication | [WHDLoad hardware debugging](playbooks/new-game-playbook-hardware.md); [native port regressions](native-port-validation.md) for relocated or [self-modifying](native-port-validation.md#self-modifying-original-code) original code |
 | WHDLoad MMU faults or vector ownership | [MMU diagnosis](playbooks/whdload-mmu.md) |
+| WHDLoad exited with an exception, or a crash in a user's run left a CoreDump | `python3 -m amigaxdev.whdldump DIR` ([shared tools](environment.md#shared-tools)); [read the matching dump first](playbooks/new-game-playbook-hardware.md#read-the-matching-dump-first) |
 | Profile, compare performance or diagnose loading stalls | [Measurement method](reference/measurement-method.md), especially instruments, clock resolution and A/B discipline |
 | Instruction/call profiles or native service costs | [Profile reader](reference/measurement-method.md#shared-instruction-profile-reader), [native-service scopes](reference/measurement-method.md#explicit-native-service-scopes) |
 | Prove equivalence, construct fixtures or validate gameplay | [Validation harness](reference/validation-harness.md); choose routine, whole-program or user-route checks |

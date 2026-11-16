@@ -19,6 +19,10 @@ ROM. Read the options and CPU/cache/MMU state from the dump as well as the user'
   `Include/whddump.i`; chunk sizes are big-endian and odd-sized chunks have a padding byte.
   Useful chunks include `OPT `, `CPU `, `SLAV`, `MEM ` and `EMEM`. Check the captured slave
   and options rather than assuming which build or icon the user launched.
+- `python3 -m amigaxdev.whdldump DIR` reads all of these: `reports` lists the appended
+  reports, `--report N` selects one (and warns that the binary files belong to the last
+  capture), `--seg`/`--hunk0` map PC and stack return addresses to hunk offsets, and `read`
+  and `dis` take Amiga addresses ([shared tools](../environment.md#shared-tools)).
 - An ordinary quit with `CoreDump` can report `Return OK.` and PC `$FFFFFFFF`. That is not
   evidence that the game jumped to an invalid address. Recover context from the interrupt
   frame, saved task registers and stacks, and loaded instructions.
