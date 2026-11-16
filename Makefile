@@ -115,13 +115,16 @@ test-native-service-scope:
 	python3 scripts/test_native_service_scope.py
 	python3 scripts/test_native_service_scope_reader.py
 
-.PHONY: test-shared-harness test-release test-strip-address
+.PHONY: test-shared-harness test-release test-whdldump test-strip-address
 test-shared-harness:
 	python3 scripts/test_fsuae_setup.py
 	python3 scripts/test_input.py
 
 test-release:
 	python3 scripts/test_release.py
+
+test-whdldump:
+	python3 scripts/test_whdldump.py
 
 test-strip-address:
 	@mkdir -p tmp/tests

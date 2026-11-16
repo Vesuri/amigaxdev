@@ -76,7 +76,7 @@ check "gdbserve captures"      "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scrip
 check "FS-UAE repeatability"   "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_fsuae_repeat.py" "$AMIGA_SHARE/fs-uae-arm/fs-uae"
 check "LHa for UNIX"           sh -c "'$AMIGA_SHARE/lha-compressor/src/lha' --version 2>&1 | grep -q LHa"
 check "Python packages"        "$AMIGA_SHARE/python/bin/python3" -c 'import PIL, numpy, capstone, amitools'
-check "amigaxdev package"      "$AMIGA_SHARE/python/bin/python3" -I -c 'import amigaxdev.env, amigaxdev.barto, amigaxdev.gdbserve, amigaxdev.disasm, amigaxdev.adf, amigaxdev.patchlist, amigaxdev.release, amigaxdev.framework, amigaxdev.mac.resource_fork, amigaxdev.dos.mz_info'
+check "amigaxdev package"      "$AMIGA_SHARE/python/bin/python3" -I -c 'import amigaxdev.env, amigaxdev.barto, amigaxdev.gdbserve, amigaxdev.disasm, amigaxdev.adf, amigaxdev.patchlist, amigaxdev.whdldump, amigaxdev.release, amigaxdev.framework, amigaxdev.mac.resource_fork, amigaxdev.dos.mz_info'
 check "Unicorn (patched)"      "$AMIGA_SHARE/python/bin/python3" -I "$REPO/scripts/test_unicorn.py" "$AMIGA_SHARE/unicorn/lib/libunicorn.2.dylib"
 check "xdftool"                "$AMIGA_SHARE/python/bin/xdftool" --help
 for t in lha unar lsar uv lldb hmount hcopy ffmpeg 7zz; do check "$t" command -v "$t"; done

@@ -10,6 +10,7 @@ AmigaXDev docs/environment.md.  Modules:
   disasm    objdump over memory dumps (dis, disd and hotspots commands)
   adf       list and extract files from an OFS/FFS floppy image
   patchlist decode a WHDLoad resload_Patch list inside a slave
+  whdldump  WHDLoad CoreDump files: the crash report, registers and memory by address
   release   deterministic LH5 release archives and installer icons
   mac       Macintosh originals: MacBinary, resource forks, HFS, A-trap names, 68k sweep
   dos       DOS originals: MZ headers, the Amiga runtime check
