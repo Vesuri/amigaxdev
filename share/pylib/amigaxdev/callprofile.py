@@ -15,8 +15,15 @@ The stub records no call stacks (its unwinder needs a trigger), so they are rebu
 a frame is pushed at the first instruction after JSR/BSR (keyed by that entry PC) or after an
 exception-entry gap (keyed `('irq', PC)`), with the SP seen there, and popped as soon as SP
 rises above it. That survives tail jumps, stack fix-ups and PEA/RTS dispatch better than
-matching RTS, but it assumes one stack: code that switches between USP and SSP (an OS game's
-task and its interrupts) splits into separate roots. Feed chunks in order and without gaps;
+matching RTS. It keeps one stack whatever the CPU mode, so an interrupt nests under the code
+it interrupted and pops when the CPU is back on a stack above the interrupt's SP: on the same
+stack, or on a user stack (USP) above the supervisor stack (SSP). With the user stack *below*
+the supervisor stack (a program's USP in low Chip RAM, the interrupts on a loader's SSP near
+the top of memory), the return to user mode never raises SP above an interrupt frame: no
+interrupt frame ever pops, each interrupt nests under the last, and the tree is a chain of
+`IRQ` frames holding everything after the first interrupt. Check the SP ranges by mode (SR
+bit 13) first; for such a program reduce with one stack per mode, popping the supervisor
+stack whole on each return to user mode. Feed chunks in order and without gaps;
 the call stack carries across them. Chunks captured back to back leave no field untraced on
 a build with `gapless-profile` (`monitor harness`); a register read between two leaves one
 field out, and older builds always leave one.
