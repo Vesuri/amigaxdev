@@ -175,6 +175,25 @@ Launcher regression checks (argument capture only, no emulator or game data):
 `python3 scripts/test_fsuae_setup.py` from AmigaXDev. They exercise `/bin/bash` 3.2,
 both launch paths, every preset, conflicting project arguments and the override order.
 
+### Chip RAM and the data cache under MMU emulation
+
+On real Amigas the board refuses data caching of Chip RAM and the I/O space (the CPU's
+cache-inhibit input), whatever the CPU's CACR and MMU tables say, so a data cache cannot
+speed up Chip RAM accesses. FS-UAE models that refusal only when no MMU is emulated:
+`set_memory_cacheable` (`memory.cpp`) clears the data-cache bits of Chip RAM only without an
+MMU model. With one (every preset whose MMU column is not "none"), Chip RAM stays
+data-cacheable unless the guest's MMU tables inhibit it; the 68030 MMU path falls back to
+that hardware state wherever the tables do not inhibit caching (`cacheablecheck`,
+`cpummu30.cpp`), translation off included. A guest that enables the data cache in CACR and
+leaves translation off, such as WHDLoad's `DCACHE` without its `MMU` option, then has Chip
+RAM data cached, which no board allows.
+
+MEASURED: a program running entirely in Chip RAM on `a1200-030` drew 13.75 frames a second
+with the caches off, 21.5 with WHDLoad's `CACHE` (instruction cache) and 34.0 with `DCACHE`.
+With `EXTRA_ARGS=--uae_mmu_model=0` (the same cycle-exact 68030 without the MMU model)
+`CACHE` gave 21.0 and `DCACHE` 21.25: the 34 was the emulated data cache serving Chip RAM.
+Take any data-cache figure for code or data in Chip RAM from a CPU without an MMU model.
+
 ## Which FS-UAE
 
 | Binary | Variable | Use |

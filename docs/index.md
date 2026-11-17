@@ -22,6 +22,7 @@ search for the affected option, helper or symptom before reading surrounding tex
 |---|---|
 | Find a slave's source, or rebuild a shipped slave that does not come out byte-identical | [Identify the slave](playbooks/new-game-playbook.md#2-unpack-and-identify-the-game): sources, reconstruction, assembler and KickEmu differences |
 | Machine preset, CPU, RAM, ROM or MMU settings | [Named setups](reference/headless-fsuae.md#named-machine-setups) |
+| A data-cache option speeds up Chip RAM code on an MMU preset | [Chip RAM and the data cache](reference/headless-fsuae.md#chip-ram-and-the-data-cache-under-mmu-emulation) |
 | Emulator choice, debugger input, bounded field advancement | [Builds](reference/headless-fsuae.md#which-fs-uae), [harness commands](reference/headless-fsuae.md#harness-commands-native-builds) |
 | Window placement, sound or screenshots | [Window options](reference/headless-fsuae.md#sound-window-screenshots) |
 | Music loses notes or wobbles in tempo on a fast CPU; FS-UAE sounds right but hardware does not | [CPU-timed audio DMA waits](playbooks/new-game-playbook.md#8-baseline-profile), [Paula audio](reference/amiga-hardware.md#paula-audio), [FS-UAE's audio workaround](reference/headless-fsuae.md#sound-window-screenshots) |

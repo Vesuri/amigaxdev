@@ -602,7 +602,10 @@ can make WHDLoad turn every cache off without the MMU, so 68020/68030 numbers ta
 are uncached. Do not infer the live state of another CPU or loader from this policy request:
 a CACR audit has observed instruction caching enabled on 68040/060 NOMMU configurations, with
 data caching disabled, despite a non-cacheable BaseMem request.
-Measure with WHDLoad's `DCACHE` (or `CACHE`) when the slave leaves caches alone.
+Measure with WHDLoad's `DCACHE` (or `CACHE`) when the slave leaves caches alone. For a program
+in Chip RAM, take `DCACHE` figures without an MMU model (`--uae_mmu_model=0` on a 68030 preset):
+with one, FS-UAE caches Chip RAM data, which no board allows
+([Chip RAM and the data cache](../reference/headless-fsuae.md#chip-ram-and-the-data-cache-under-mmu-emulation)).
 Whether the slave manages caches is a per-game decision for the user: leave them to WHDLoad's
 options (with the ReadMe recommending `DCache`), or enable KickEmu's `CACHE`.
 
