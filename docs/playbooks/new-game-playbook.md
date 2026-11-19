@@ -622,6 +622,21 @@ The wait runs only when notes or effects start: count its calls in the busiest s
 calling it cheap. FS-UAE hides this bug by default; verify with its workaround off
 ([headless FS-UAE](../reference/headless-fsuae.md#sound-window-screenshots)).
 
+**CPU-timed screens, fades and loads.** Games also hold screens with CPU loops: a bonus or
+game-over screen, a palette fade's wait after each step, a loader's pause before each file.
+On a 68030 these flash past. Find them by scanning the code for loops that only count:
+`dbf Dn,*`, `subq.l #1,Dn; bne` back to itself, often with a large count loaded just before
+(one game: 4 of the main program's 15 `dbf`-to-self loops were delays, the rest cleared or
+copied memory). Do the same for tight backward branches in interpreted or threaded game code.
+Then measure each delay on the A500 in raster lines, with breakpoints at its entry and exit
+reading the field counter and the beam, and replace it with a beam-timed wait of that length.
+For a wait repeated after each step of a sequence (a fade's 32 palette steps), wait until the
+step's A500 time has passed since the previous step ended. That way the step's own work counts
+toward the time, and a 68000 keeps its original pace instead of getting slower. Read the beam
+stably: a long read of `VPOSR` is two word reads, so near line 256 the line number can tear.
+Read twice until the line bits agree. Before removing a delay, check what is on screen during
+it. One loader's pause before each file was also what kept a picture visible on a fast CPU.
+
 Record the cache state behind every figure from the hardware, not from the API. A VERIFY-only
 boot can log `CACR` right after the slave's `resload_SetCPU`; the API state
 reports instruction and data caches requested even on CPUs that have neither. Read `CACR` only

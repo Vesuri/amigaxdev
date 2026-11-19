@@ -416,6 +416,12 @@ after `make setup` rebuilds it.
   memory discrepancies, see the optional [cache observer](cache-observer.md).
 - `until` blocks the server until its address is reached. Prefer `break *A`,
   `ignore $bpnum N`, `continue`.
+- **A request that runs the CPU holds the server.** `until` and `gdb continue` return only
+  when a breakpoint is reached, and the server takes one request at a time. Meanwhile other
+  clients' connections are refused, `quit` included (macOS). A script whose client timed out
+  therefore leaves the server running behind it. Use `continue` only where the CPU
+  is sure to arrive, bound other waits with `monitor fields N` polls, and after a timeout check
+  for the server's process before booting the same instance again.
 - The stub stops on CPU exceptions: an address error or illegal instruction stops with a usable
   backtrace. It also accepts hardware watchpoints, but one has
   failed to fire: prove a watchpoint on a known write before trusting its silence.
