@@ -196,6 +196,22 @@ not erase movement that a slower consumer has yet to read. Test PAL/NTSC and
 independent producer/consumer rates. Hardware handshakes and beam/blitter waits
 are a different class from user-visible delays.
 
+## Interrupt counters and bypassed locks
+
+A field counter in an interrupt handler counts the handler's entries. Once a patch adds an
+interrupt source on the same level (a blit queue driven by the blitter interrupt on level 3),
+every counter in that handler before the patch's filter counts the new source too: the
+game's and the slave's own (a frame-rate lock's count). Filter the added source before every
+counter, or take its count back, and measure entries per field after the change.
+
+A lock or wait that the patch skips in one mode stops resetting its counter. A free-running
+word later read with a signed test (`cmp.w d1,d0; blt`) passes `$7FFF` and is negative; the
+first lock after the mode, at a transition such as the end of a level, game over or name entry,
+then waits for the word to wrap. That can take minutes, often with the next screen's palette
+over the old picture. Whether and how long it stalls depends on how many entries the counter
+saw, so it shows only at some CPU speeds and some play lengths. Keep resetting the counter
+where the lock is skipped, and make the wait unsigned (`blo`) so a large count passes.
+
 ## Recording with a changing timestep
 
 Recording one input tuple per update does not establish a fixed-duration movie.

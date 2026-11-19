@@ -455,6 +455,14 @@ prediction fraction and re-entry where history is retained. Native CPU checks es
 routine behavior within their modeled boundary; they do not establish complete gameplay,
 visual acceptance or hardware performance.
 
+Drive a modified loop to each of its exits, not only through it: finishing a level, a bonus
+count, name entry, game over and the return to the menu. Patched state (counters, interrupt
+sources, locks) is handed back to unpatched code there. When a bounded route cannot reach an
+exit (the timer runs out before a course ends), add a test-only assembler define that stops
+the timer, keep it out of the release build, and note what it changes (a frozen timer also
+lengthens a remaining-time bonus count). Run the exits at the CPU speeds between the presets
+as well ([headless FS-UAE](headless-fsuae.md), "Override precedence").
+
 ## 11. Pictures
 
 - **Judge appearance only from a clean real run.** The remote debugger greys the display, so
