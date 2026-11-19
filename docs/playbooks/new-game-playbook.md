@@ -792,6 +792,18 @@ in an interpreter before booting.
 - Choose the patch type deliberately. Use `PL_P` (jump, no return) when the replacement
   re-executes the original body: a `PL_PS` twin returns into code that has already run and
   corrupts the stack.
+- **A game fix of more than one word is written whole or not at all.** Guard it with one
+  comparison covering every byte it writes, and check that the guarded bytes are the original
+  ones. Separate per-word guards can leave half a fix in place, which is worse than none. A
+  checker must apply the fix to the pinned original and run it, with the unpatched code as the
+  negative control.
+- **Before blaming a port's data for a difference from another version, run the data through
+  the renderer's code.** Decode the asset with the game's own unpacker, ported from the
+  disassembly rather than guessed, and compare it with the other version's asset. A dispatch
+  table whose entry is a copy of its neighbour's (a 4-pixel font nibble drawn as the next lower
+  pattern) drops pixels that are in the data and in the other version. A short in-place fix can
+  then reuse a sibling case: do the missing part, then branch into the existing case that does
+  the rest.
 - **Find self-modifying code before moving or caching code.** Decode the executed instructions
   of a capture, evaluate each write's destination from the recorded registers (indexed and
   register-indirect as well as absolute) and intersect the written bytes with executed
