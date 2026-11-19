@@ -260,6 +260,27 @@ scene that does not natively rotate them. Do not erase native controls still own
 next mode, and do not confuse prediction reset with draining a pending display handoff.
 Validate an early skip during motion and a second entry, not just a completed first pass.
 
+## Pair recorded draw calls by identity, not by position
+
+A game too tangled to interpolate at the state level can be interpolated at its drawing
+primitives: record each tick's calls (lines, plots, shapes) as fixed-size ops, then draw the
+recording several times between ticks, each op lerped toward its partner in the previous
+tick's recording. A wrong pair shows as an object lerping against a different object.
+
+- An op's index in the recording, or its object's table slot, is not an identity. A table the
+  game keeps sorted (by depth, say) and compacts on removal moves an object to another slot
+  whenever another object is inserted or removed. Key an op by the call site (the primitive's
+  return address) plus values that stay constant through the object's life, such as a spawn
+  velocity or an accumulated step that the native update adds to. Tell duplicate keys within one
+  tick apart by occurrence order. Draw an op with no partner at its current position.
+- Each op type writes only some fields of the op. When the recorder clears only part of an op,
+  a pairing test that reads a field this type never writes sees stale data. The first run can
+  pass while a later one fails. No test
+  may read a field its op type does not write. Validate a second run after a game over or a mode
+  change, not only the first.
+- Measure pairing directly: for each paired op, the distance it moves between recordings. Snaps
+  that are not near-camera 1/z growth are wrong pairs; count them per scene.
+
 ## Give newly spawned projectiles an explicit presentation interval
 
 A reused object slot is not proof of a continuous trajectory. Certify new identity at the
