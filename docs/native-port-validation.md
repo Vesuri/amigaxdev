@@ -143,6 +143,13 @@ With Commodore Installer, `askchoice` returns a zero-based index, whereas
 forms without checking how the result controls copying. The installed Developer
 CD reference is under `Reference/DevCon/Orlando_1993/Devcon93.2/Installer/Installer2.16/installer.doc`.
 
+An installer that reads PC floppies goes through `PC0:`, which needs CrossDOS (Workbench
+2.1 and later) and a high-density drive for 1.44 MB disks. `askdisk` waits for a volume
+*name* (its `dest`), not a drive, and PC disks' labels are not dependable: prompt with a
+`message` per disk and let the helper's checks refuse a wrong disk. On a Workbench 2.04
+test image without CrossDOS, test the per-disk loop by replacing the prompt with an
+`Assign PC0:` to a drawer holding that disk's files.
+
 Run the script through the actual supported Installer version. Cover fresh
 installation, reuse, replacement, incomplete data, removal and invalid saves.
 Use distinct synthetic installed-file bytes and valid source files: identical

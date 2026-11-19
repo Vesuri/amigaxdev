@@ -556,6 +556,15 @@ assembled with `-I.` and the project's `whdload/smoke_name.i`) tests the harness
   executable) out with `ws_DontCache` (kick31.s hard-codes it 0: build from a copy whose field
   points at a slave label). Each read of an uncached file is an OS switch, so read those files
   in few large reads. Check what stays cached with host access times on the installed files.
+  The converse holds too: a file read in small pieces (an EXEC model's 4-byte relocation
+  reads) or read again during play (an overlay manager's own executable) must stay cached,
+  even if it is also read at start.
+- An A1200's 68EC020 addresses 24 bits, so its Fast RAM is at most 8 MB of Zorro II. ExpMem
+  (game plus the 512 KiB Kickstart image), WHDLoad's backup of all of BaseMem and the PreLoad
+  cache must all fit in it, so a slave whose ExpMem approaches 7 MB cannot boot on such a
+  machine at all. A larger port needs a 32-bit CPU with Zorro III RAM: state that as the
+  requirement, and test it on such a setup (FS-UAE: `--zorro_iii_memory=` with
+  `--uae_cpu_24bit_addressing=false` when the CPU is not a preset's).
 - The user supplies the original data; the installer copies and validates it (exact size and
   SHA-256 per file, or a bundled helper extracting an allowlist from the user's archive) into a
   staging drawer, and replaces `data/` only on success. Reuse/replace and save preservation:

@@ -194,6 +194,11 @@ is what reaches the calls GCC emits by itself from a constant-store loop.
   `SHF_GNU_RETAIN`. `__attribute__((retain))` is ignored on this target; set the flag in the
   assembler source. Check for the string in the executable after `elf2hunk` and delete the
   output if it is missing.
+- **Keep digits out of the `$VER:` name.** Version tools take the first word after the
+  name that starts with a digit as `version.revision`, so a name such as `Game 2` reads as
+  version 2 (INFERRED from the format; Installer's `getversion` and C:Version parse it).
+  Use one word without a leading digit (`$VER: Game2 0.1 (19.11.2026)`), and make an
+  Installer script that checks `getversion` against it.
 - **`.incbin` dependencies are invisible to `-MMD`.** List them in the Makefile: a regenerated
   blob that didn't trigger a rebuild shifted a game's music by one byte.
 

@@ -354,7 +354,17 @@ The 68000 core showed differences only in the recorded DMA data of the next fiel
   fields after each work. A game that reads its pointer position gives a closed loop: move,
   run fields, read the position, repeat.
 - **Hold a button or key for several fields**: a game that polls once a frame misses a
-  press and release within one field. Release everything held before ending a run.
+  press and release within one field. Release everything held before ending a run. A game
+  that reads an input event queue only every few fields can miss a short press too, seeing
+  only its release: hold for longer than its read interval, measured at the reader.
+- **Advance a script on something the guest does, not on time.** Load and cinematic lengths
+  vary between runs, so a fixed delay lands a key in the wrong screen. Gate each step on an
+  observable event (the next screen's file opened, a label reached), and repeat an idempotent
+  key (Esc to skip a scene, a click) until that event, stopping before a screen where the
+  same key does something else (Esc on a title menu that quits).
+- **Long key scripts: start from the icon.** Tool types read by the program bypass the
+  Shell's command-line length and ReadArgs quoting (a `*` or `=` inside a script item), so
+  a script of hundreds of characters passes whole.
 
 Use `amigaxdev.input.Input` with the CPU stopped. It checks capabilities, records
 commands/replies, rejects protocol errors and releases its held inputs in reverse order:
