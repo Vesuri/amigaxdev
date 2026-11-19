@@ -131,6 +131,15 @@ $(OUT).exe: $(OUT).elf ; elf2hunk $< $@ -s
   the ELF and the stub supplies the load base.
 - `elf2hunk -s` drops the HUNK_SYMBOL table (11% of one probe build). Nothing
   reads it: every debugger reads the ELF. Keep `SYMS=1` to retain it if a tool ever needs it.
+  Install the stripped executable under WHDLoad too: an unstripped one with a large
+  generated program (165k symbols) is read in small pieces through kickfs, and LoadSeg
+  appears never to return.
+- **Kickstart 3.1's LoadSeg counts a RELOC32 block's offsets in a 16-bit loop**
+  (`move.w`, `dbf`), so a block of 65,536 or more offsets fails with "file is not
+  executable". `elf2hunk` writes one block per target hunk, which a large generated code
+  hunk can exceed (65,839 offsets, measured). Split each oversized block into consecutive
+  blocks of at most 65,535 for the same target hunk after `elf2hunk`; the relocation is the
+  same. Check every release executable for blocks over the limit.
 - `.DELETE_ON_ERROR`: a failed `elf2hunk` must not leave a truncated executable that looks up
   to date.
 - Write `objdump --disassemble --no-show-raw-ins -S` of the ELF to `$(OUT).s` after every link;
