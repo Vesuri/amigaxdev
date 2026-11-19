@@ -401,6 +401,12 @@ re-inserts the system copper list after every `WaitTOF`.
   channel during preparation and restore it only after the state and DMA startup are ready.
   The shared handler must intersect `INTREQR` with `INTENAR`: another channel can interrupt
   while the protected channel still has a pending request.
+- **Clear a channel's request when enabling its interrupt.** Paula sets a channel's `INTREQ`
+  bit at every reload, interrupt enabled or not, so a channel that played with its interrupt
+  masked has a request pending. A driver that enables the interrupt and counts interrupts from
+  the start (one as the sample starts, one per pass, stopping at 0) takes that stale request as
+  the start, and the real start ends the count: the sample is cut to a click. Write the
+  channel's bit to `INTREQ` together with the `INTENA` write, before `DMACON` starts it.
 - **Check actual sample starts as well as acknowledgements.** In one slave's 68030 capture, an
   interrupt race replaced 19 initial 2,250-word sample lengths with 550-word loop lengths;
   the A500 reference did not. Compare note commands, driver state and DMA fetches. Account
