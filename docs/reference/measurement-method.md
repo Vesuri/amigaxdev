@@ -44,7 +44,9 @@ For short waits or startup stalls, see [clock resolution](#clock-resolution-and-
 5. **Profile several heavy scenes from the start, not one fixture.** Tuning on one
    opening-frames window can miss a cost that dominates another scene (a later profile found
    one at about 25% of the heavy windows). A window's content follows its start field, so rank
-   on several runs.
+   on several runs. If the game records and plays back films or replays, a recorded fight
+   played from its own viewer is a repeatable heavy scene that needs no scripted flying.
+   Measure what playback costs against live play before using it to rank.
 6. **Re-measure; never quote an old number.** A figure belongs to one build, probe set,
    window and workload. A stale "~6 FPS", really 14.4, can steer scope for months.
 

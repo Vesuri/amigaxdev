@@ -347,6 +347,11 @@ Each port keeps a host build of the same core sources: Clang, GNU Make, SDL2 fro
 - **Unicorn** for differential oracles: use the shared `$AMIGA_UNICORN` build, not Homebrew's,
   which dies with SIGILL on arm64 where an add/subtract-with-borrow folds to a constant.
   Unicorn's 68020: write SR before A7 (A7 is the active stack pointer).
+  - **Unicorn x86 interrupt hooks** (a DOS service layer in Python, 16-bit mode): the hook
+    runs with no interrupt frame pushed and returns to the instruction after the `INT`.
+    Return carry and the other result flags by writing the live EFLAGS register, never a
+    stacked copy. INT 25h/26h (absolute disk read and write) must leave one extra word, the
+    caller's flags, on the stack, as DOS does: the caller pops it.
   - **Unicorn's M68000 model is not a 68000** (2.1.4, measured). It runs word and long accesses
     at odd addresses and jumps to odd PCs without an address error. It also runs 68020
     instructions (`bfins`, `extb.l`, `muls.l`, `divu.l`, `bra.l`, `cas`, `movec`, scaled and

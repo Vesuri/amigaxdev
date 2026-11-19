@@ -231,7 +231,11 @@ becoming `>= $27` on an always-even value).
   at the code;
 - the output heals itself: later writes overwrite the disagreement, so steer the pre-state
   into the real table ranges and run more cases;
-- the oracle shares the input the defect lives in: see §7.
+- the oracle shares the input the defect lives in: see §7;
+- no input ever reaches the path: a decoder's rare branch (a full table, a mode switch)
+  that the pinned data never takes. Measure which paths the pinned inputs take. Make the
+  rest loud refusals rather than untested code, and sabotage the refusal's condition so
+  that it must fire.
 
 **A sabotage run can lie**:
 
@@ -348,6 +352,11 @@ oracle inputs merely because a summary exists if those files are needed to repro
   digests. Compare persistent state and important events, not only screenshots.
   Compare digests at identical ticks. Both CPUs must use the same precision policy (for
   example, a table against a portable atan).
+- **A milestone may start from files the owner supplied** (a recorded film, a save). Pin
+  each by SHA-256, never commit it, and place it beside the installation in every harness
+  (the reference, host lockstep and the Amiga replay) with one fixed modification time. The
+  game sees the file's date through find-first and file-time calls, so a copy stamped with
+  the copy time diverges.
 - **Different CPU speeds need not show identical intermediate frames.** Capture state pairs.
 
 **Lockstep against the reference**

@@ -161,6 +161,28 @@ from the reference and reproduced independently from the file and the unpacker's
 (for DOS: a DOSBox Staging dump at the decoder's far `JMP`, normalised and `cmp`'d against a
 Unicorn unpack).
 
+**Installer archives** (a DOS installer's multi-floppy volumes):
+- **Don't assume one codec per archive or per publisher.** One catalog format (for example a
+  `05 '[PVM]'` header followed by fixed-size records) carries different record layouts and
+  codecs from title to title: PKWARE DCL streams with a CRC-32 in one, and in another a
+  per-record method byte that selects stored, tree-coded LZ or LZW with 90h run-length coding,
+  with no CRC.
+- **Read the method per record.** Check whether offsets count from the start of the stream or
+  from the disk the record names. Data can end where the catalog begins and run on into the
+  next volume.
+- **Find the decoder by profiling the installer, not by reading it.** Run the installer in a
+  minimal Unicorn DOS (file, disk and keyboard services only) and stop when it reads one
+  file's stream. Then record the instruction addresses it runs, and diff them against a
+  profile taken on a file that uses another method. The new addresses are that method's
+  decoder.
+- **A self-unpacking installer holds its tables only in memory.** Its code and tables appear
+  past the image's end after start-up and never in the file. Take them from a memory dump.
+  If a table is needed as data, the owner decides whether it may be committed as
+  interoperability data.
+- **The oracle is the tree the original installer wrote** under the reference emulator,
+  pinned by SHA-256. Decode every record in a compiled helper: a Python prototype is fine for
+  one file but too slow for the whole archive.
+
 Gate: extraction is a make target; rerunning it reproduces identical hashes.
 
 ## 4. Build the reference loop first
@@ -569,6 +591,10 @@ assembled with `-I.` and the project's `whdload/smoke_name.i`) tests the harness
   SHA-256 per file, or a bundled helper extracting an allowlist from the user's archive) into a
   staging drawer, and replaces `data/` only on success. Reuse/replace and save preservation:
   [native port validation](../native-port-validation.md).
+- A configuration file the original installer writes may be one of the data files under
+  another name (an options file equal byte for byte to an installed preset). Find its
+  source and copy it from the user's installed data, rather than embedding its bytes in the
+  helper. Settings that are plain keywords can be written from the documented choice.
 - `make dist` does a clean release build (no probes, profiling, self-tests or diagnostic markers;
   `elf2hunk -s`), the slave, the helper, then a packager with an explicit file allowlist that
   refuses any member matching an original's hash (and can scan for any 256-byte block of the
