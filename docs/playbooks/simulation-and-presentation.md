@@ -232,6 +232,22 @@ initializer rebuilds dependent maps. Test a second race after a nonzero fraction
 pass can conceal cumulative table drift. Keep native duplicate-row selection rules intact
 and require exact fetched-plane equality when the added fractions are zero.
 
+## New camera poses expose word overflow in native clippers
+
+Drawing a camera pose every field reaches poses the native rate rarely shows. Native 2D
+clippers often take an edge's dx and dy with `sub.w`. A projection clamp of each endpoint
+(for example ±32277) does not bound the span between them. When a large ground face is
+clipped at the near plane close to the camera, an edge's ends can project more than 32767
+apart. The span wraps, the border intersection lands on the wrong side, and the face fills
+the view, sky included, for as long as the pose lasts. The same bug is usually in the
+original game. Find it with a random camera sweep over a captured scene in a CPU emulator,
+using a symptom detector based on geometry (for example a face whose vertices are all
+above the horizon), not on pixels. Fix it in front of the native routine: when either span
+overflows, split the edge at its 32-bit midpoint, recursively, and pass each half to the
+unchanged native clipper. The halves lie on the same line, so edges that fit are drawn
+exactly as before. Keep the native code's register contract, and restore the endpoint
+words between halves if the clipper rewrites them.
+
 ## Redraw animation scripts without advancing them
 
 Cinematic actors can combine drawing with script-cursor advancement. Calling

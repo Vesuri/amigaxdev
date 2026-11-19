@@ -371,6 +371,16 @@ re-inserts the system copper list after every `WaitTOF`.
   68040; waiting for completion fixed corruption with full MMU and CACHE enabled. Check
   this ownership boundary before attributing corruption to caches or disabling the MMU.
   Emulator success establishes that tested path, not real-hardware certification.
+- **A plane-by-plane clear of a displayed bitmap shows intermediate pens.** `RectFill` and
+  similar calls blit one plane after another, so a field can show the area half cleared,
+  in a pen whose index is a bit subset of the original (pen 30 `%11110` shown as pen 24
+  `%11000`). This happens even when the area was faded to the background colour first. To
+  diagnose, dump the live copper list (`GfxBase->LOFlist`): if its colour moves are correct,
+  the wrong colour comes from bitplane data, not the palette. A beam-timed blit of several
+  full-width planes may not fit in the time the beam is away from the area. Instead, clear
+  with the CPU one row of every plane at a time, skipping a row while the beam is on it or
+  a few lines above it. Every displayed row is then entirely old or entirely new. Leave
+  enough lead for a 68000 row under display DMA (2–3 lines for five 40-byte planes).
 - **Interleaved bitmaps multiply blit height by the plane count**; split tall blits (a
   4-plane 292-row clear needs two).
 - **The first/last-word masks apply to channel A only.** For a masked blit of a constant pen, put

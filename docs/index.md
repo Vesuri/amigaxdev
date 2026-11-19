@@ -35,6 +35,8 @@ search for the affected option, helper or symptom before reading surrounding tex
 | Prove equivalence, construct fixtures or validate gameplay | [Validation harness](reference/validation-harness.md); choose routine, whole-program or user-route checks |
 | Change simulation speed, timestep, input sampling or replay | [Fixed-time simulation](playbooks/fixed-time-simulation.md) |
 | Smooth rendering without advancing gameplay; projection or animation | [Simulation and presentation](playbooks/simulation-and-presentation.md) |
+| Polygons near the camera fill the whole view, sky included | [Word overflow in native clippers](playbooks/simulation-and-presentation.md#new-camera-poses-expose-word-overflow-in-native-clippers) |
+| A cleared or faded-out area flashes in another pen for one field | [Plane-by-plane clears](reference/amiga-hardware.md#blitter) |
 | CPU instruction costs, C/assembly optimisation or copies | [m68k optimisation](reference/m68k-optimisation.md) |
 | Chip bus, copper, blitter, Paula, DMA, interrupts or OS handback | [Amiga hardware](reference/amiga-hardware.md) |
 | Macintosh pointer truncation above 16 MB | [Logical and native addresses](native-port-validation.md#macintosh-logical-addresses-and-native-high-pointers) |
