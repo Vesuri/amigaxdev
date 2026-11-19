@@ -147,6 +147,10 @@ installed native builds reject JIT because they were compiled without it.
 Examples: `EXTRA_ARGS='--cpu=68040-NOMMU --uae_cpu_data_cache=false'` disables the MMU
 and data cache without changing the preset's clock. `EXTRA_ARGS='--zorro_iii_memory=32768'`
 (or `--uae_z3mem_size=32`) adds 32 MB Zorro III RAM while retaining other preset settings.
+The presets skip the 28 MHz 68020 of common A1200 accelerators, between the `a1200`'s
+14 MHz 68EC020 and the 50 MHz 68030: `EXTRA_ARGS='--cpu=68020 --uae_cpu_frequency=28375160'`,
+plus `--fast_memory=0 --zorro_iii_memory=32768` to put the Fast memory above 16 MB. A
+timing-dependent bug can show only there.
 High-level RAM values use FS-UAE's units; raw `*_size` options use UAE's units.
 
 Check `Cache/Logs/debug.uae` and the final `CPU=..., MMU=..., JIT=...` runtime report
@@ -193,6 +197,13 @@ with the caches off, 21.5 with WHDLoad's `CACHE` (instruction cache) and 34.0 wi
 With `EXTRA_ARGS=--uae_mmu_model=0` (the same cycle-exact 68030 without the MMU model)
 `CACHE` gave 21.0 and `DCACHE` 21.25: the 34 was the emulated data cache serving Chip RAM.
 Take any data-cache figure for code or data in Chip RAM from a CPU without an MMU model.
+
+MEASURED: the same cycle-exact 68030 costs the host more with the data cache on. A game whose
+slave enabled it (WHDLoad's `CACHECHIPDATA`) ran on `a1200-030` at about 15 emulated fields
+per wall-clock second instead of 50, and with `WARP=1` it got about a fifth of the fields
+in the same window. Its sounds and events looked sparse, though per field they were not; with
+the cache off it ran at 50 again. Before blaming a cache-related bug on an emulated 68030,
+count emulated fields (a VBL counter at the window's start and end), not wall-clock seconds.
 
 ## Which FS-UAE
 
@@ -517,6 +528,12 @@ Debug runs (`DEBUG=1`, `WARP=1`, `FSUAE_QUIET=1`, or `--warp_mode=1` in `EXTRA_A
 `--audio_driver=dummy` and a window behind the others (`SDL_MAC_BACKGROUND_APP=1`); plain runs
 are audible and in front. `SOUND=1|0` (`SILENT=1`) and `WINDOW=front|back|none` override;
 `none` adds `--video_driver=null`.
+
+On macOS, an emulator started from a background shell that has no terminal (an agent's tool
+shell, a detached server) shows its window but never takes keyboard focus, even with
+`WINDOW=front`: clicks reach it, keys do not. For a session a person plays while a tool
+debugs it, have them start the server in their own terminal; the tool then drives it over
+the server's socket as usual.
 
 - Paula keeps running with the dummy driver, so silent runs measure the same: a silent arm
   re-measured 17.181 ms against 17.194 audible. Check that sound is off with
