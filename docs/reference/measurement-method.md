@@ -387,6 +387,11 @@ for setup to delete installed shared files or another task's output.
   ÷ inline copies × a counted call rate.
 - **Measure both the removed work and the replacement cost.** Never attribute a residual to
   an unmeasured component.
+- **An instruction's traced cycles are not what removing it saves.** In a 68020 loop of two
+  `divu.w` a step, the profile put about 1 ms a frame on the six memory accesses around the
+  divisions (variables in fast memory, data cache off). Keeping them in registers left CPU
+  work a frame unchanged (19.35 to 19.37 ms) and the frame rate too. Price a removal by
+  rebuilding and tracing the whole loop, not by summing its instructions' cycles.
 - **The recipe that broke a "structural" ceiling** (−36% on one rasteriser): shape-probe the inputs, prove the algebra on the host over millions of random
   cases, write the assembly, then run the on-target differential against the same C oracle.
   After special-casing a recursion's leaves, re-price their parents.
