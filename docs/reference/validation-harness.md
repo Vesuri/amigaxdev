@@ -299,6 +299,11 @@ runs captured with different amounts of output.
 - **Check that the gate can fail:** an unpinned clock diverges, and two configurations never
   compare equal. A wrong flag rule can hang the run instead of diverging, so a run that never
   reaches its dump is a failure.
+- **Draw random cases from the values the game produces.** Find every writer of each input
+  and pin the ones it never sets. A differential test that randomised two words the game
+  never writes (always 0 there) caught a deliberate one-instruction bug in 3% of cases; with
+  them 0, as in the game, in 20-43%. Break the replacement on purpose, once per path, and
+  check that the test fails.
 - **Record only from a clean tree, after the change is proven correct.** Re-record, clean,
   and check again: a sound reference survives a clean rebuild. A record taken after a
   differently flagged build fails consistently, with the same byte count from any build, and

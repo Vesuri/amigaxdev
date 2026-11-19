@@ -108,6 +108,14 @@ positions before comparing visibility bounds. Keep the native segment-index diff
 projection if it indexes road samples: visibility distance and projection index are different
 quantities. Test both sides of each cutoff while advancing both positions together.
 
+A renderer that collects visible objects while it samples the world (a ground drawn row by
+row that notes each object cell a row crosses) misses objects between samples where the
+samples lie farther apart than the grid, usually the distant rows. At the original frame rate
+an object that came and went with the view went unnoticed; at 50 fps it flickers. Confirm it
+from the game's own collected list frame by frame, then search the cells between consecutive
+samples too (lines at most a cell apart cross every cell whose centre lies between them), in
+the list's order, and only up to the original's distance limit.
+
 Check continuity across track intervals before blaming interpolation. A fractional
 camera-height term can use one interval while forward height accumulation begins with the next.
 At each crossing that mismatch produced a vertical jump shared by the road and riders. Compare
