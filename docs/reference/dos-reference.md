@@ -4,7 +4,8 @@ How a DOS port runs its original as ground truth: a pinned, patched DOSBox-X tha
 the game with its own installer and then runs it headless, deterministically and traced to
 named milestones. The playbook's [§4](../playbooks/new-port-playbook.md#4-build-the-reference-loop-first)
 says why the loop comes first; [validation harness](validation-harness.md) holds the general
-method. The x86 facts the translator and its oracles need are in [x86 real mode](x86-real-mode.md).
+method. The x86 facts the translator and its oracles need are in [x86 real mode](x86-real-mode.md),
+and what the port's runtime models in its place in [the runtime under translated DOS code](dos-runtime.md).
 
 AmigaXDev installs stock `dosbox-x` and `dosbox-staging` (`Brewfile.extras`) for manual play
 and comparisons. Reference runs use the project's own patched build; the shared environment
@@ -12,8 +13,8 @@ has no patched build or shared patch set yet ([open work](../open-work.md)).
 
 ## The emulator build
 
-- **Pin it by commit**, not only by tag, in the project's `manifest/` (a tag can move). The
-  ports so far use tag `dosbox-x-v2026.08.31`, commit `4f19017c5f565dc40d01fede0f1382892e7243d7`.
+- **Pin it by commit**, not only by tag, in the project's `manifest/` (a tag can move). A known-good
+  pin: tag `dosbox-x-v2026.08.31`, commit `4f19017c5f565dc40d01fede0f1382892e7243d7`.
 - **Build outside the repo** when the repo path contains a space (game names do): autoconf
   fails on it. Keep the tree under `~/.local/src/<project>-dosbox-x` and link it from the
   ignored `tools/vendor/dosbox-x`.
@@ -65,7 +66,7 @@ Patches added when a game needs them:
 - **A 386 normal core at fixed cycles** for every reference run (`core=normal`,
   `cputype=386`, `cycles=fixed N`), whatever CPU the game asks for. A 286 personality
   differs only where interrupts arrive and in PUSHF's bits 12–15, which reach RAM when a
-  manager saves FLAGS (7202h on one, 0202h on the other); use it only as a second
+  manager saves FLAGS (7202h on the 386, 0202h on the 286); use it only as a second
   personality. Choose N once, early: visit counts do not transfer across cycle settings.
 - `turbo` removes only the real-time throttle; runs stay deterministic.
 - Memory, EMS and XMS as the game's minimum machine asks; the machine shape also decides

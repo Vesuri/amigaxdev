@@ -139,7 +139,8 @@ $(OUT).exe: $(OUT).elf ; elf2hunk $< $@ -s
   executable". `elf2hunk` writes one block per target hunk, which a large generated code
   hunk can exceed (65,839 offsets, measured). Split each oversized block into consecutive
   blocks of at most 65,535 for the same target hunk after `elf2hunk`; the relocation is the
-  same. Check every release executable for blocks over the limit.
+  same. Check every release executable for blocks over the limit. The shared tools have no
+  splitter or check yet ([open work](../open-work.md)).
 - `.DELETE_ON_ERROR`: a failed `elf2hunk` must not leave a truncated executable that looks up
   to date.
 - Write `objdump --disassemble --no-show-raw-ins -S` of the ELF to `$(OUT).s` after every link;

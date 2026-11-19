@@ -33,18 +33,21 @@ search for the affected option, helper or symptom before reading surrounding tex
 | Profile, compare performance or diagnose loading stalls | [Measurement method](reference/measurement-method.md), especially instruments, clock resolution and A/B discipline |
 | Instruction/call profiles or native service costs | [Profile reader](reference/measurement-method.md#shared-instruction-profile-reader), [native-service scopes](reference/measurement-method.md#explicit-native-service-scopes) |
 | Prove equivalence, construct fixtures or validate gameplay | [Validation harness](reference/validation-harness.md); choose routine, whole-program or user-route checks |
+| Which checks a change needs; scoping long test suites by dependency | [Gate a change by what it can affect](reference/validation-harness.md#gate-a-change-by-what-it-can-affect) |
 | Change simulation speed, timestep, input sampling or replay | [Fixed-time simulation](playbooks/fixed-time-simulation.md) |
 | Smooth rendering without advancing gameplay; projection or animation | [Simulation and presentation](playbooks/simulation-and-presentation.md) |
 | Polygons near the camera fill the whole view, sky included | [Word overflow in native clippers](playbooks/simulation-and-presentation.md#new-camera-poses-expose-word-overflow-in-native-clippers) |
 | A cleared or faded-out area flashes in another pen for one field | [Plane-by-plane clears](reference/amiga-hardware.md#blitter) |
 | CPU instruction costs, C/assembly optimisation or copies | [m68k optimisation](reference/m68k-optimisation.md) |
-| Chip bus, copper, blitter, Paula, DMA, interrupts or OS handback | [Amiga hardware](reference/amiga-hardware.md) |
+| Chip bus, copper, blitter, Paula (including re-hosting PSG and OPL/AdLib sound), DMA, interrupts, mouse, joystick and keyboard, or OS handback | [Amiga hardware](reference/amiga-hardware.md) |
 | Macintosh pointer truncation above 16 MB | [Logical and native addresses](native-port-validation.md#macintosh-logical-addresses-and-native-high-pointers) |
 | Run a DOS original as the reference: DOSBox-X build, patches, installer scripts, input, determinism, milestones | [The DOS reference](reference/dos-reference.md) |
-| x86 real-mode semantics, the CPU-mode census, Unicorn x86-16 oracle quirks | [x86 real mode](reference/x86-real-mode.md) |
-| Estimate a port's frame rate before choosing the target CPU | [Price the target](playbooks/new-port-playbook.md#2-identify-the-original-and-choose-the-approach) |
-| Start a port from a sibling port's translator and runtime | [Starting from a sibling port](playbooks/new-port-playbook.md#6-scaffold-the-repo) |
+| x86 real-mode semantics, the CPU-mode census, MZ executables, Unicorn x86-16 oracle quirks | [x86 real mode](reference/x86-real-mode.md) |
+| DOS services, EMS and XMS, overlay managers, loaded drivers or interrupt delivery under translated code | [The runtime under translated DOS code](reference/dos-runtime.md) |
+| Estimate a port's frame rate before choosing the target CPU | [Price the target](playbooks/new-port-playbook.md#price-the-target) |
+| Start a port from a sibling port's translator and runtime | [Starting from a sibling port](playbooks/new-port-playbook.md#starting-from-a-sibling-port) |
 | Compiler flags, linking, HUNK conversion or release builds | [Port toolchain](reference/port-toolchain.md) |
+| A large executable fails to load ("file is not executable") or never returns from LoadSeg under WHDLoad | [Linking and elf2hunk](reference/port-toolchain.md#linking-and-elf2hunk) |
 | Installer, icons, archives or release validation | [Native port release checks](native-port-validation.md); the selected WHDLoad playbook's §13 for slave releases |
 
 ## Reuse before implementing

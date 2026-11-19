@@ -26,14 +26,15 @@ acceptance check. Keep implementation contracts in their canonical reference.
    level (3 dB) and pitch (10 cent) tolerances fail on planted defects.
 3. **RELOC32 block splitting in the shared tools.**
    Reproduction: Kickstart 3.1's LoadSeg refuses a RELOC32 block of 65,536 or more offsets
-   ([linking](reference/port-toolchain.md#linking-and-elf2hunk)); only one port has a splitter.
+   ([linking](reference/port-toolchain.md#linking-and-elf2hunk)), and `elf2hunk` writes one
+   block per target hunk; nothing shared splits or checks them.
    Component: the `amigaxdev` package (split and check modes), the release checks.
    Acceptance: a synthetic hunk with a 65,839-offset block is split into blocks of at most
    65,535 that relocate identically, the check mode fails on the unsplit file, and a stripped
    release executable compares equal to its full build apart from symbol and debug hunks.
 4. **A FAT12 image reader for the install-data helpers.**
-   Reproduction: two DOS ports' native installers each add their own FAT12 reader for the
-   user's floppy images beside the shared `share/install-data` I/O.
+   Reproduction: a native installer that reads the user's DOS floppy images must add its own
+   FAT12 reader beside the shared `share/install-data` I/O.
    Component: `share/install-data`.
    Acceptance: host and freestanding 68020 builds list and read every file of a set of 1.44 MB
    images byte-identically to a host FAT reader, and refuse a truncated image and a bad FAT

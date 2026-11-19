@@ -10,7 +10,7 @@ from several original platforms. Related docs:
 - [Fixed-time simulation](../playbooks/fixed-time-simulation.md): timing departures.
 
 1. [Ground truth](#1-ground-truth)
-2. [Levels of evidence](#2-levels-of-evidence)
+2. [Levels of evidence](#2-levels-of-evidence), including [which checks a change needs](#gate-a-change-by-what-it-can-affect)
 3. [Routine differentials](#3-routine-differentials)
 4. [Fixtures: what to randomise](#4-fixtures-what-to-randomise)
 5. [Results, not implementation details](#5-results-not-implementation-details)
@@ -72,12 +72,24 @@ Each level answers a different question. None alone proves whole-game fidelity.
 | Gameplay regression suites with explicit success records | Lifecycle paths still complete | Fidelity of what they pass through |
 | Linked-ELF checks under a CPU oracle | The assembly actually linked | DMA-era timing |
 
-**Gate a change by what it can affect**:
+### Gate a change by what it can affect
 
-- documentation: link and syntax checks;
-- a pure helper: host checks;
-- a runtime change: original-byte checks and a bounded target run;
-- a release or installer change: see [native port validation](../native-port-validation.md).
+| Change | Evidence |
+|---|---|
+| documentation | link and syntax checks |
+| pure helper | host checks with boundary and rejection cases |
+| loader or binary hook | original-byte guards, register/CCR preservation, bounded native completion |
+| new service | original arguments and results, native call-site acceptance |
+| display / audio | matching game state, full viewport or event/voice contracts on the target |
+| performance | matched scenario in guest ticks or fields, pinned CPU model, profiling overhead stated |
+| installer / release | extraction hashes, real Installer run, WHDLoad execution, independent archive check ([native port validation](../native-port-validation.md)) |
+
+**Scope validation by dependency** once the full gate set takes hours. Run the checks the
+change reaches through its callers, consumers and shared contracts, and say which and why
+before running them; broaden when memory, flags, control flow or interrupt contracts change.
+Keep every selected check, oracle and tolerance: scope by dependency, never by whether a test
+passes. Green results for unchanged inputs stand. A project states the rule in its
+`AGENTS.md`.
 
 ## 3. Routine differentials
 

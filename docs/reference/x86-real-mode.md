@@ -6,7 +6,8 @@ instruction differential against Unicorn and, where Unicorn deviates, live DOSBo
 everything else is architecture knowledge (Intel and Motorola manuals) that needs a
 differential case before a lowering relies on it. The method is in the playbook's
 ["x86 translated or recovered"](../playbooks/new-port-playbook.md#x86-translated-or-recovered);
-the reference emulator in [the DOS reference](dos-reference.md).
+the reference emulator in [the DOS reference](dos-reference.md); the runtime's services, EMS,
+overlays and interrupt delivery in [the runtime under translated DOS code](dos-runtime.md).
 
 ## The CPU mode decides the contract
 
@@ -100,9 +101,8 @@ FLAGS: CF 0, PF 2, AF 4, ZF 6, SF 7, TF 8, IF 9, DF 10, OF 11.
   `push cs; call near` calls a far routine in the same segment (treat it as a far call);
   `push seg; push off; retf` is a far jump.
 - Code can pop or rewrite its return address (inline parameters, dispatch, an overlay
-  manager redirecting returns). With guest calls lowered as `jsr`, keep the guest stack
-  byte-exact and **check the popped CS:IP at every return site**: a mismatch goes to a
-  far re-dispatch or a named stop.
+  manager redirecting returns): the reason for the runtime's
+  [return-site check](dos-runtime.md#calls-and-returns).
 - Microsoft C/LINK far code uses a frame paragraph up to 15 bytes below a function's first
   byte, inside the previous function: CS follows control flow, not address. Take a far
   function's CS as its entry rounded down to a paragraph.

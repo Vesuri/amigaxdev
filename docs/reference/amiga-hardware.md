@@ -433,19 +433,24 @@ re-inserts the system copper list after every `WaitTOF`.
   banks: square waves at computed periods; noise from a rendered LFSR or evolving buffers
   refreshed in slices. Envelopes clocked at 50 Hz quantise 100 Hz steps in pairs; a CIA
   timer fixes that.
-- **Re-host OPL2 FM the same way**: the runtime keeps a shadow of the guest's 388h/389h
-  writes and key-on counts; once a field a re-hoster turns them into commands for Paula's
-  voices. Each sounding operator pair becomes one period loop (at most 4 KB) rendered on
-  demand into a Chip pool (64 KB in pages of 256 bytes), with the modulator quantised to
-  0.75 dB steps and a per-voice memo so that a pitch change is a new period, not a new
-  render. Feedback 6–7 is chaotic only under a strong modulator; play it from noise tables
-  built at start-up at the modulator's pitch. Bound the renders per field. An additive
-  channel's loop holds both operators at their levels relative to the louder. The oracle is
-  Nuked OPL on the host, rendering the same register log: level within 3 dB and pitch within
-  10 cents. Music re-hosts live; effects are prerendered at start-up from the driver's own
-  writes (playbook §9): one gunshot re-hosted live rendered 192 KB of loops in its 0.88 s,
-  about 19 M cycles, some 40% of a 50 MHz 68030. Real-time software OPL synthesis, mixed
-  per sample, was estimated at 15–35% of the CPU and rejected.
+- **Re-host OPL2 FM (AdLib) the same way.** The runtime keeps a shadow of the guest's
+  388h/389h writes and key-on counts; once a field a re-hoster turns them into commands for
+  Paula's voices:
+  - each sounding operator pair becomes one period loop (at most 4 KB) rendered on demand
+    into a Chip pool (64 KB in pages of 256 bytes), with the modulator quantised to 0.75 dB
+    steps and a per-voice memo, so that a pitch change is a new period, not a new render;
+    bound the renders per field;
+  - feedback 6–7 is chaotic only under a strong modulator: play it from noise tables built
+    at start-up at the modulator's pitch;
+  - an additive channel's loop holds both operators at their levels relative to the louder;
+  - the oracle is Nuked OPL on the host, rendering the same register log: level within 3 dB
+    and pitch within 10 cents.
+
+  Music re-hosts live; effects are prerendered at start-up from the driver's own writes
+  (playbook §9). One gunshot re-hosted live rendered 192 KB of loops in its 0.88 s, about
+  19 M cycles, some 40% of a 50 MHz 68030. Real-time software OPL synthesis, mixed per
+  sample, was estimated at 15–35% of the CPU and rejected. No shared re-hoster exists yet
+  ([open work](../open-work.md)).
 - Keep the refresh in the VBI and bounded in time, with no per-sample interrupt mixer.
   When the original drives more voices than it has channels, port its priority mixer and map
   its channels to Paula's, rather than mixing voices together (for example, 16 voice slots
