@@ -40,6 +40,10 @@ search for the affected option, helper or symptom before reading surrounding tex
 | CPU instruction costs, C/assembly optimisation or copies | [m68k optimisation](reference/m68k-optimisation.md) |
 | Chip bus, copper, blitter, Paula, DMA, interrupts or OS handback | [Amiga hardware](reference/amiga-hardware.md) |
 | Macintosh pointer truncation above 16 MB | [Logical and native addresses](native-port-validation.md#macintosh-logical-addresses-and-native-high-pointers) |
+| Run a DOS original as the reference: DOSBox-X build, patches, installer scripts, input, determinism, milestones | [The DOS reference](reference/dos-reference.md) |
+| x86 real-mode semantics, the CPU-mode census, Unicorn x86-16 oracle quirks | [x86 real mode](reference/x86-real-mode.md) |
+| Estimate a port's frame rate before choosing the target CPU | [Price the target](playbooks/new-port-playbook.md#2-identify-the-original-and-choose-the-approach) |
+| Start a port from a sibling port's translator and runtime | [Starting from a sibling port](playbooks/new-port-playbook.md#6-scaffold-the-repo) |
 | Compiler flags, linking, HUNK conversion or release builds | [Port toolchain](reference/port-toolchain.md) |
 | Installer, icons, archives or release validation | [Native port release checks](native-port-validation.md); the selected WHDLoad playbook's §13 for slave releases |
 

@@ -132,6 +132,31 @@ Then choose, with the owner, the **target** (A500 68000 with uniformly slow memo
 | x86 DOS | offline translation to 68020 assembly, or routine-by-routine recovery into native code, both oracle-tested against x86 | `amigaxdev.dos`, `ExportAuditListing.java`, Unicorn (`AMIGA_UNICORN`) |
 | bytecode / engine data (GameMaker and similar) | lossless extraction → auditable IR → portable deterministic core → Amiga backend | — |
 
+For an x86 original, census the instruction set first ([the CPU mode decides the
+contract](../reference/x86-real-mode.md#the-cpu-mode-decides-the-contract)). The translators
+built so far handle 16-bit real mode with 80186 forms; 386 forms, 32-bit registers or a DOS
+extender change the approach, not only the decoder.
+
+**Price the target before the owner chooses it.** On the reference at fixed cycles, split
+the heaviest early scene's frame into the frame limiter's wait and the work (probe the
+limiter's entry and exit), and repeat at double the cycles: an unchanged interval means the
+limiter sets it, a halved one that the work does. Then apply measured ratios of earlier
+translated x86 ports, labelled DERIVED, and confirm them at the first vertical slice with a
+profile on the target model split into runtime, generated code, c2p and interrupts.
+Measured so far, per scene and not transferable without that check:
+
+| Quantity | Measured |
+|---|---|
+| Translated 68020 frame against a 12,000-cycle DOSBox-X reference | 4–8× slower |
+| A 50 MHz 68030 model against the 68020 model | about 3× faster |
+| All-in 68030 cycles per x86 instruction outside the frame wait | about 50 (runtime and platform 51%, generated code 41%, c2p 6%, interrupt transitions 2%) |
+| 68k instructions per x86 instruction, all in | about 9.9; price a 68040 from that at 1.3–1.5 cycles per instruction (INFERRED, cached integer code), since FS-UAE's 040 timing counts instructions and its profiler records nothing there |
+| Generated 68020 code of one whole DOS program (root and overlays) | about 1.36 MB, beside 1.06 MiB of guest RAM and a 560 KiB EMS store in Fast RAM |
+| One flight simulator on a 68020 | 290–300 ms a frame against a 240 ms goal (a 14 MHz 286); its successors set a 68030 minimum and recommend a 68040 |
+
+A texture-mapped or voxel renderer had not been measured when these were taken; it needs its
+own estimate. The worst-case sound effect is priced the same way (§9).
+
 Write the faithfulness-seam rule (which code is a validated faithful twin and which is
 Amiga-only and lossy) as the first architecture doc (`docs/faithfulness-seam.md`), before the
 first twin.
@@ -194,7 +219,7 @@ before the port needs them.
 | Platform | Reference |
 |---|---|
 | Macintosh | MAME (`mac2fdhd`, `mdc48`), Lua autoboot and input scripts |
-| DOS | DOSBox-X (286 core, instrumented with patches), DOSBox Staging as a second CPU personality |
+| DOS | a pinned, patched DOSBox-X: 386 normal core at fixed cycles, installer and input scripted on emulated time and guest visits ([the DOS reference](../reference/dos-reference.md)); a 286 personality or DOSBox Staging only as a second CPU personality |
 | BBC Micro | jsbeeb, headless under Node |
 | Atari 8-bit | atari800 in FIFO mode, RAM extracted from its state files |
 | arcade board | a Musashi host harness with device models |
@@ -210,7 +235,11 @@ What the loop must do:
 - dump memory, registers and frames at named milestones, and trace executed addresses, edges,
   interrupts, port and device I/O, writes to code, and file operations, normalised to the load
   base, armed by a proven guest event;
-- drive input deterministically (DOSBox-X `autotype`, MAME Lua, jsbeeb key scripts).
+- drive input deterministically: on the Nth visit of a guest poll site, or from a script on
+  emulated time and screen state (MAME Lua, jsbeeb key scripts, a DOSBox-X script patch).
+  Never on host wall time: DOSBox-X's `autotype` sleeps in it and loses keys;
+- pin every clock the guest can read (BIOS ticks, DOS date, host file times, RTC/NVRAM), and
+  record the emulator build by commit with a tree check before each run.
 
 First job: dump RAM at the program's entry and diff it against your extracted image. Until that
 diff is clean, every address derived from the image is provisional. Gate on stable crops and
@@ -247,8 +276,9 @@ such as `DumpHwAccesses.java` for memory-mapped hardware. `tools/ghidra` links t
 - **Disassemble the image that executes, not the file.** Prove the runtime image with two
   independent captures (§3); packers and self-relocating loaders make the file image wrong
   where it matters.
-- **One address convention, never mixed**: Mac `(segment, offset)`; DOS normalised to load
-  segment 0 with the relocations reversed; `(overlay, segment, offset)` when overlays exist.
+- **One address convention, never mixed**: Mac `(segment, offset)`; DOS `(module, offset)`,
+  where the module is the root (its load image, normalised to load segment 0 with the
+  relocations reversed) or the overlay or driver file whose bytes the DOS read put there.
 - **Never classify mixed code and data by linear sweep.** A linear sweep of an overlay invents
   hundreds of plausible instructions from ASCII.
 - **Static analysis is an upper bound, the trace a lower bound**: combine them, and check every
@@ -263,6 +293,22 @@ such as `DumpHwAccesses.java` for memory-mapped hardware. `tools/ghidra` links t
 - **Classify every code write mechanically** (operand, opcode, branch, call, extent) and prove
   the absence of writes to executed bytes by a byte-level trace check per path. A patched call
   or jump target set is explicit and checked at generation time.
+- **Model the overlay manager and every runtime-loaded module from its code**, then replay the
+  model over every trace (call order, residency, exactly predicted reads, caller resident on
+  return) with sabotage rules that must fail it. Managers seen so far: a linker's thunk
+  manager (make the overlay resident, then `jmp far`; parents reload with children),
+  Borland VROOMM (INT 3Fh stubs patched to far jumps while resident, returns trapped by
+  rewriting saved frames along the BP chain, eviction on probation, buffer compaction by
+  `rep movsw`, the run-time segment kept in the stub's own word), and a game's own manager.
+- **Runtime-loaded drivers** (sound, graphics) are often called through far pointers the game
+  copies into its data from an entry table of near offsets, and receive callbacks the same
+  way. Map them by their ports and callers, never by file name or strings: a plan that
+  named two drawing drivers sound drivers was wrong. A driver loaded at the same paragraph in
+  every trace can be translated at a static segment with a residency check.
+- For DOS, Ghidra runs downstream of the project's own recursive-descent sweep: import each
+  unit raw (`x86:LE:16:Real Mode`) at its link address, one program per overlay segment when
+  segments share link addresses, and seed it from the sweep and the trace. The sweep and the
+  translator's control flow are the authority.
 
 Gate: static and live evidence agree on the executable surface (a check target such as
 `make static-map-check`); generation does not silently treat unknown targets as data.
@@ -305,6 +351,24 @@ commit, the classes taken and every local change in `UPSTREAM.md`.
 `python3 -m amigaxdev.framework diff PROJECT` shows what differs from the canonical tree, and
 `sync` copies canonical files in under the port's prefixes; a fix made in a port goes back to
 AmigaXDev `share/framework/`.
+
+**Starting from a sibling port.** When an earlier port of the same original CPU has the
+translator, runtime and harnesses, copy them rather than rewrite; a port that did so reached
+whole-game lockstep in about two and a half weeks:
+- Copy as-is at one commit, pinned in `manifest/references.tsv` (`project`, `commit`, `role`),
+  with a one-line provenance header in each copied file. Then make one mechanical rename
+  commit (the donor's prefix to the port's), empty the annotation tables to their headers,
+  and drop the donor's game-specific modules.
+- Banner each copied doc "the rules apply; the facts are the donor's until re-derived", and
+  mark each donor decision kept or changed in the port's translator design.
+- Log every later change to an imported file in `docs/upstream.md`, tagged as a donor fix, a
+  port change or a rename, so that fixes flow back.
+- Before building any surface, check the sibling ports' newer commits for it; bugs and fixes
+  crossed between ports that way. Make the donor's late lessons (its contract changes,
+  interrupt delivery, EMS cost, cost meter) the port's day-one choices, in a table in the
+  port plan.
+- The copied platform code may not build against the canonical framework at once; vendor the
+  donor's copy, record that in `UPSTREAM.md`, and converge later with `amigaxdev.framework`.
 
 Gate: `make` builds an empty host program and `cd amiga && . ./env.sh && make` an empty Amiga
 executable that `./run.sh` boots and quits cleanly.
@@ -350,7 +414,10 @@ right. The guardrails against that:
   Sync points (interrupts taken only at chosen guest boundaries) belong in the test harness,
   where the reference takes interrupts at the same points. Polling for interrupts at every
   loop head on the target costs several percent of all cycles and keeps native routines behind
-  exact-poll scopes; asynchronous delivery removes both.
+  exact-poll scopes; asynchronous delivery removes both. Drive the Amiga timer from the PIT
+  divisor the guest programs (a CIA-B timer latch scaled to the E-clock), not from the beam.
+  Keep loop heads in the harness's sync set and fix the set before recording long references
+  ([the DOS reference](../reference/dos-reference.md#determinism)).
 - **Spin-waits:** a wait on an I/O port is a device-model gap; a wait on RAM is a hook candidate.
   Report the candidates and hook only waits that own a frame (typically few of them).
 
@@ -404,11 +471,38 @@ right. The guardrails against that:
 
   Little-endian RAM, zero-extended registers and flags in memory look simpler, but block-local
   speed steps under that contract recover little; changing the contract later means
-  re-plumbing the harness and its sabotage plants.
+  re-plumbing the harness and its sabotage plants. The contract presumes 16-bit code: census
+  the CPU mode first ([x86 real mode](../reference/x86-real-mode.md#the-cpu-mode-decides-the-contract)).
+- Guest calls become `jsr`/`rts` over a byte-exact guest stack, with the popped CS:IP checked
+  at every return site; a mismatch (an overlay manager rewrote the frame, code popped its own
+  return) re-dispatches far or stops by name.
+- **Answer every service as the reference emulator does**: EMS allocation order and page
+  counts, MCBs and the PSP, INT 33h, the BIOS keyboard buffer. Guest RAM then compares with the
+  reference directly. Load the user's original executable into guest RAM at run time, so the
+  shipped program holds only translated code.
 - **EMS mapping must cost what it costs on a PC**: a page-table change, not a copy. Copying two
   16 KB pages byte by byte per map can take a quarter of a scene's cycles. Design the EMS model
-  for speed before the first profile; at least use long-word copies with an exact
-  identical-remap skip.
+  for speed before the first profile: map pages lazily, run guarded ES accesses on the store
+  page itself, and copy in only at DS/SS loads of the frame (one port cut its copies to one
+  milestone from 82 MB to 5.7 MB). A page mapped at two frame pages is one memory. At least
+  use long-word copies with an exact identical-remap skip. No port has needed XMS yet; check
+  for INT 2Fh AX=4300h/4310h before assuming the same.
+- **Overlays**: translate each overlay once as its own module and run the game's own manager
+  translated, so it loads the bytes into guest RAM as on the PC. Take an overlay's run-time
+  segment from the manager's own residency record, key dispatch rows by CS:IP and module with a
+  residency bit, and lower stub entries as two-form cells (trapping and resident).
+- **Interrupt delivery details**: a handler that reaches STI before its EOI needs an
+  "in service" guard; several handlers (two INT 08h chains, an INT 15h AH=4Fh keyboard
+  intercept called from the BIOS INT 09h model, a Sound Blaster IRQ timed by block length over
+  rate) each need the footprint proof.
+- Host-lockstep memory hooks belong in C from the start, stopping at the first difference and
+  guarded by a watchdog; per-access Python hooks were too slow for whole-game runs.
+- Review every indirect site the traces never ran with a generated report: each keeps a guard
+  that falls to a named stop or to a lookup that stops on an unknown target.
+- Uninitialised stack reaches guest state (an `intdos` register block, a local stored on one
+  branch only), and the port's dead stack holds other bytes than the reference's when its
+  interrupt handler runs on a private stack. Compare such bytes only under an owner-approved
+  mask with its own controls, never by loosening the comparison.
 - **Self-modifying regions**: lower them as a run-time cell walk, then cache matched cells with
   exact invalidation on code stores, segment loads that reach the region, and runtime writes.
   Range-check every indirect transfer that can land in such a region: an unresolved `call dx`
@@ -515,7 +609,15 @@ the repo from the first twin:
 - Measure target-only code with an **in-process differential** against its C oracle (same run,
   same inputs), never a cross-run picture: a faster renderer changes the trajectory.
 - Before trusting a new gate, plant a few deliberate defects, confirm it fails, then remove them
-  (a make target such as `make test-sabotage`).
+  (a make target such as `make test-sabotage`). Pair every check with its sabotage twin
+  (`t-NAME`, `t-sab-NAME`), each writing its log to `tmp/test/NAME.log` and printing `ok` or
+  `FAIL` with the log's tail.
+- **Scope validation by dependency.** Whole-game gates take hours once a port is large. Run
+  the checks the change reaches through its callers, consumers and shared contracts, and say
+  which and why before running them; broaden when memory, flags, control flow or interrupt
+  contracts change. Keep every selected check, oracle and tolerance; scope by dependency,
+  never by whether a test passes. Green results for unchanged inputs stand. Put the rule in
+  `AGENTS.md`.
 - A change to the transpiler, CPU model or memory representation changes the oracle too: record
   determinism baselines first, never re-record one to make a failure pass.
 - Know what each check answers: installation, execution and the resulting picture are separate
@@ -598,7 +700,8 @@ assembled with `-I.` and the project's `whdload/smoke_name.i`) tests the harness
 - `make dist` does a clean release build (no probes, profiling, self-tests or diagnostic markers;
   `elf2hunk -s`), the slave, the helper, then a packager with an explicit file allowlist that
   refuses any member matching an original's hash (and can scan for any 256-byte block of the
-  original), then an independent checker. Version and date come from `VERSION` and must
+  original, forwards and byte-reversed when the port keeps guest RAM reversed), then an
+  independent checker. Version and date come from `VERSION` and must
   match in the executable, slave, installer and ReadMe.
 - Archive with `amigaxdev.release` (the shared `LHA`, LH5, members in the given order, a fixed
   DOS stamp, the installer and drawer icons, refusal of originals and of an existing archive);
