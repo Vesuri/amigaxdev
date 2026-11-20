@@ -27,6 +27,8 @@ The playbook's §0 rules apply here (`docs/playbooks/new-game-playbook.md`), in 
   WHDLoad developer packages are the explicit exception: retain only the latest, discard
   older installations after verifying the replacement, and do not keep `.replaced/` backups.
 - **Never `pkill fs-uae` or `pkill gdb`**: other projects run emulators at the same time.
+- **Parallelise tests and validations within `$AMIGA_JOBS`** (half the logical CPUs, from
+  `share/env.sh`), never one job per core: other projects share the machine.
 - Commits: author and committer `Vesa Halttunen <vesuri@jormas.com>`, unsigned,
   `core.hooksPath=/dev/null`, no Co-Authored-By or other trailers, one commit per coherent change.
 - When creating or cloning a personal repository, explicitly set repository-local

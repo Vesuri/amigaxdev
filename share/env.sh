@@ -63,6 +63,16 @@ export AMIGA_PYLIB="${AMIGA_PYLIB:-$AMIGA_SHARE/pylib}"
 export AMIGA_GHIDRA_SCRIPTS="${AMIGA_GHIDRA_SCRIPTS:-$AMIGA_SHARE/ghidra_scripts}"
 export AMIGA_FRAMEWORK="${AMIGA_FRAMEWORK:-$AMIGA_SHARE/framework}"
 
+# Parallel jobs for tests and validations: half the logical CPUs, at least one, so other
+# projects and sessions keep the rest of the machine. Set AMIGA_JOBS to override.
+if [ -z "${AMIGA_JOBS:-}" ]; then
+  _amiga_ncpu="$(sysctl -n hw.ncpu 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)"
+  AMIGA_JOBS=$((_amiga_ncpu / 2))
+  [ "$AMIGA_JOBS" -ge 1 ] || AMIGA_JOBS=1
+  unset _amiga_ncpu
+fi
+export AMIGA_JOBS
+
 # PATH: the shared Python environment (Pillow, numpy, capstone, amitools), the cross tools,
 # vasm and friends, and the native arm64 FS-UAE.  Each is added once.  The x86_64 FS-UAE
 # that comes with amiga-debug is left off PATH (and removed if an older env.sh put it there):

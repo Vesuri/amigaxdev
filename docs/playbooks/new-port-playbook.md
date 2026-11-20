@@ -53,6 +53,12 @@ installed shared index, are in [a project's agent instructions](../environment.m
 - **Never `pkill fs-uae` or `pkill gdb`** (nor MAME, DOSBox, jsbeeb): projects share the host.
   The shared `fsuae_common.sh` kills only this directory's recorded pid; reference-emulator
   scripts must record and kill their own pid the same way.
+- **Parallelise tests and validations, but never take the whole machine.** Run independent
+  checks concurrently, within `$AMIGA_JOBS` jobs (the shared `env.sh` sets it to half the
+  logical CPUs): `make -j"$AMIGA_JOBS"`, worker pools of that size, never a bare `-j` or one
+  job per core. Every compiler, emulator and pool worker this session starts, in the
+  background too, counts against it. Parallel emulator runs from one checkout each need their
+  own run directory and debugger port ([headless FS-UAE](../reference/headless-fsuae.md)).
 - **No local paths in the repo** (no home directories, usernames, `/tmp`, paths into other
   projects). Shared files come from the variables of the shared `env.sh` (§1); scratch output
   goes to ignored `tmp/`.

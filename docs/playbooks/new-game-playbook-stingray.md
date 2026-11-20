@@ -50,6 +50,12 @@ Patches come after all of that.
   `~/.local/share/amiga/fsuae_common.sh`, which kills only the pid this directory started and
   gives each directory its own gdb-stub port. Kill orphans of your own (a `serve`, a `gdb`, an
   FS-UAE that crashed and left its window up) by pid, after checking the pid is yours.
+- **Parallelise tests and validations, but never take the whole machine.** Run independent
+  checks concurrently, within `$AMIGA_JOBS` jobs (the shared `env.sh` sets it to half the
+  logical CPUs): `make -j"$AMIGA_JOBS"`, worker pools of that size, never a bare `-j` or one
+  job per core. Every compiler, emulator and pool worker this session starts, in the
+  background too, counts against it. Parallel emulator runs from one checkout each need their
+  own run directory and debugger port ([headless FS-UAE](../reference/headless-fsuae.md)).
 - Commits: author **and** committer `Vesa Halttunen <vesuri@jormas.com>`; GitHub account
   **Vesuri**; no signing of commits, tags or pushes; `core.hooksPath=/dev/null`; no
   `Co-Authored-By` or assistant-attribution trailers. Nothing work-related in repository

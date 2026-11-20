@@ -99,6 +99,7 @@ without edits.
 | `AMIGA_PYLIB` | `pylib` | the `amigaxdev` Python package (below) |
 | `AMIGA_GHIDRA_SCRIPTS` | `ghidra_scripts` | shared Ghidra scripts: `-scriptPath "ghidra_scripts;$AMIGA_GHIDRA_SCRIPTS"` |
 | `AMIGA_FRAMEWORK` | `framework` | the canonical framework the ports compare their copies with |
+| `AMIGA_JOBS` | half the logical CPUs, at least 1 | the parallel-job budget for tests and validations (`make -j"$AMIGA_JOBS"`, worker pools); the playbooks' §0 rule |
 
 Paths without a directory are under `$AMIGA_SHARE`. The shared `env.sh` also puts
 `$AMIGA_SHARE/python/bin`, `$AMIGA_TOOLCHAIN/bin`, `$AMIGA_PREFIX` and the directory of
